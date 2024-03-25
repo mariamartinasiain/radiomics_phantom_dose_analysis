@@ -28,19 +28,27 @@ def identify_images_rois(folder):
             study_folders_map = json.load(map_file)
             return study_folders_map
 
-    series_folders = [f for f in os.listdir(folder) if os.path.isdir(folder)]
+    series_folders = [root for root, _, _ in os.walk(folder)]
+
 
     study_folders_map = {}
 
     # Read one file from each folder to identify Image -> ROI pairs
     for series_folder in tqdm(series_folders):
         dicom_files = glob(f"{folder}/{series_folder}/*.dcm")
+        print("folder", folder)
+        print("series_folder", series_folder)
+        if len(dicom_files) == 0:
+            continue
+        
         first_dicom_file = dicom_files[0]
         ds = dcmread(first_dicom_file, defer_size="1 KB", stop_before_pixels=True)
 
+        print("ds", ds)
         # Check if it's the image or the ROIs
         study_uid = ds.StudyInstanceUID
         modality = ds.Modality
+        print("modality", modality)
 
         if study_uid not in study_folders_map:
             study_folders_map[study_uid] = {}

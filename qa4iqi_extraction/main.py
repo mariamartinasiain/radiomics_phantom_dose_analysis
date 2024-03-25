@@ -19,14 +19,16 @@ if __name__ == "__main__":
     dataset_folder = DATASET_FOLDER
 
     # Check if dataset is complete
-    dataset_complete, series = check_data(dataset_folder)
+    #dataset_complete, series = check_data(dataset_folder)
 
     # If not complete, offer to download it
-    if not dataset_complete:
-        offer_download_data(series, dataset_folder)
+    #if not dataset_complete:
+        #offer_download_data(series, dataset_folder)
 
     # Identify DICOM series & associated ROIs
     dicom_folders_map = identify_images_rois(dataset_folder)
+
+    print("dicom_folders_map", dicom_folders_map)
 
     # Launch conversion & extraction pipeline
     extracted_features_df = run_feature_extraction(dicom_folders_map)
