@@ -45,7 +45,7 @@ def identify_images_rois(folder):
         first_dicom_file = dicom_files[0]
         ds = dcmread(first_dicom_file, defer_size="1 KB", stop_before_pixels=True)
 
-        print("ds", ds)
+        #print("ds", ds)
         # Check if it's the image or the ROIs
         study_uid = ds.StudyInstanceUID
         modality = ds.Modality
