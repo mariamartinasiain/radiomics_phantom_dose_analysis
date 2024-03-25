@@ -35,7 +35,8 @@ def identify_images_rois(folder):
 
     # Read one file from each folder to identify Image -> ROI pairs
     for series_folder in tqdm(series_folders):
-        dicom_files = glob(f"{folder}/{series_folder}/*.dcm")
+        dicom_files = glob(f"{folder}/{series_folder}/*")
+        dicom_files = [f for f in dicom_files if os.path.isfile(f)]
         print("folder", folder)
         print("series_folder", series_folder)
         if len(dicom_files) == 0:
