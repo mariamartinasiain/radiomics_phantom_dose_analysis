@@ -32,7 +32,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     # Read DICOM image & convert to NIfTI
     dicom_files = glob(f"{dicom_image_folder}/*")
     dicom_files = [f for f in dicom_files if os.path.isfile(f)]
-    dicom_datasets = [pydicom.dcmread(f) for f in dicom_files]
+    dicom_datasets = [pydicom.dcmread(f,force=True) for f in dicom_files]
     dicom_datasets = sorted(dicom_datasets, key=lambda ds: -ds.InstanceNumber)
 
     # Store useful DICOM metadata

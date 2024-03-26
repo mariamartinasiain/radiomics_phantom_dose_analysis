@@ -29,6 +29,7 @@ def identify_images_rois(folder):
             return study_folders_map
 
     series_folders = [root for root, _, _ in os.walk(folder)]
+    
 
 
     study_folders_map = {}
@@ -37,8 +38,9 @@ def identify_images_rois(folder):
     for series_folder in tqdm(series_folders):
         dicom_files = glob(f"{series_folder}/*")
         dicom_files = [f for f in dicom_files if os.path.isfile(f)]
-        print("folder", folder)
-        print("series_folder", series_folder)
+        #print("folder", folder)
+        #print("series_folder", series_folder)
+        #print("dicom_files", dicom_files)
         if len(dicom_files) == 0:
             continue
         
@@ -49,7 +51,7 @@ def identify_images_rois(folder):
         # Check if it's the image or the ROIs
         study_uid = ds.StudyInstanceUID
         modality = ds.Modality
-        print("modality", modality)
+        #print("modality", modality)
 
         if study_uid not in study_folders_map:
             study_folders_map[study_uid] = {}

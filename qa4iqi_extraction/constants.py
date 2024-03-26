@@ -1,4 +1,4 @@
-DATASET_FOLDER = "../DICOM"
+DATASET_FOLDER = "../DICOM/1"
 OUTPUT_FILE_NAME = "data/output/features.csv"
 PARAMETER_FILE_NAME = "params/qa4iqi_params.yml"
 TCIA_COLLECTION_NAME = "CT-Phantom4Radiomics"

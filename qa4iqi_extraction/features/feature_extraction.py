@@ -12,6 +12,11 @@ from qa4iqi_extraction.features.extract_features import extract_features
 
 from qa4iqi_extraction.utils.nifti import convert_to_nifti
 
+logging.basicConfig(filename="std.log", 
+					format='%(asctime)s %(message)s', 
+					filemode='w') 
+
+
 logger = logging.getLogger()
 
 
@@ -24,10 +29,18 @@ def run_feature_extraction(dicom_folders_map):
         dicom_folders_map.items(), desc="Processing all DICOM studies"
     ):
         with tempfile.TemporaryDirectory(prefix=study_uid) as tmp_dir:
-            nifti_image_path, nifti_roi_paths, dicom_info = convert_to_nifti(
-                dicom_image_mask, tmp_dir
-            )
+            try : 
+                nifti_image_path, nifti_roi_paths, dicom_info = convert_to_nifti(
+                    dicom_image_mask, tmp_dir
+                )
+            except Exception as e:
+                logger.error(f"Error converting study {study_uid}: {e}")
+                print(f"Error converting study {study_uid}: {e} ... From file {dicom_image_mask}. Skipping...")
+                continue
+            
             logger.debug(f"Done converting study {study_uid}")
+            
+            print("finished converting study from file", dicom_image_mask)
 
             features_df = extract_features(
                 nifti_image_path, nifti_roi_paths, dicom_info[SERIES_DESCRIPTION_FIELD]
@@ -44,6 +57,8 @@ def run_feature_extraction(dicom_folders_map):
         i += 1
 
     # Concatenate all dataframes
+    if not all_features_df:
+        return pd.DataFrame()
     concatenated_features_df = pd.concat(all_features_df, ignore_index=True)
 
     # Sort by series number
