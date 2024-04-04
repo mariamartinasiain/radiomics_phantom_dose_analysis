@@ -46,6 +46,13 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     # Store useful DICOM metadata
     dicom_info = {}
+    dicom_info[SERIES_NUMBER_FIELD] = None
+    dicom_info[SERIES_DESCRIPTION_FIELD] = None
+    dicom_info[MANUFACTURER_FIELD] = None
+    dicom_info[MANUFACTURER_MODEL_NAME_FIELD] = None
+    dicom_info[SLICE_THICKNESS_FIELD] = None
+    dicom_info[SLICE_SPACING_FIELD] = None
+    
     try:
         dicom_info[SERIES_NUMBER_FIELD] = dicom_datasets[0].SeriesNumber
         dicom_info[SERIES_DESCRIPTION_FIELD] = dicom_datasets[0].SeriesDescription
