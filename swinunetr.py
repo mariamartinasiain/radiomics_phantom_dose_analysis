@@ -112,7 +112,7 @@ class CropOnROId(MapTransform, LazyTransform):
             self.cropper.lazy = value
 
 
-    def __call__(self, data, lazy: bool | None = None):
+    def __call__(self, data, lazy= None):
         d = dict(data)
         lazy_ = self.lazy if lazy is None else lazy
         for key in self.key_iterator(d):
