@@ -171,7 +171,7 @@ for batch in dataload:
   #plutot for roi in batch[rois] ...
   image = batch["image"]
   x_in = image.cuda()
-  val_inputs = torch.unsqueeze(x_in, 1).cuda()
+  val_inputs = x_in.cuda()
 
   fig, (ax1, ax3) = plt.subplots(1, 2, figsize=(18, 6))
   ax1.imshow(val_inputs.cpu().numpy()[0, 0, :, :, slice_num], cmap="gray")
