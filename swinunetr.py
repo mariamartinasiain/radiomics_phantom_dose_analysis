@@ -193,7 +193,7 @@ for batch in dataload:
         "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD][0],
         "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
         "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],
-        "SliceSpacing": batch["info"][SLICE_SPACING_FIELD][0],
+        "SpacingBetweenSlices": batch["info"][SLICE_SPACING_FIELD][0],
         "ROI": batch["roi_label"][0],
         "deepfeatures": latentrep.flatten().tolist()  # Convertir en liste pour la sauvegarde CSV
   }
