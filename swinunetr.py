@@ -75,7 +75,7 @@ class CropOnROI(Crop):
         
         def is_positive(x):
             return x > 0
-        
+        print("IMG SHAPE",img.shape)
         box_start, box_end = generate_spatial_bounding_box(
             img, is_positive, None, 0, True
         )
