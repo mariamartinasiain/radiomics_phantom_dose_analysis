@@ -48,6 +48,9 @@ def load_data(filepath, color_mode='roi'):
         # Extraction des deux premiers caractères de la SeriesDescription
         labels = data['SeriesDescription'].str[:2]
     series_numbers = data['SeriesNumber']
+    print(f"Loaded {len(features)} features")
+    print(f"Loaded {len(labels)} labels")
+    print(f"Features: {features}")
     return features, labels, series_numbers
 
 def perform_pca(features):
@@ -67,7 +70,7 @@ def perform_tsne(features):
 def main(color_mode='series_desc'):
     print("Analyzing data...")
 
-    filepath = "../features.csv"
+    filepath = "../deepfeatures.csv"
     features, labels, series_numbers = load_data(filepath, color_mode)
 
     
