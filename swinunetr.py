@@ -119,7 +119,7 @@ class CropOnROId(MapTransform, LazyTransform):
     def __call__(self, data, lazy= None):
         d = dict(data)
         lazy_ = self.lazy if lazy is None else lazy
-        print("LA SHAPE DE SIZE",convert_to_tensor(self.size).shape)
+        print("LA SHAPE DE SIZE",(convert_to_tensor(self.size)).shape)
         for key in self.key_iterator(d):
             d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
         return d
