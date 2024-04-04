@@ -143,10 +143,10 @@ def load_data(datalist_json_path):
   return datalist
 
 
-target_size = (96, 96, 96)
+target_size = (32, 32, 32)
 
 model = SwinUNETR(
-    img_size=(96, 96, 96),
+    img_size=(32, 32, 32),
     in_channels=1,
     out_channels=14,
     feature_size=48,
