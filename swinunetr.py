@@ -32,7 +32,7 @@ from monai.transforms import (
     ToTensord,Orientationd, 
     MaskIntensityd,
     Transform,
-    AddChanneld,
+    EnsureChannelFirstd,
 )
 
 from monai.config import print_config
@@ -153,7 +153,7 @@ print("Using pretrained self-supervied Swin UNETR backbone weights !")
 transforms = Compose([
     LoadImaged(keys=["image", "roi"]),
     DebugTransform(),
-    AddChanneld(keys=["image", "roi"]),
+    EnsureChannelFirstd(keys=["image", "roi"]),
     CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
     DebugTransform(),  # Check the shape right after resizing
     #MaskIntensityd(keys=["image"], mask_key="roi"),
