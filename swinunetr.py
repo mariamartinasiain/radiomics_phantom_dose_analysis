@@ -149,7 +149,7 @@ print("Using pretrained self-supervied Swin UNETR backbone weights !")
 transforms = Compose([
     LoadImaged(keys=["image", "roi"]),
     DebugTransform(),
-    CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
+    CropOnROId(keys=["image"], roi_key="roi",size=[96,96,96]), 
     DebugTransform(),  # Check the shape right after resizing
     #MaskIntensityd(keys=["image"], mask_key="roi"),
     ToTensord(keys=["image", "roi"]),
