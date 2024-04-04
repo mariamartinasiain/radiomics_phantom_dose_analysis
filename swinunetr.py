@@ -87,6 +87,8 @@ class CropOnROI(Crop):
         # update box_start and box_end
         box_start_ = box_start_ - np.floor_divide(np.asarray(spatial_size) - orig_spatial_size, 2)
         box_end_ = box_start_ + spatial_size
+        print("BOX START",box_start_)
+        print("BOX END",box_end_)
         mid_point = np.floor((box_start_ + box_end_) / 2)
         print("MID POINT",mid_point)
         return mid_point
