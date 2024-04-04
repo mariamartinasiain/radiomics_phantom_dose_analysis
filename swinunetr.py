@@ -13,7 +13,7 @@ from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
 from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type
 from monai.transforms.transform import LazyTransform, MapTransform
-from monai.utils import ensure_tuple
+from monai.utils import ensure_tuple,convert_to_tensor
 from monai.transforms.croppad.array import Crop
 from monai.transforms import (
     AsDiscrete,
@@ -119,7 +119,7 @@ class CropOnROId(MapTransform, LazyTransform):
     def __call__(self, data, lazy= None):
         d = dict(data)
         lazy_ = self.lazy if lazy is None else lazy
-        print("LA SHAPE DE SIZE",self.size.shape)
+        print("LA SHAPE DE SIZE",convert_to_tensor(self.size).shape)
         for key in self.key_iterator(d):
             d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
         return d
