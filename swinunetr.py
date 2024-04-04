@@ -189,8 +189,8 @@ for batch in dataload:
         "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD],
         "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD],
         "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD],
-        "Manufacturer" : batch["info"][MANUFACTURER_FIELD],
-        "ROI": batch["roi_label"],  # Ceci doit être ajusté en fonction de la structure de votre batch
+        "Manufacturer" : batch["info"][MANUFACTURER_FIELD].string(),
+        "ROI": batch["roi_label"].string(),
         "deepfeatures": latentrep.flatten().tolist()  # Convertir en liste pour la sauvegarde CSV
   }
   csv_data.append(record)
