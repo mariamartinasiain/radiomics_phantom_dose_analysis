@@ -1,4 +1,5 @@
 DATASET_FOLDER = "../DICOM"
+#/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl
 #si le chemin est un fichier de ct scan, il va y avoir un pb car le .json va se mettre dedans et causer un pb de read sur le dicom, donc mettre dossier parent
 OUTPUT_FILE_NAME = "data/output/features.csv"
 PARAMETER_FILE_NAME = "params/qa4iqi_params.yml"
@@ -17,3 +18,5 @@ SERIES_NUMBER_FIELD = "SeriesNumber"
 MANUFACTURER_FIELD = "Manufacturer"
 MANUFACTURER_MODEL_NAME_FIELD = "ManufacturerModelName"
 SERIES_DESCRIPTION_FIELD = "SeriesDescription"
+SLICE_THICKNESS_FIELD = "SliceThickness"
+SLICE_SPACING_FIELD = "SpacingBetweenSlices"

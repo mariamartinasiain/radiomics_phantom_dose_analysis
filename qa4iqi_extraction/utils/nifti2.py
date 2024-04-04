@@ -17,6 +17,8 @@ from qa4iqi_extraction.constants import (
     SERIES_NUMBER_FIELD,
     MANUFACTURER_FIELD,
     MANUFACTURER_MODEL_NAME_FIELD,
+    SLICE_THICKNESS_FIELD,
+    SLICE_SPACING_FIELD,
 )
 
 
@@ -49,6 +51,9 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
         dicom_info[SERIES_DESCRIPTION_FIELD] = dicom_datasets[0].SeriesDescription
         dicom_info[MANUFACTURER_FIELD] = dicom_datasets[0].Manufacturer
         dicom_info[MANUFACTURER_MODEL_NAME_FIELD] = dicom_datasets[0].ManufacturerModelName
+        dicom_info[SLICE_THICKNESS_FIELD] = dicom_datasets[0].SliceThickness
+        dicom_info[SLICE_SPACING_FIELD] = dicom_datasets[0].SpacingBetweenSlices
+        
     except Exception as e:
         print(f"Error reading DICOM metadata: {e}")
 

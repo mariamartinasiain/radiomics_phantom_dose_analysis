@@ -9,6 +9,8 @@ from qa4iqi_extraction.constants import (
     STUDY_UID_FIELD,
     MANUFACTURER_FIELD,
     MANUFACTURER_MODEL_NAME_FIELD,
+    SLICE_THICKNESS_FIELD,
+    SLICE_SPACING_FIELD,
 )
 from qa4iqi_extraction.features.extract_features import extract_features
 
@@ -56,6 +58,8 @@ def run_feature_extraction(dicom_folders_map):
             features_df.insert(0, STUDY_UID_FIELD, study_uid)
             features_df.insert(0,MANUFACTURER_FIELD, dicom_info[MANUFACTURER_FIELD])
             features_df.insert(0,MANUFACTURER_MODEL_NAME_FIELD, dicom_info[MANUFACTURER_MODEL_NAME_FIELD])
+            features_df.insert(0,SLICE_THICKNESS_FIELD, dicom_info[SLICE_THICKNESS_FIELD])
+            features_df.insert(0,SLICE_SPACING_FIELD, dicom_info[SLICE_SPACING_FIELD])
 
             all_features_df.append(features_df)
 
