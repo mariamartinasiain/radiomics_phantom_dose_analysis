@@ -119,7 +119,7 @@ class CropOnROId(MapTransform, LazyTransform):
     def __call__(self, data, lazy= None):
         d = dict(data)
         lazy_ = self.lazy if lazy is None else lazy
-        print("LA SHAPE DE SIZE",(convert_to_tensor(self.size)))
+        print("LA SHAPE DE SIZE",(torch.tensor(self.size)).shape)
         for key in self.key_iterator(d):
             d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
         return d
@@ -149,7 +149,7 @@ print("Using pretrained self-supervied Swin UNETR backbone weights !")
 transforms = Compose([
     LoadImaged(keys=["image", "roi"]),
     DebugTransform(),
-    CropOnROId(keys=["image"], roi_key="roi",size=[96,96,96]), 
+    CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
     DebugTransform(),  # Check the shape right after resizing
     #MaskIntensityd(keys=["image"], mask_key="roi"),
     ToTensord(keys=["image", "roi"]),
