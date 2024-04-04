@@ -11,7 +11,7 @@ from tqdm import tqdm
 from monai.data import Dataset, DataLoader
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
-from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type,is_positive
+from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type
 from monai.transforms.transform import LazyTransform, MapTransform
 from monai.utils import ensure_tuple
 from monai.transforms.croppad.array import Crop
@@ -72,6 +72,10 @@ class CropOnROI(Crop):
         And adjust bounding box coords to be divisible by `k`.
 
         """
+        
+        def is_positive(x):
+            return x > 0
+        
         box_start, box_end = generate_spatial_bounding_box(
             img, is_positive, None, 0, True
         )
