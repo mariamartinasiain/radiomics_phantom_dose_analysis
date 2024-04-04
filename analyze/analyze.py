@@ -39,6 +39,9 @@ def generate_advanced_markers(num_required):
 def load_data(filepath, color_mode='roi'):
     data = pd.read_csv(filepath)
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
+    #verifier si features est plutot une liste ou un string d'une liste
+    if features.columns[0] == 'deepfeatures':
+        features = features['deepfeatures'].apply(eval).apply(pd.Series)
     if color_mode == 'roi':
         labels = data['ROI']
     elif color_mode == 'series_desc':
