@@ -92,7 +92,7 @@ class CropOnROI(Crop):
         self.slices = self.compute_slices(
             roi_center=center, roi_size=size, roi_start=None, roi_end=None, roi_slices=None
         )
-    def __call__(self, img: torch.Tensor, lazy: bool | None = None):
+    def __call__(self, img: torch.Tensor, lazy = None):
         lazy_ = self.lazy if lazy is None else lazy
         return super().__call__(img=img, slices=ensure_tuple(self.slices), lazy=lazy_)
         
