@@ -44,10 +44,13 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     # Store useful DICOM metadata
     dicom_info = {}
-    dicom_info[SERIES_NUMBER_FIELD] = dicom_datasets[0].SeriesNumber
-    dicom_info[SERIES_DESCRIPTION_FIELD] = dicom_datasets[0].SeriesDescription
-    dicom_info[MANUFACTURER_FIELD] = dicom_datasets[0].Manufacturer
-    dicom_info[MANUFACTURER_MODEL_NAME_FIELD] = dicom_datasets[0].ManufacturerModelName
+    try:
+        dicom_info[SERIES_NUMBER_FIELD] = dicom_datasets[0].SeriesNumber
+        dicom_info[SERIES_DESCRIPTION_FIELD] = dicom_datasets[0].SeriesDescription
+        dicom_info[MANUFACTURER_FIELD] = dicom_datasets[0].Manufacturer
+        dicom_info[MANUFACTURER_MODEL_NAME_FIELD] = dicom_datasets[0].ManufacturerModelName
+    except Exception as e:
+        print(f"Error reading DICOM metadata: {e}")
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
