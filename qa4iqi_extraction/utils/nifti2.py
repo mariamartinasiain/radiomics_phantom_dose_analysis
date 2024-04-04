@@ -1,4 +1,5 @@
 from glob import glob
+import json
 import os
 import numpy as np
 import nibabel as nib
@@ -14,19 +15,23 @@ from qa4iqi_extraction.constants import (
     FOLDER_NAME_ROIS,
     SERIES_DESCRIPTION_FIELD,
     SERIES_NUMBER_FIELD,
+    MANUFACTURER_FIELD,
+    MANUFACTURER_MODEL_NAME_FIELD,
 )
 
 
 def convert_to_nifti(dicom_image_mask, nifti_dir):
-    print("convert_to_nifti DEUX")
-    output_folder_image = f"{nifti_dir}/{FOLDER_NAME_IMAGE}"
-    output_folder_rois = f"{nifti_dir}/{FOLDER_NAME_ROIS}"
+    print("Convert to nifti DEUX")
+    output_folder_image = os.path.join(nifti_dir, FOLDER_NAME_IMAGE)
+    output_folder_rois = os.path.join(nifti_dir, FOLDER_NAME_ROIS)
     output_file_seg_prefix = "segmentation"
     output_file_seg_suffix = ".nii.gz"
 
     os.makedirs(output_folder_image, exist_ok=True)
     print("output_folder_image", output_folder_image)
     os.makedirs(output_folder_rois, exist_ok=True)
+    print("output_folder_rois", output_folder_rois)
+    print("output folder image", output_folder_image)
 
     dicom_image_folder = dicom_image_mask[FIELD_NAME_IMAGE]
     dicom_seg_file = dicom_image_mask[FIELD_NAME_SEG]
@@ -41,12 +46,16 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     dicom_info = {}
     dicom_info[SERIES_NUMBER_FIELD] = dicom_datasets[0].SeriesNumber
     dicom_info[SERIES_DESCRIPTION_FIELD] = dicom_datasets[0].SeriesDescription
+    dicom_info[MANUFACTURER_FIELD] = dicom_datasets[0].Manufacturer
+    dicom_info[MANUFACTURER_MODEL_NAME_FIELD] = dicom_datasets[0].ManufacturerModelName
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
         stack.add_dcm(ds)
     nii = stack.to_nifti()
-    nifti_image_path = f"{output_folder_image}/image.nii.gz"
+    unique_id = os.path.basename(dicom_image_folder)
+    nifti_image_path = f"{output_folder_image}/image_{unique_id}.nii.gz"
+    print("nifti_image_path", nifti_image_path)
     nii.to_filename(nifti_image_path, dtype=np.uint16)
 
     # Read DICOM SEG & convert to NIfTI
@@ -88,10 +97,36 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
         padded_seg_image = nib.nifti1.Nifti1Image(padded_seg, nii.affine, nii.header)
 
-        nifti_roi_path = f"{output_folder_rois}/{output_file_seg_prefix}-{segment_number}-{segment_labels[segment_number - 1]}{output_file_seg_suffix}"
+        nifti_roi_path = f"{output_folder_rois}/{output_file_seg_prefix}_{unique_id}-{segment_number}-{segment_labels[segment_number - 1]}{output_file_seg_suffix}"
         nifti_roi_paths.append(nifti_roi_path)
 
         padded_seg_image.to_filename(nifti_roi_path, dtype=np.uint8)
+
+
+    # JSON update
+    json_filename = os.path.join(nifti_dir, "dataset_info.json")
+    if os.path.exists(json_filename):
+        with open(json_filename, 'r') as json_file:
+            json_data = json.load(json_file)
+    else:
+        json_data = []
+
+    """ new_data_entry = {
+        "image": nifti_image_path,
+        "rois": [{"path": roi_path, "roi": roi_path.split('-')[-1].replace(output_file_seg_suffix, '')} for roi_path in nifti_roi_paths],
+        "info": dicom_info  # Assuming dicom_info contains the additional DICOM metadata including UID
+    } """
+    for roi_path in nifti_roi_paths:
+        new_data_entry = {
+            "image": nifti_image_path,
+            "roi": roi_path,
+            "roi_label": roi_path.split('-')[-1].replace(output_file_seg_suffix, ''),
+            "info": dicom_info  # Assuming dicom_info contains the additional DICOM metadata including UID
+        }
+        json_data.append(new_data_entry)
+
+    with open(json_filename, 'w') as json_file:
+        json.dump(json_data, json_file)
 
     return nifti_image_path, nifti_roi_paths, dicom_info
 

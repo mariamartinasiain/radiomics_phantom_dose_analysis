@@ -1,4 +1,5 @@
-DATASET_FOLDER = "../DICOM/1"
+DATASET_FOLDER = "../DICOM"
+#si le chemin est un fichier de ct scan, il va y avoir un pb car le .json va se mettre dedans et causer un pb de read sur le dicom, donc mettre dossier parent
 OUTPUT_FILE_NAME = "data/output/features.csv"
 PARAMETER_FILE_NAME = "params/qa4iqi_params.yml"
 TCIA_COLLECTION_NAME = "CT-Phantom4Radiomics"
@@ -13,4 +14,6 @@ ROI_NAME_FIELD = "ROI"
 DIAGNOSTICS_FEATURES_PREFIX = "diagnostics"
 STUDY_UID_FIELD = "StudyInstanceUID"
 SERIES_NUMBER_FIELD = "SeriesNumber"
+MANUFACTURER_FIELD = "Manufacturer"
+MANUFACTURER_MODEL_NAME_FIELD = "ManufacturerModelName"
 SERIES_DESCRIPTION_FIELD = "SeriesDescription"

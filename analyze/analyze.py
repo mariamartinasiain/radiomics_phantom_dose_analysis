@@ -29,13 +29,21 @@ def generate_advanced_markers(num_required):
                             })
                         else:
                             return generated_markers
+    while len(generated_markers) < num_required:
+        #duplicating markers
+        generated_markers = generated_markers + generated_markers
+        
 
     return generated_markers
 
-def load_data(filepath):
+def load_data(filepath, color_mode='roi'):
     data = pd.read_csv(filepath)
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI'])
-    labels = data['ROI']
+    if color_mode == 'roi':
+        labels = data['ROI']
+    elif color_mode == 'series_desc':
+        # Extraction des deux premiers caractères de la SeriesDescription
+        labels = data['SeriesDescription'].str[:2]
     series_numbers = data['SeriesNumber']
     return features, labels, series_numbers
 
@@ -53,12 +61,11 @@ def perform_tsne(features):
     return tsne_results
 
 
-def main():
-
+def main(color_mode='series_desc'):
     print("Analyzing data...")
 
-    filepath = "data/output/features.csv"
-    features, labels, series_numbers = load_data(filepath)
+    filepath = "../features.csv"
+    features, labels, series_numbers = load_data(filepath, color_mode)
 
     
     unique_labels = labels.unique()
@@ -70,6 +77,8 @@ def main():
     
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     base_filename = f"{filepath.rsplit('/', 1)[0]}/results_{timestamp}"
+
+    print("Performing PCA")
 
     pca_results, explained_variance = perform_pca(features)
     
@@ -95,6 +104,8 @@ def main():
     plt.legend()
     plt.savefig(f"{base_filename}_PCA.png")
     plt.show()
+
+    print("Performing t-SNE")
 
     tsne_results = perform_tsne(features)
 
