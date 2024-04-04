@@ -50,7 +50,7 @@ def load_data(filepath, color_mode='roi'):
     series_numbers = data['SeriesNumber']
     print(f"Loaded {len(features)} features")
     print(f"Loaded {len(labels)} labels")
-    print(f"Features: {features}")
+    #print(f"Features: {features}")
     return features, labels, series_numbers
 
 def perform_pca(features):
