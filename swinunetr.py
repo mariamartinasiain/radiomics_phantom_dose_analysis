@@ -11,6 +11,10 @@ from tqdm import tqdm
 from monai.data import Dataset, DataLoader
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
+from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type,is_positive
+from monai.transforms.transform import LazyTransform, MapTransform
+from monai.utils import ensure_tuple
+from monai.transforms.croppad.array import Crop
 from monai.transforms import (
     AsDiscrete,
     Compose,
@@ -61,6 +65,60 @@ class DebugTransform(Transform):
         print(f"Sum of image pixel values: {data['image'].sum()}")
         return data
 
+class CropOnROI(Crop):
+    def compute_center(self, img: torch.Tensor):
+        """
+        Compute the start points and end points of bounding box to crop.
+        And adjust bounding box coords to be divisible by `k`.
+
+        """
+        box_start, box_end = generate_spatial_bounding_box(
+            img, is_positive, None, 0, True
+        )
+        box_start_, *_ = convert_data_type(box_start, output_type=np.ndarray, dtype=np.int16, wrap_sequence=True)
+        box_end_, *_ = convert_data_type(box_end, output_type=np.ndarray, dtype=np.int16, wrap_sequence=True)
+        orig_spatial_size = box_end_ - box_start_
+        # make the spatial size divisible by `k`
+        spatial_size = np.asarray(compute_divisible_spatial_size(orig_spatial_size.tolist(), k=self.k_divisible))
+        # update box_start and box_end
+        box_start_ = box_start_ - np.floor_divide(np.asarray(spatial_size) - orig_spatial_size, 2)
+        box_end_ = box_start_ + spatial_size
+        mid_point = np.floor((box_start_ + box_end_) / 2)
+        return mid_point
+    
+    def __init__(self, roi,size, lazy=False):
+        super().__init__(lazy)
+        center = self.compute_center(roi)
+        self.slices = self.compute_slices(
+            roi_center=center, roi_size=size, roi_start=None, roi_end=None, roi_slices=None
+        )
+    def __call__(self, img: torch.Tensor, lazy: bool | None = None):
+        lazy_ = self.lazy if lazy is None else lazy
+        return super().__call__(img=img, slices=ensure_tuple(self.slices), lazy=lazy_)
+        
+class CropOnROId(MapTransform, LazyTransform):
+    backend = Crop.backend
+
+    def __init__(self, keys,roi_key,size, allow_missing_keys: bool = False, lazy: bool = False):
+        MapTransform.__init__(self, keys, allow_missing_keys)
+        LazyTransform.__init__(self, lazy)
+        self.roi_key = roi_key
+        self.size = size
+
+    @LazyTransform.lazy.setter  # type: ignore
+    def lazy(self, value: bool) -> None:
+        self._lazy = value
+        if isinstance(self.cropper, LazyTransform):
+            self.cropper.lazy = value
+
+
+    def __call__(self, data, lazy: bool | None = None):
+        d = dict(data)
+        lazy_ = self.lazy if lazy is None else lazy
+        for key in self.key_iterator(d):
+            d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
+        return d
+    
 jsonpath = "./dataset_info.json"
 def load_data(datalist_json_path):
   with open(datalist_json_path, 'r') as f:
@@ -86,9 +144,9 @@ print("Using pretrained self-supervied Swin UNETR backbone weights !")
 transforms = Compose([
     LoadImaged(keys=["image", "roi"]),
     DebugTransform(),
-    Resized(spatial_size=target_size, keys=["image", "roi"],size_mode ="all"),
+    CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
     DebugTransform(),  # Check the shape right after resizing
-    MaskIntensityd(keys=["image"], mask_key="roi"),
+    #MaskIntensityd(keys=["image"], mask_key="roi"),
     ToTensord(keys=["image", "roi"]),
     Orientationd(keys=["image", "roi"], axcodes="RAS"),
 ])
