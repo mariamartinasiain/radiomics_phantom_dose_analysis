@@ -6,6 +6,7 @@ import json
 import nibabel as nib
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from tqdm import tqdm
 from monai.data import Dataset, DataLoader
@@ -45,6 +46,13 @@ from monai.data import (
     load_decathlon_datalist,
     decollate_batch,
     set_track_meta,
+)
+
+from qa4iqi_extraction.constants import (
+    SERIES_NUMBER_FIELD,
+    SERIES_DESCRIPTION_FIELD,
+    MANUFACTURER_MODEL_NAME_FIELD,
+    MANUFACTURER_FIELD,
 )
 
 
@@ -166,21 +174,26 @@ dataset = Dataset(data=datafiles, transform=transforms)
 dataload = DataLoader(dataset, batch_size=1)
 
 slice_num = 50
+csv_data = []
 
 for batch in dataload:
   #plutot for roi in batch[rois] ...
   image = batch["image"]
   x_in = image.cuda()
   val_inputs = x_in.cuda()
-
-  fig, (ax1, ax3) = plt.subplots(1, 2, figsize=(18, 6))
-  ax1.imshow(val_inputs.cpu().numpy()[0, 0, :, :, slice_num], cmap="gray")
-  ax1.set_title('Image')
-  #ax3.imshow(torch.argmax(val_outputs, dim=1).detach().cpu()[0, :, :, slice_num])
-  #ax3.set_title(f'Predict')
-  plt.show()
-
   val_outputs = model.swinViT(val_inputs)
   latentrep = val_outputs[4] #48*2^4 = 768
   latentrep = model.encoder10(latentrep)
   print(latentrep.shape)
+  record = {
+        "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD],
+        "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD],
+        "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD],
+        "Manufacturer" : batch["info"][MANUFACTURER_FIELD],
+        "ROI": batch["roi_label"],  # Ceci doit être ajusté en fonction de la structure de votre batch
+        "deepfeatures": latentrep.flatten().tolist()  # Convertir en liste pour la sauvegarde CSV
+  }
+  csv_data.append(record)
+
+df = pd.DataFrame(csv_data)
+df.to_csv("deepfeatures.csv", index=False)
