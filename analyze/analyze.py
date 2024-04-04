@@ -67,7 +67,7 @@ def perform_tsne(features):
     return tsne_results
 
 
-def main(color_mode='series_desc'):
+def main(color_mode='roi'):
     print("Analyzing data...")
 
     filepath = "../deepfeatures.csv"
