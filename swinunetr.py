@@ -198,10 +198,7 @@ for batch in tqdm(dataload):
         "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
     }
   
-    try :
-        record["SpacingBetweenSlices"] = batch["info"][SLICE_SPACING_FIELD][0]
-    except Exception as e:
-        print("No SpacingBetweenSlices")
+   
     csv_data.append(record)
 
 df = pd.DataFrame(csv_data)
