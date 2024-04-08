@@ -17,6 +17,7 @@ from monai.transforms.transform import LazyTransform, MapTransform
 from monai.utils import ensure_tuple,convert_to_tensor
 from monai.transforms.croppad.array import Crop
 from torch.utils.data._utils.collate import default_collate
+from monai.data import PNGSaver
 from monai.transforms import (
     AsDiscrete,
     Compose,
@@ -63,6 +64,8 @@ import torch
 
 print_config()
 
+saver = PNGSaver(output_dir="./", output_postfix='slice', output_ext='.png', separate_folder=False)
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -105,7 +108,6 @@ class CropOnROI(Crop):
         
         def is_positive(x):
             return torch.gt(x, 0)
-        print("IMG SHAPE",img.shape)
         box_start, box_end = generate_spatial_bounding_box(
             img, is_positive, None, 0, True
         )
@@ -195,7 +197,7 @@ datafiles = load_data(jsonpath)
 dataset = Dataset(data=datafiles, transform=transforms)
 dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
 
-slice_num = 50
+slice_num = 20
 csv_data = []
 
 for batch in tqdm(dataload):
@@ -215,11 +217,15 @@ for batch in tqdm(dataload):
         "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
         "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
     }
+    series_number = batch["info"][SERIES_NUMBER_FIELD][0]
+    roi_label = batch["roi_label"][0]
+    image_filename = f"{series_number}_{roi_label}.png"
   
+    slice_to_save = val_inputs[:, slice_num, :, :].cpu()
+    saver.save(slice_to_save,filename=image_filename)
    
     csv_data.append(record)
-    df = pd.DataFrame(csv_data)
-    df.to_csv("deepfeatures.csv", index=False)
+    
 
 df = pd.DataFrame(csv_data)
 df.to_csv("deepfeatures.csv", index=False)
