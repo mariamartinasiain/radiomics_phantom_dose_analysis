@@ -1,7 +1,7 @@
 import os
 import sys
 
-
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import torch
@@ -76,15 +76,15 @@ class AddChanneld(MapTransform):
 
 transforms = Compose([
     LoadImaged(keys=["image", "roi"]),
-    DebugTransform(),
+    #DebugTransform(),
     EnsureChannelFirstd(keys=["image", "roi"]),
     CropOnROId(keys=["image"], roi_key="roi",size=(64,64,64)), 
-    DebugTransform(),  # Check the shape right after resizing
+    #DebugTransform(),  # Check the shape right after resizing
     #MaskIntensityd(keys=["image"], mask_key="roi"),
     AveragePoolingDepthd(keys=["image"]),
-    DebugTransform(),
+    #DebugTransform(),
     Resized(spatial_size=(1024, 1024), mode='bilinear', keys=["image"]),
-    DebugTransform(),
+    #DebugTransform(),
     AddChanneld(keys=["image"], num_channel=3),
     ToTensord(keys=["image", "roi"]),
     #Orientationd(keys=["image", "roi"], axcodes="RAS"),
@@ -97,8 +97,7 @@ dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
 slice_num = 50
 csv_data = []
 
-for batch in dataload:
-    print("MEDSAM")
+for batch in tqdm(dataload):
     image = batch["image"]
     x_in = image.cuda()
     input_image = medsam.preprocess(x_in[None,:,:,:])
