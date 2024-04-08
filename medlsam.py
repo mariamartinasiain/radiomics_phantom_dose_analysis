@@ -63,6 +63,16 @@ class AveragePoolingDepthd(MapTransform):
             d[key] = torch.mean(d[key], dim=1, keepdim=False)
         return d
 
+class AddChanneld(MapTransform):
+    def __init__(self, keys, num_channel=3):
+        super().__init__(keys)
+        self.num_channel = num_channel
+
+    def __call__(self, data):
+        d = dict(data)
+        for key in self.keys:
+            d[key] = torch.cat([d[key]] * self.num_channel, dim=0)
+        return d
 
 transforms = Compose([
     LoadImaged(keys=["image", "roi"]),
@@ -75,6 +85,7 @@ transforms = Compose([
     DebugTransform(),
     Resized(spatial_size=(1024, 1024), mode='bilinear', keys=["image"]),
     DebugTransform(),
+    AddChanneld(keys=["image"], num_channel=3),
     ToTensord(keys=["image", "roi"]),
     #Orientationd(keys=["image", "roi"], axcodes="RAS"),
 ])
