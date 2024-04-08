@@ -224,7 +224,7 @@ for batch in tqdm(dataload):
     image_filename = f"{series_number}_{roi_label}.png"
   
     
-    saver.save(slice_to_save,filename=image_filename)
+    plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
    
     csv_data.append(record)
     
