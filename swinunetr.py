@@ -227,6 +227,8 @@ for batch in tqdm(dataload):
     plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
    
     csv_data.append(record)
+    df = pd.DataFrame(csv_data)
+    df.to_csv("deepfeatures.csv", index=False)
     
 
 df = pd.DataFrame(csv_data)
