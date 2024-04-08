@@ -87,6 +87,7 @@ slice_num = 50
 csv_data = []
 
 for batch in dataload:
+    print("MEDSAM")
     image = batch["image"]
     input_image = medsam.preprocess(image[None,:,:,:])
     x_in = image.cuda()
