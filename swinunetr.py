@@ -90,11 +90,8 @@ def custom_collate_fn(batch):
 
 class DebugTransform(Transform):
     def __call__(self, data):
-        # Print the shape of the image and the mask
         print(f"Image shape: {data['image'].shape}, Mask shape: {data['roi'].shape}")
-        # Print unique values in the mask
         print(f"Unique values in mask: {np.unique(data['roi'])}")
-        # Print the sum of the image pixel values (as an example metric)
         print(f"Sum of image pixel values: {data['image'].sum()}")
         return data
 
@@ -107,7 +104,7 @@ class CropOnROI(Crop):
         """
         
         def is_positive(x):
-            return x > 0
+            return torch.gt(x, 0)
         print("IMG SHAPE",img.shape)
         box_start, box_end = generate_spatial_bounding_box(
             img, is_positive, None, 0, True
@@ -204,8 +201,8 @@ csv_data = []
 for batch in tqdm(dataload):
     #plutot for roi in batch[rois] ...
     image = batch["image"]
-    #val_inputs = image.cuda()
-    val_outputs = model.swinViT(image)
+    val_inputs = image.cuda()
+    val_outputs = model.swinViT(val_inputs)
     latentrep = val_outputs[4] #48*2^4 = 768
     #latentrep = model.encoder10(latentrep)
     print(latentrep.shape)
