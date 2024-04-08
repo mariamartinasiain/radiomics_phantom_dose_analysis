@@ -20,7 +20,7 @@ from monai.transforms import (
     EnsureChannelFirstd,
 )
 from MedLSAM.MedSAM.segment_anything.build_sam import sam_model_registry
-from swinunetr import CropOnROId, load_data,jsonpath,DebugTransform
+from swinunetr import CropOnROId, load_data,jsonpath,DebugTransform,custom_collate_fn
 from qa4iqi_extraction.constants import (
     SERIES_NUMBER_FIELD,
     SERIES_DESCRIPTION_FIELD,
@@ -81,7 +81,7 @@ transforms = Compose([
 
 datafiles = load_data(jsonpath)
 dataset = Dataset(data=datafiles, transform=transforms)
-dataload = DataLoader(dataset, batch_size=1)
+dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
 
 slice_num = 50
 csv_data = []
