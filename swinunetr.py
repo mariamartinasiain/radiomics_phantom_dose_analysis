@@ -16,6 +16,7 @@ from monai.transforms.utils import generate_spatial_bounding_box, compute_divisi
 from monai.transforms.transform import LazyTransform, MapTransform
 from monai.utils import ensure_tuple,convert_to_tensor
 from monai.transforms.croppad.array import Crop
+from torch.utils.data._utils.collate import default_collate
 from monai.transforms import (
     AsDiscrete,
     Compose,
@@ -64,6 +65,21 @@ print_config()
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def custom_collate_fn(batch):
+    # Filter out any data points where any key is None
+    filtered_batch = [item for item in batch if all(item[key] is not None for key in item)]
+
+    # If after filtering, the batch is empty, handle this scenario (e.g., return None, raise an error, etc.)
+    if not filtered_batch:
+        # Here, you can choose how to handle an empty batch.
+        # For example, raise an error, or return an empty batch.
+        # This example raises an error.
+        raise ValueError("Batch is empty after filtering out None values.")
+
+    # Use the default collate function on the filtered batch
+    return default_collate(filtered_batch)
 
 
 class DebugTransform(Transform):
@@ -173,7 +189,7 @@ transforms = Compose([
 ])
 
 datafiles = load_data(jsonpath)
-dataset = Dataset(data=datafiles, transform=transforms)
+dataset = Dataset(data=datafiles, transform=transforms,collate_fn=custom_collate_fn)
 dataload = DataLoader(dataset, batch_size=1)
 
 slice_num = 50
