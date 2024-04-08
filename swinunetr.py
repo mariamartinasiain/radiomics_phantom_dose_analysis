@@ -100,6 +100,7 @@ class CropOnROI(Crop):
         box_end_ = box_start_ + spatial_size
         print("BOX START",box_start_)
         print("BOX END",box_end_)
+        print("bouding box size",spatial_size)
         mid_point = np.floor((box_start_ + box_end_) / 2)
         print("MID POINT",mid_point)
         return mid_point
@@ -178,7 +179,7 @@ dataload = DataLoader(dataset, batch_size=1)
 slice_num = 50
 csv_data = []
 
-for batch in dataload:
+for batch in tqdm(dataload):
   #plutot for roi in batch[rois] ...
   image = batch["image"]
   x_in = image.cuda()
