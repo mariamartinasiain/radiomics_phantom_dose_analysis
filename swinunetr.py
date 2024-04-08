@@ -205,7 +205,7 @@ for batch in tqdm(dataload):
     image = batch["image"]
     val_inputs = image.cuda()
     print(val_inputs.shape)
-    slice_to_save = val_inputs[:,:, slice_num, :, :].cpu()
+    slice_to_save = val_inputs[:,:, slice_num, :, :].cpu().squeeze().squeeze()
     print(slice_to_save.shape)
     val_outputs = model.swinViT(val_inputs)
     latentrep = val_outputs[4] #48*2^4 = 768
