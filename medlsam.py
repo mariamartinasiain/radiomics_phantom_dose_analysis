@@ -31,7 +31,7 @@ from qa4iqi_extraction.constants import (
 )
 
 nettype = "vit_b" #encoder_embed_dim=768
-vit_load_path = "../models/MedLSAM/sam_vit_b_01ec64.pth"
+vit_load_path = "sam_vit_b_01ec64.pth"
 
 medsam = sam_model_registry[nettype](checkpoint=vit_load_path).to('cuda:0')
 encoder = medsam.image_encoder
