@@ -76,14 +76,11 @@ def filter_none(data):
     return data
 
 def custom_collate_fn(batch):
-    # Recursively filter out None values from the batch
     filtered_batch = [filter_none(item) for item in batch]
 
-    # Check if the batch is empty after filtering
     if not filtered_batch or all(item is None for item in filtered_batch):
         raise ValueError("Batch is empty after filtering out None values.")
 
-    # Use the default collate function on the filtered batch
     try:
         return default_collate(filtered_batch)
     except TypeError as e:
@@ -171,7 +168,7 @@ def load_data(datalist_json_path):
   return datalist
 
 
-target_size = (96, 96, 96)
+target_size = (32, 32, 32)
 
 model = SwinUNETR(
     img_size=target_size,
