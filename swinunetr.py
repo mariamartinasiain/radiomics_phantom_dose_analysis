@@ -61,12 +61,7 @@ from qa4iqi_extraction.constants import (
 
 import torch
 
-print_config()
 
-
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def filter_none(data):
@@ -158,78 +153,89 @@ class CropOnROId(MapTransform, LazyTransform):
         for key in self.key_iterator(d):
             d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
         return d
-    
-jsonpath = "./dataset_info.json"
 def load_data(datalist_json_path):
-  with open(datalist_json_path, 'r') as f:
-          datalist = json.load(f)
-  return datalist
+        with open(datalist_json_path, 'r') as f:
+                datalist = json.load(f)
+        return datalist
 
 
-target_size = (64, 64, 32)
+def main():
+    print_config()
 
-model = SwinUNETR(
-    img_size=target_size,
-    in_channels=1,
-    out_channels=14,
-    feature_size=48,
-    use_checkpoint=True,
-).to(device)
 
-weight = torch.load("./model_swinvit.pt")
-model.load_from(weights=weight)
-model = model.to('cuda')
-print("Using pretrained self-supervied Swin UNETR backbone weights !")
 
-transforms = Compose([
-    LoadImaged(keys=["image", "roi"]),
-    #DebugTransform(),
-    EnsureChannelFirstd(keys=["image", "roi"]),
-    CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
-    #DebugTransform(),  # Check the shape right after resizing
-    #MaskIntensityd(keys=["image"], mask_key="roi"),
-    ToTensord(keys=["image", "roi"]),
-    #Orientationd(keys=["image", "roi"], axcodes="RAS"),
-])
-
-datafiles = load_data(jsonpath)
-dataset = Dataset(data=datafiles, transform=transforms)
-dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
-
-slice_num = 20
-csv_data = []
-
-for batch in tqdm(dataload):
-    #plutot for roi in batch[rois] ...
-    image = batch["image"]
-    val_inputs = image.cuda()
-    print(val_inputs.shape)
-    slice_to_save = val_inputs[:,:, slice_num, :, :].cpu().squeeze().squeeze()
-    print(slice_to_save.shape)
-    val_outputs = model.swinViT(val_inputs)
-    latentrep = val_outputs[4] #48*2^4 = 768
-    #latentrep = model.encoder10(latentrep)
-    print(latentrep.shape)
-    record = {
-        "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
-        "deepfeatures": latentrep.flatten().tolist(),
-        "ROI": batch["roi_label"][0],
-        "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD][0],
-        "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD][0],
-        "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
-        "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
-    }
-    series_number = batch["info"][SERIES_NUMBER_FIELD][0]
-    roi_label = batch["roi_label"][0]
-    image_filename = f"{series_number}_{roi_label}.png"
-  
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
+    jsonpath = "./dataset_info.json"
     
-    plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
-   
-    csv_data.append(record)
+
+    target_size = (64, 64, 32)
+
+    model = SwinUNETR(
+        img_size=target_size,
+        in_channels=1,
+        out_channels=14,
+        feature_size=48,
+        use_checkpoint=True,
+    ).to(device)
+
+    weight = torch.load("./model_swinvit.pt")
+    model.load_from(weights=weight)
+    model = model.to('cuda')
+    print("Using pretrained self-supervied Swin UNETR backbone weights !")
+
+    transforms = Compose([
+        LoadImaged(keys=["image", "roi"]),
+        #DebugTransform(),
+        EnsureChannelFirstd(keys=["image", "roi"]),
+        CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
+        #DebugTransform(),  # Check the shape right after resizing
+        #MaskIntensityd(keys=["image"], mask_key="roi"),
+        ToTensord(keys=["image", "roi"]),
+        #Orientationd(keys=["image", "roi"], axcodes="RAS"),
+    ])
+
+    datafiles = load_data(jsonpath)
+    dataset = Dataset(data=datafiles, transform=transforms)
+    dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
+
+    slice_num = 20
+    csv_data = []
+
+    for batch in tqdm(dataload):
+        #plutot for roi in batch[rois] ...
+        image = batch["image"]
+        val_inputs = image.cuda()
+        print(val_inputs.shape)
+        slice_to_save = val_inputs[:,:, slice_num, :, :].cpu().squeeze().squeeze()
+        print(slice_to_save.shape)
+        val_outputs = model.swinViT(val_inputs)
+        latentrep = val_outputs[4] #48*2^4 = 768
+        #latentrep = model.encoder10(latentrep)
+        print(latentrep.shape)
+        record = {
+            "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
+            "deepfeatures": latentrep.flatten().tolist(),
+            "ROI": batch["roi_label"][0],
+            "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD][0],
+            "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD][0],
+            "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
+            "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
+        }
+        series_number = batch["info"][SERIES_NUMBER_FIELD][0]
+        roi_label = batch["roi_label"][0]
+        image_filename = f"{series_number}_{roi_label}.png"
+    
+        
+        plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
+    
+        csv_data.append(record)
+        df = pd.DataFrame(csv_data)
+        df.to_csv("deepfeatures.csv", index=False)
+        
+
     df = pd.DataFrame(csv_data)
     df.to_csv("deepfeatures.csv", index=False)
-    
 
-df = pd.DataFrame(csv_data)
-df.to_csv("deepfeatures.csv", index=False)
+if __name__ == "__main__":
+    main()
