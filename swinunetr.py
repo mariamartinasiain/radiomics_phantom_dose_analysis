@@ -225,6 +225,8 @@ for batch in tqdm(dataload):
   
    
     csv_data.append(record)
+    df = pd.DataFrame(csv_data)
+    df.to_csv("deepfeatures.csv", index=False)
 
 df = pd.DataFrame(csv_data)
 df.to_csv("deepfeatures.csv", index=False)
