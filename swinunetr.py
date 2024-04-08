@@ -204,8 +204,7 @@ csv_data = []
 for batch in tqdm(dataload):
     #plutot for roi in batch[rois] ...
     image = batch["image"]
-    x_in = image.cuda()
-    val_inputs = x_in.cuda()
+    val_inputs = image.cuda()
     val_outputs = model.swinViT(val_inputs)
     latentrep = val_outputs[4] #48*2^4 = 768
     #latentrep = model.encoder10(latentrep)
