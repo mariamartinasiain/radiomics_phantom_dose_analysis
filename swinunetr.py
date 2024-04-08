@@ -204,6 +204,8 @@ for batch in tqdm(dataload):
     #plutot for roi in batch[rois] ...
     image = batch["image"]
     val_inputs = image.cuda()
+    print(val_inputs.shape)
+    slice_to_save = val_inputs[:, slice_num, :, :].cpu()
     val_outputs = model.swinViT(val_inputs)
     latentrep = val_outputs[4] #48*2^4 = 768
     #latentrep = model.encoder10(latentrep)
@@ -221,7 +223,7 @@ for batch in tqdm(dataload):
     roi_label = batch["roi_label"][0]
     image_filename = f"{series_number}_{roi_label}.png"
   
-    slice_to_save = val_inputs[:, slice_num, :, :].cpu()
+    
     saver.save(slice_to_save,filename=image_filename)
    
     csv_data.append(record)
