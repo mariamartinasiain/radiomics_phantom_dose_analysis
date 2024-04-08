@@ -180,25 +180,29 @@ slice_num = 50
 csv_data = []
 
 for batch in tqdm(dataload):
-  #plutot for roi in batch[rois] ...
-  image = batch["image"]
-  x_in = image.cuda()
-  val_inputs = x_in.cuda()
-  val_outputs = model.swinViT(val_inputs)
-  latentrep = val_outputs[4] #48*2^4 = 768
-  latentrep = model.encoder10(latentrep)
-  print(latentrep.shape)
-  record = {
+    #plutot for roi in batch[rois] ...
+    image = batch["image"]
+    x_in = image.cuda()
+    val_inputs = x_in.cuda()
+    val_outputs = model.swinViT(val_inputs)
+    latentrep = val_outputs[4] #48*2^4 = 768
+    latentrep = model.encoder10(latentrep)
+    print(latentrep.shape)
+    record = {
         "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
+        "deepfeatures": latentrep.flatten().tolist(),
+        "ROI": batch["roi_label"][0],
         "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD][0],
         "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD][0],
         "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
-        "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],
-        "SpacingBetweenSlices": batch["info"][SLICE_SPACING_FIELD][0],
-        "ROI": batch["roi_label"][0],
-        "deepfeatures": latentrep.flatten().tolist()  # Convertir en liste pour la sauvegarde CSV
-  }
-  csv_data.append(record)
+        "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
+    }
+  
+    try :
+        record["SpacingBetweenSlices"] = batch["info"][SLICE_SPACING_FIELD][0]
+    except:
+        print("No SpacingBetweenSlices")
+    csv_data.append(record)
 
 df = pd.DataFrame(csv_data)
 df.to_csv("deepfeatures.csv", index=False)
