@@ -189,8 +189,8 @@ transforms = Compose([
 ])
 
 datafiles = load_data(jsonpath)
-dataset = Dataset(data=datafiles, transform=transforms,collate_fn=custom_collate_fn)
-dataload = DataLoader(dataset, batch_size=1)
+dataset = Dataset(data=datafiles, transform=transforms)
+dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
 
 slice_num = 50
 csv_data = []
