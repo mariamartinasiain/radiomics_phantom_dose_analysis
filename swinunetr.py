@@ -17,7 +17,7 @@ from monai.transforms.transform import LazyTransform, MapTransform
 from monai.utils import ensure_tuple,convert_to_tensor
 from monai.transforms.croppad.array import Crop
 from torch.utils.data._utils.collate import default_collate
-from monai.data import ImageSaver
+from monai.data import ImageWriter
 from monai.transforms import (
     AsDiscrete,
     Compose,
@@ -64,7 +64,7 @@ import torch
 
 print_config()
 
-saver = PNGSaver(output_dir="./", output_postfix='slice', output_ext='.png', separate_folder=False)
+saver = ImageWriter(output_dir="./", output_postfix='slice', output_ext='.png', separate_folder=False)
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
