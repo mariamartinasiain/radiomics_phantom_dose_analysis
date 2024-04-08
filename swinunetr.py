@@ -17,7 +17,7 @@ from monai.transforms.transform import LazyTransform, MapTransform
 from monai.utils import ensure_tuple,convert_to_tensor
 from monai.transforms.croppad.array import Crop
 from torch.utils.data._utils.collate import default_collate
-from monai.data import PNGSaver
+from monai.data import ImageSaver
 from monai.transforms import (
     AsDiscrete,
     Compose,
