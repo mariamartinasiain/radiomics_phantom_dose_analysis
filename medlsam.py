@@ -89,8 +89,8 @@ csv_data = []
 for batch in dataload:
     print("MEDSAM")
     image = batch["image"]
-    input_image = medsam.preprocess(image[None,:,:,:])
     x_in = image.cuda()
+    input_image = medsam.preprocess(x_in[None,:,:,:])
     val_inputs = x_in.cuda()
     latentrep = encoder(val_inputs)
     print(latentrep.shape)
