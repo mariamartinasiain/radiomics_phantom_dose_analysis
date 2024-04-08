@@ -67,19 +67,28 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def custom_collate_fn(batch):
-    # Filter out any data points where any key is None
-    filtered_batch = [item for item in batch if all(item[key] is not None for key in item)]
+def filter_none(data):
+    """Recursively filter out None values in the data."""
+    if isinstance(data, dict):
+        return {k: filter_none(v) for k, v in data.items() if v is not None}
+    elif isinstance(data, list):
+        return [filter_none(item) for item in data if item is not None]
+    return data
 
-    # If after filtering, the batch is empty, handle this scenario (e.g., return None, raise an error, etc.)
-    if not filtered_batch:
-        # Here, you can choose how to handle an empty batch.
-        # For example, raise an error, or return an empty batch.
-        # This example raises an error.
+def custom_collate_fn(batch):
+    # Recursively filter out None values from the batch
+    filtered_batch = [filter_none(item) for item in batch]
+
+    # Check if the batch is empty after filtering
+    if not filtered_batch or all(item is None for item in filtered_batch):
         raise ValueError("Batch is empty after filtering out None values.")
 
     # Use the default collate function on the filtered batch
-    return default_collate(filtered_batch)
+    try:
+        return default_collate(filtered_batch)
+    except TypeError as e:
+        # Handle or log the TypeError if it still occurs
+        raise RuntimeError("Failed to collate batch: {}".format(e))
 
 
 class DebugTransform(Transform):
