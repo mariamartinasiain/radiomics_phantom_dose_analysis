@@ -200,7 +200,7 @@ for batch in tqdm(dataload):
   
     try :
         record["SpacingBetweenSlices"] = batch["info"][SLICE_SPACING_FIELD][0]
-    except:
+    except Exception as e:
         print("No SpacingBetweenSlices")
     csv_data.append(record)
 
