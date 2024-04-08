@@ -1,0 +1,3 @@
+[submodule "MedLSAM"]
+	path = MedLSAM
+	url = https://github.com/openmedlab/MedLSAM
