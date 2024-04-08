@@ -120,11 +120,11 @@ class CropOnROI(Crop):
         # update box_start and box_end
         box_start_ = box_start_ - np.floor_divide(np.asarray(spatial_size) - orig_spatial_size, 2)
         box_end_ = box_start_ + spatial_size
-        print("BOX START",box_start_)
-        print("BOX END",box_end_)
-        print("bouding box size",spatial_size)
+        #print("BOX START",box_start_)
+        #print("BOX END",box_end_)
+        #print("bouding box size",spatial_size)
         mid_point = np.floor((box_start_ + box_end_) / 2)
-        print("MID POINT",mid_point)
+        #print("MID POINT",mid_point)
         return mid_point
     
     def __init__(self, roi,size, lazy=False):
@@ -156,7 +156,7 @@ class CropOnROId(MapTransform, LazyTransform):
     def __call__(self, data, lazy= None):
         d = dict(data)
         lazy_ = self.lazy if lazy is None else lazy
-        print("LA SHAPE DE SIZE",(torch.tensor(self.size)).shape)
+        #print("LA SHAPE DE SIZE",(torch.tensor(self.size)).shape)
         for key in self.key_iterator(d):
             d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
         return d
@@ -185,13 +185,13 @@ print("Using pretrained self-supervied Swin UNETR backbone weights !")
 
 transforms = Compose([
     LoadImaged(keys=["image", "roi"]),
-    DebugTransform(),
+    #DebugTransform(),
     EnsureChannelFirstd(keys=["image", "roi"]),
     CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
-    DebugTransform(),  # Check the shape right after resizing
+    #DebugTransform(),  # Check the shape right after resizing
     #MaskIntensityd(keys=["image"], mask_key="roi"),
     ToTensord(keys=["image", "roi"]),
-    Orientationd(keys=["image", "roi"], axcodes="RAS"),
+    #Orientationd(keys=["image", "roi"], axcodes="RAS"),
 ])
 
 datafiles = load_data(jsonpath)
