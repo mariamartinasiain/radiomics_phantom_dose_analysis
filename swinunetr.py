@@ -158,7 +158,7 @@ def load_data(datalist_json_path):
                 datalist = json.load(f)
         return datalist
 
-
+jsonpath = "./dataset_info.json"
 def main():
     print_config()
 
@@ -166,7 +166,7 @@ def main():
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
-    jsonpath = "./dataset_info.json"
+    
     
 
     target_size = (64, 64, 32)
