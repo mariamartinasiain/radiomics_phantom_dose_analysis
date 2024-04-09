@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 
-def load_data(file_path):
+def load_csv(file_path):
     data = pd.read_csv(file_path)
 
     # Standardize ROI labels
@@ -18,7 +18,13 @@ def load_data(file_path):
     
     features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     features = features.values
+    
+    return features, labels
+
+def load_data(file_path):
     scaler = StandardScaler()
+    
+    features, labels = load_csv(file_path)
     features = scaler.fit_transform(features)
     
     label_encoder = LabelEncoder()
@@ -39,19 +45,17 @@ def define_classifier(input_size):
             x = layers.Dropout(dropout_rate)(x)
         return x
 
-    x = tf.keras.Input(shape=(input_size,))
-    ff = mlp(x, 0.1, [250,150, 75])
+    input = tf.keras.Input(shape=(input_size,))
+    ff = mlp(input, 0.1, [250,150, 75])
     classif = layers.Dense(4, activation='softmax')(ff)
 
-
-
-    classifier = tf.keras.Model(inputs=x, outputs=classif)
-    
+    classifier = tf.keras.Model(inputs=input, outputs=classif)
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-    
     classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+    
     classifier.summary()
     print(classifier.summary())
+    
     return classifier
 
 def save_classifier_performance(history):
