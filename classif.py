@@ -7,20 +7,19 @@ from sklearn.preprocessing import LabelEncoder
 from keras.utils import to_categorical
 
 def load_data(file_path):
-    data = pd.read_csv(file_path)
+    # Ensure the first line is recognized as headers
+    data = pd.read_csv(file_path, header=0)
 
     # Standardize ROI labels
     data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
-
-    features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
-    print(features)
     labels = data['ROI'].values
+    features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI', 'ManufacturerModelName', 'Manufacturer', 'SliceThickness', 'SpacingBetweenSlices'], errors='ignore')
 
     label_encoder = LabelEncoder()
     encoded_labels = label_encoder.fit_transform(labels)
     one_hot_labels = to_categorical(encoded_labels)
 
-    x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.2, random_state=42)
+    x_train, x_val, y_train, y_val = train_test_split(features.values, one_hot_labels, test_size=0.2, random_state=42)
     return x_train, y_train, x_val, y_val
 
 def define_classifier(input_size):
