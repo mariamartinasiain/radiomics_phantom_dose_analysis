@@ -15,6 +15,7 @@ def load_data(file_path):
     features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     print(features.shape)
     features = features[1:]
+    labels = labels[1:]
     print(features.shape)
     
 
