@@ -19,7 +19,7 @@ def load_data(file_path):
     features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     features = features.values
     scaler = StandardScaler()
-    #features = scaler.fit_transform(features)
+    features = scaler.fit_transform(features)
     
     label_encoder = LabelEncoder()
     encoded_labels = label_encoder.fit_transform(labels)
