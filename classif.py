@@ -5,6 +5,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from keras.utils import to_categorical
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils.class_weight import compute_class_weight
+import numpy as np
 
 def load_data(file_path):
     data = pd.read_csv(file_path)
@@ -13,20 +16,22 @@ def load_data(file_path):
     data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
     labels = data['ROI'].values
     features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
-    print(features.shape)
+    #print(features.shape)
     features = features.values
-    print(features)
-    print(labels)
-    
+    #print(features)
+    #print(labels)
+    scaler = StandardScaler()
+    features = scaler.fit_transform(features)
     
 
     label_encoder = LabelEncoder()
     encoded_labels = label_encoder.fit_transform(labels)
     one_hot_labels = to_categorical(encoded_labels)
-    print(one_hot_labels)
-
-    x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.2, random_state=42)
-    return x_train, y_train, x_val, y_val
+    #print(one_hot_labels)
+    class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
+    class_weights = dict(enumerate(class_weights))
+    x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.1, random_state=42)
+    return x_train, y_train, x_val, y_val,class_weights
 
 def define_classifier(input_size):
     def mlp(x, dropout_rate, hidden_units):
@@ -64,7 +69,7 @@ def save_classifier_performance(history):
     
 def train_classifier(input_size, data_path):
     classifier = define_classifier(input_size)
-    x_train, y_train, x_val, y_val = load_data(data_path)
+    x_train, y_train, x_val, y_val,cw = load_data(data_path)
 
     history = classifier.fit(
         x_train, y_train,
@@ -72,6 +77,7 @@ def train_classifier(input_size, data_path):
         batch_size=128,
         epochs=500,
         verbose=2
+        class_weight=cw
     )
     save_classifier_performance(history)
     classifier.save('classifier.h5')
