@@ -76,7 +76,7 @@ def train_classifier(input_size, data_path):
         batch_size=64,
         epochs=250,
         verbose=2,
-        class_weight=cw
+        #class_weight=cw
     )
     save_classifier_performance(history)
     classifier.save('classifier.h5')
