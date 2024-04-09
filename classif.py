@@ -16,7 +16,7 @@ def load_data(file_path):
     print(features.shape)
     features = features[1:]
     labels = labels[1:]
-    print(features.shape)
+    print(features)
     
 
     label_encoder = LabelEncoder()
