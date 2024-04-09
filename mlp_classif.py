@@ -19,6 +19,8 @@ def load_csv(file_path):
     features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     features = features.values
     
+    print(f'Loaded {len(features)} samples with {len(features[0])} features')
+    
     return features, labels
 
 def load_data(file_path):
