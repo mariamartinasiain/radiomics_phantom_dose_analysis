@@ -13,6 +13,7 @@ def load_data(file_path):
     data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
 
     features = data.iloc[:, 6:].values
+    print(features)
     labels = data['ROI'].values
 
     label_encoder = LabelEncoder()
