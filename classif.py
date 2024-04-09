@@ -28,7 +28,7 @@ def load_data(file_path):
     class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
     class_weights = dict(enumerate(class_weights))
     
-    x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.5, random_state=42)
+    x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.2, random_state=42)
     
     return x_train, y_train, x_val, y_val,class_weights
 
@@ -40,7 +40,7 @@ def define_classifier(input_size):
         return x
 
     x = tf.keras.Input(shape=(input_size,))
-    ff = mlp(x, 0.1, [150, 75, 40])
+    ff = mlp(x, 0.1, [250,150, 75, 40])
     classif = layers.Dense(4, activation='softmax')(ff)
 
 
