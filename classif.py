@@ -30,7 +30,7 @@ def load_data(file_path):
     #print(one_hot_labels)
     class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
     class_weights = dict(enumerate(class_weights))
-    x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.1, random_state=42)
+    x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.9, random_state=42)
     return x_train, y_train, x_val, y_val,class_weights
 
 def define_classifier(input_size):
