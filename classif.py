@@ -36,15 +36,18 @@ def define_classifier(input_size):
         return x
 
     x = tf.keras.Input(shape=(input_size,))
-    ff = mlp(x, 0.05, [50, 40])
+    ff = mlp(x, 0.0, [50, 40])
     classif = layers.Dense(4, activation='softmax')(ff)
+
+
 
     classifier = tf.keras.Model(inputs=x, outputs=classif)
     
-    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     
     classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
-
+    classifier.summary()
+    print(classifier.summary())
     return classifier
 
 def save_classifier_performance(history):
