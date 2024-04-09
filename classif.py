@@ -41,7 +41,7 @@ def define_classifier(input_size):
 
     classifier = tf.keras.Model(inputs=x, outputs=classif)
     
-    optimizer = tf.keras.optimizers.Adam(learning_rate=2e-3)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
     
     classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
