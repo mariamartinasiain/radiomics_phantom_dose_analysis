@@ -38,6 +38,8 @@ def load_data(file_path):
     
     x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.2, random_state=42)
     
+    print(f'Loaded {len(x_train)} training samples and {len(x_val)} validation samples')
+    
     return x_train, y_train, x_val, y_val,class_weights
 
 def define_classifier(input_size):
