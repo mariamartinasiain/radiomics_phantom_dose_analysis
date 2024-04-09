@@ -12,7 +12,7 @@ def load_data(file_path):
     # Standardize ROI labels
     data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
 
-    features = data.iloc[:, 6:].values
+    features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     print(features)
     labels = data['ROI'].values
 
