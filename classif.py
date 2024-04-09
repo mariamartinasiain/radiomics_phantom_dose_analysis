@@ -73,8 +73,8 @@ def train_classifier(input_size, data_path):
     history = classifier.fit(
         x_train, y_train,
         validation_data=(x_val, y_val),
-        batch_size=128,
-        epochs=500,
+        batch_size=64,
+        epochs=250,
         verbose=2,
         class_weight=cw
     )
