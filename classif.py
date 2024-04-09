@@ -19,7 +19,7 @@ def load_data(file_path):
     features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     features = features.values
     scaler = StandardScaler()
-    features = scaler.fit_transform(features)
+    #features = scaler.fit_transform(features)
     
     label_encoder = LabelEncoder()
     encoded_labels = label_encoder.fit_transform(labels)
@@ -76,7 +76,7 @@ def train_classifier(input_size, data_path):
         batch_size=64,
         epochs=250,
         verbose=2,
-        #class_weight=cw
+        class_weight=cw
     )
     save_classifier_performance(history)
     classifier.save('classifier.h5')
