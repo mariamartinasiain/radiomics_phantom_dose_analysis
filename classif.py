@@ -16,11 +16,14 @@ def load_data(file_path):
     print(features.shape)
     features = features.values
     print(features)
+    print(labels)
+    
     
 
     label_encoder = LabelEncoder()
     encoded_labels = label_encoder.fit_transform(labels)
     one_hot_labels = to_categorical(encoded_labels)
+    print(one_hot_labels)
 
     x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.2, random_state=42)
     return x_train, y_train, x_val, y_val
@@ -33,7 +36,7 @@ def define_classifier(input_size):
         return x
 
     x = tf.keras.Input(shape=(input_size,))
-    ff = mlp(x, 0.1, [200, 100, 40])
+    ff = mlp(x, 0.05, [200, 100, 40])
     classif = layers.Dense(4, activation='softmax')(ff)
 
     classifier = tf.keras.Model(inputs=x, outputs=classif)
@@ -63,7 +66,7 @@ def train_classifier(input_size, data_path):
     history = classifier.fit(
         x_train, y_train,
         validation_data=(x_val, y_val),
-        batch_size=64,
+        batch_size=128,
         epochs=500,
         verbose=2
     )
