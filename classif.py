@@ -37,7 +37,10 @@ def define_classifier(input_size):
     classif = layers.Dense(4, activation='softmax')(ff)
 
     classifier = tf.keras.Model(inputs=x, outputs=classif)
-    classifier.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    
+    optimizer = tf.keras.optimizers.Adam(learning_rate=2e-4)
+    
+    classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
     return classifier
 
@@ -61,7 +64,7 @@ def train_classifier(input_size, data_path):
         x_train, y_train,
         validation_data=(x_val, y_val),
         batch_size=64,
-        epochs=50,
+        epochs=500,
         verbose=2
     )
     save_classifier_performance(history)
