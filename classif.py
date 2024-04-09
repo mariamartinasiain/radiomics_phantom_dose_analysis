@@ -14,7 +14,7 @@ def load_data(file_path):
     data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
     labels = data['ROI'].values
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI', 'ManufacturerModelName', 'Manufacturer', 'SliceThickness', 'SpacingBetweenSlices'], errors='ignore')
-
+    print(features)
     label_encoder = LabelEncoder()
     encoded_labels = label_encoder.fit_transform(labels)
     one_hot_labels = to_categorical(encoded_labels)
