@@ -3,7 +3,7 @@ from mlp_classif import load_data
 
 
 def train_classifier(data_path):
-    x_train, y_train, x_val, y_val,cw = load_data(data_path)
+    x_train, y_train, x_val, y_val,cw = load_data(data_path,one_hot=False)
     clf = svm.LinearSVC()
     clf.fit(x_train, y_train)
     

@@ -23,20 +23,23 @@ def load_csv(file_path):
     
     return features, labels
 
-def load_data(file_path):
+def load_data(file_path,one_hot=True):
     scaler = StandardScaler()
     
     features, labels = load_csv(file_path)
     features = scaler.fit_transform(features)
     
-    label_encoder = LabelEncoder()
-    encoded_labels = label_encoder.fit_transform(labels)
-    one_hot_labels = to_categorical(encoded_labels)
-    
     class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
     class_weights = dict(enumerate(class_weights))
     
-    x_train, x_val, y_train, y_val = train_test_split(features, one_hot_labels, test_size=0.2, random_state=42)
+    
+    label_encoder = LabelEncoder()
+    encoded_labels = label_encoder.fit_transform(labels)
+    if one_hot:
+        one_hot_labels = to_categorical(encoded_labels)
+        labels = one_hot_labels
+    
+    x_train, x_val, y_train, y_val = train_test_split(features, labels, test_size=0.2, random_state=42)
     
     print(f'Loaded {len(x_train)} training samples and {len(x_val)} validation samples')
     
