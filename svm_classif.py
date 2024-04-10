@@ -13,7 +13,7 @@ def train_classifier(data_path):
     return clf, accuracy
 
 def main():
-    train_classifier('data/output/features.csv')
+    train_classifier('deepfeatures.csv')
 
 if __name__ == '__main__':
     main()
