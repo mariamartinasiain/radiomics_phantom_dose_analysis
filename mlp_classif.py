@@ -71,7 +71,12 @@ def load_data(file_path,one_hot=True):
     x_train, x_val = features[train_idx], features[val_idx]
     y_train, y_val = labels[train_idx], labels[val_idx]
     
+    train_groups = np.unique(groups[train_idx])
+    val_groups = np.unique(groups[val_idx])
+    
     print(f'Loaded {len(x_train)} training samples and {len(x_val)} validation samples')
+    print(f'Training groups: {train_groups}')
+    print(f'Validation groups: {val_groups}')
     
     return x_train, y_train, x_val, y_val,class_weights
 
