@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 
-def group_data(data, mode='scanner'):
+def group_data(data, mode='repetition'):
     gd = {}
     if mode == 'scanner':
         # Extract the first two characters and map them to unique integers
