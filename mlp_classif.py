@@ -65,7 +65,7 @@ def load_data(file_path,one_hot=True):
     if one_hot:
         labels = to_categorical(labels)
     
-    gss = GroupShuffleSplit(n_splits=1, test_size=0.5, random_state=42)
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
     train_idx, val_idx = next(gss.split(features, labels, groups=groups))
     x_train, x_val = features[train_idx], features[val_idx]
     y_train, y_val = labels[train_idx], labels[val_idx]
