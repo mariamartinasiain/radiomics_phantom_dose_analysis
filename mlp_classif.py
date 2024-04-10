@@ -55,16 +55,13 @@ def load_data(file_path,one_hot=True):
     
     features, labels,groups = load_csv(file_path)
     features = scaler.fit_transform(features)
-    
     class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
     class_weights = dict(enumerate(class_weights))
-    
     
     label_encoder = LabelEncoder()
     labels = label_encoder.fit_transform(labels)
     if one_hot:
         labels = to_categorical(labels)
-    
     
     gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
     train_idx, val_idx = next(gss.split(features, labels, groups=groups))
@@ -128,7 +125,7 @@ def train_classifier(input_size, data_path):
     classifier.save('classifier.h5')
     
 def main():
-    train_classifier(86, 'data/output/features.csv')
+    train_classifier(86, 'deepfeatures.csv')
     
 if __name__ == '__main__':
     main()
