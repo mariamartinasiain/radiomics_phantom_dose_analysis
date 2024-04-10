@@ -1,16 +1,40 @@
+import re
 import tensorflow as tf
 from keras import layers
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
 from sklearn.preprocessing import LabelEncoder
 from keras.utils import to_categorical
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 
+def group_data(data, mode='scanner'):
+    gd = {}
+    if mode == 'scanner':
+        # Extract the first two characters and map them to unique integers
+        unique_groups = data['SeriesDescription'].apply(lambda x: x[:2]).unique()
+        group_map = {group: i for i, group in enumerate(unique_groups)}
+        gd['group_id'] = data['SeriesDescription'].apply(lambda x: group_map[x[:2]])
+    elif mode == 'repetition':
+        # Extract the base part excluding the numeric suffix and map them to unique integers
+        def extract_base(description):
+            base = re.match(r"(.+)(-\s#\d+)$", description)
+            if base:
+                return base.group(1).strip()
+            return description
+        gd['base'] = data['SeriesDescription'].apply(extract_base)
+        unique_bases = gd['base'].unique()
+        base_map = {base: i for i, base in enumerate(unique_bases)}
+        gd['group_id'] = gd['base'].apply(lambda x: base_map[x])
+    
+    return np.array(gd['group_id'])
+
 def load_csv(file_path):
     data = pd.read_csv(file_path)
+
+    groups = group_data(data)
 
     # Standardize ROI labels
     data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
@@ -23,12 +47,12 @@ def load_csv(file_path):
     
     print(f'Loaded {len(features)} samples with {len(features[0])} features')
     
-    return features, labels
+    return features, labels,groups
 
 def load_data(file_path,one_hot=True):
     scaler = StandardScaler()
     
-    features, labels = load_csv(file_path)
+    features, labels,groups = load_csv(file_path)
     features = scaler.fit_transform(features)
     
     class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
@@ -41,7 +65,11 @@ def load_data(file_path,one_hot=True):
         one_hot_labels = to_categorical(encoded_labels)
         labels = one_hot_labels
     
-    x_train, x_val, y_train, y_val = train_test_split(features, labels, test_size=0.2, random_state=42)
+    
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_idx, val_idx = next(gss.split(features, labels, groups=groups))
+    x_train, x_val = features[train_idx], features[val_idx]
+    y_train, y_val = labels[train_idx], labels[val_idx]
     
     print(f'Loaded {len(x_train)} training samples and {len(x_val)} validation samples')
     
