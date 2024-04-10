@@ -24,6 +24,7 @@ def group_data(data, mode='repetition'):
             if base:
                 return base.group(1).strip()
             return description
+        
         gd['base'] = data['SeriesDescription'].apply(extract_base)
         unique_bases = gd['base'].unique()
         base_map = {base: i for i, base in enumerate(unique_bases)}
@@ -60,10 +61,9 @@ def load_data(file_path,one_hot=True):
     
     
     label_encoder = LabelEncoder()
-    encoded_labels = label_encoder.fit_transform(labels)
+    labels = label_encoder.fit_transform(labels)
     if one_hot:
-        one_hot_labels = to_categorical(encoded_labels)
-        labels = one_hot_labels
+        labels = to_categorical(labels)
     
     
     gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
