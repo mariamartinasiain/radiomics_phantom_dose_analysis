@@ -16,7 +16,9 @@ def load_csv(file_path):
     data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
     labels = data['ROI'].values
     
-    features = features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
+    features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
+    if features.columns[0] == 'deepfeatures':
+        features = features['deepfeatures'].apply(eval).apply(pd.Series)
     features = features.values
     
     print(f'Loaded {len(features)} samples with {len(features[0])} features')
@@ -90,10 +92,10 @@ def train_classifier(input_size, data_path):
         class_weight=cw
     )
     save_classifier_performance(history)
-    classifier.save('classifier.h5')
+    classifier.save('classifier_deep.h5')
     
 def main():
-    train_classifier(86, 'data/output/features.csv')
+    train_classifier(3072, 'deepfeatures.csv')
     
 if __name__ == '__main__':
     main()
