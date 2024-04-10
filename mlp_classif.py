@@ -124,10 +124,10 @@ def train_classifier(input_size, data_path):
         class_weight=cw
     )
     save_classifier_performance(history)
-    classifier.save('deepclassifier.h5')
+    classifier.save('classifier.h5')
     
 def main():
-    train_classifier(3072, 'deepfeatures.csv')
+    train_classifier(86, 'data/output/features.csv')
     
 if __name__ == '__main__':
     main()
