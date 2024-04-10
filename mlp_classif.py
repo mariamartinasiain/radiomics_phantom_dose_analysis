@@ -35,7 +35,9 @@ def group_data(data, mode='repetition'):
 def load_csv(file_path):
     data = pd.read_csv(file_path)
 
+    print("Grouping data...")
     groups = group_data(data)
+    print(f'Found {len(np.unique(groups))} unique groups')
 
     # Standardize ROI labels
     data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
@@ -85,7 +87,7 @@ def define_classifier(input_size):
         return x
 
     input = tf.keras.Input(shape=(input_size,))
-    ff = mlp(input, 0.1, [250,150, 75])
+    ff = mlp(input, 0.1, [180,150, 75])
     classif = layers.Dense(4, activation='softmax')(ff)
 
     classifier = tf.keras.Model(inputs=input, outputs=classif)
@@ -117,7 +119,7 @@ def train_classifier(input_size, data_path):
         x_train, y_train,
         validation_data=(x_val, y_val),
         batch_size=64,
-        epochs=150,
+        epochs=70,
         verbose=2,
         class_weight=cw
     )
