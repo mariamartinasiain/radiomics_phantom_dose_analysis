@@ -41,7 +41,7 @@ def load_data(file_path,one_hot=True):
         one_hot_labels = to_categorical(encoded_labels)
         labels = one_hot_labels
     
-    x_train, x_val, y_train, y_val = train_test_split(features, labels, test_size=0.2, random_state=42)
+    x_train, x_val, y_train, y_val = train_test_split(features, labels, test_size=0.99, random_state=42)
     
     print(f'Loaded {len(x_train)} training samples and {len(x_val)} validation samples')
     
