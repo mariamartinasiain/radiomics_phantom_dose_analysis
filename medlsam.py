@@ -95,25 +95,27 @@ dataset = Dataset(data=datafiles, transform=transforms)
 dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
 
 slice_num = 50
-csv_data = []
 
-for batch in tqdm(dataload):
-    image = batch["image"]
-    x_in = image.cuda()
-    input_image = medsam.preprocess(x_in[None,:,:,:])
-    val_inputs = x_in.cuda()
-    latentrep = encoder(val_inputs)
-    print(latentrep.shape)
-    record = {
-            "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
-            "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD][0],
-            "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD][0],
-            "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
-            "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],
-            "ROI": batch["roi_label"][0],
-            "deepfeatures": latentrep.flatten().tolist()  # Convertir en liste pour la sauvegarde CSV
-    }
-    csv_data.append(record)
 
-df = pd.DataFrame(csv_data)
-df.to_csv("deepfeaturesmedsam.csv", index=False)
+with open("deepfeaturesmedsam.csv", "w", newline="") as csvfile:
+    fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    for batch in tqdm(dataload):
+        image = batch["image"]
+        x_in = image.cuda()
+        input_image = medsam.preprocess(x_in[None,:,:,:])
+        val_inputs = x_in.cuda()
+        latentrep = encoder(val_inputs)
+        print(latentrep.shape)
+        record = {
+                "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
+                "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD][0],
+                "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD][0],
+                "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
+                "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],
+                "ROI": batch["roi_label"][0],
+                "deepfeatures": latentrep.flatten().tolist()  # Convertir en liste pour la sauvegarde CSV
+        }
+        writer.writerow(record)
+
