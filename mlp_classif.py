@@ -37,10 +37,12 @@ def load_csv(file_path, label_type='roi_small',mg_filter=None):
     data = pd.read_csv(file_path)
     
     print("mg filter",mg_filter)
+    print(f'Length of data before filtering: {len(data)}')
     datad = {}
     datad['mg_value'] = data['SeriesDescription'].apply(extract_mg_value)
     if mg_filter is not None:
         data = data[datad['mg_value'] == mg_filter]
+        print(f'Length of data after filtering: {len(data)}')
 
     print("Grouping data...")
     if label_type == 'scanner':
