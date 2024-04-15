@@ -78,6 +78,7 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small'):
         labels = to_categorical(labels)
     print(f'Found {len(np.unique(labels))} unique labels')
     print(f'Labeled classes: {label_encoder.classes_}')
+    classes_size = len(label_encoder.classes_)
     
     gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
     train_idx, val_idx = next(gss.split(features, labels, groups=groups))
@@ -91,9 +92,9 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small'):
     print(f'Training groups: {train_groups}')
     print(f'Validation groups: {val_groups}')
     
-    return x_train, y_train, x_val, y_val,class_weights
+    return x_train, y_train, x_val, y_val,class_weights,classes_size
 
-def define_classifier(input_size):
+def define_classifier(input_size,classes_size):
     def mlp(x, dropout_rate, hidden_units):
         for units in hidden_units:
             x = layers.Dense(units, activation=tf.nn.gelu)(x)
@@ -102,7 +103,7 @@ def define_classifier(input_size):
 
     input = tf.keras.Input(shape=(input_size,))
     ff = mlp(input, 0.1, [170,150, 75])
-    classif = layers.Dense(4, activation='softmax')(ff)
+    classif = layers.Dense(classes_size, activation='softmax')(ff)
 
     classifier = tf.keras.Model(inputs=input, outputs=classif)
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
@@ -126,9 +127,10 @@ def save_classifier_performance(history):
     
     
 def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classif_type='roi_small'):
-    classifier = define_classifier(input_size)
-    x_train, y_train, x_val, y_val,cw = load_data(data_path,test_size,label_type=classif_type)
-
+    
+    x_train, y_train, x_val, y_val,cw, classes_size = load_data(data_path,test_size,label_type=classif_type)
+    classifier = define_classifier(input_size,classes_size)
+    
     history = classifier.fit(
         x_train, y_train,
         validation_data=(x_val, y_val),
