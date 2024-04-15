@@ -1,3 +1,4 @@
+from analyze.analyze import extract_mg_value
 import re
 import tensorflow as tf
 from keras import layers
@@ -32,8 +33,12 @@ def group_data(data, mode='scanner'):
     
     return np.array(gd['group_id'])
 
-def load_csv(file_path, label_type='roi_small'):
+def load_csv(file_path, label_type='roi_small',mg_filter=None):
     data = pd.read_csv(file_path)
+    
+    data['mg_value'] = data['SeriesDescription'].apply(extract_mg_value)
+    if mg_filter is not None:
+        data = data[data['mg_value'] == mg_filter]
 
     print("Grouping data...")
     if label_type == 'scanner':
@@ -64,10 +69,10 @@ def load_csv(file_path, label_type='roi_small'):
     
     return features, labels,groups
 
-def load_data(file_path,test_size,one_hot=True, label_type='roi_small'):
+def load_data(file_path,test_size,one_hot=True, label_type='roi_small',mg_filter=None):
     scaler = StandardScaler()
     
-    features, labels,groups = load_csv(file_path, label_type=label_type)
+    features, labels,groups = load_csv(file_path, label_type=label_type,mg_filter=mg_filter)
     features = scaler.fit_transform(features)
     class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
     class_weights = dict(enumerate(class_weights))
@@ -102,7 +107,7 @@ def define_classifier(input_size,classes_size):
         return x
 
     input = tf.keras.Input(shape=(input_size,))
-    ff = mlp(input, 0.2, [100,60, 30])
+    ff = mlp(input, 0.2, [150,80, 40])
     classif = layers.Dense(classes_size, activation='softmax')(ff)
 
     classifier = tf.keras.Model(inputs=input, outputs=classif)
@@ -126,16 +131,16 @@ def save_classifier_performance(history):
 
     
     
-def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classif_type='roi_small'):
+def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classif_type='roi_small',mg_filter=None):
     
-    x_train, y_train, x_val, y_val,cw, classes_size = load_data(data_path,test_size,label_type=classif_type)
+    x_train, y_train, x_val, y_val,cw, classes_size = load_data(data_path,test_size,label_type=classif_type,mg_filter=mg_filter)
     classifier = define_classifier(input_size,classes_size)
     
     history = classifier.fit(
         x_train, y_train,
         validation_data=(x_val, y_val),
         batch_size=64,
-        epochs=150,
+        epochs=180,
         verbose=2,
         class_weight=cw
     )
