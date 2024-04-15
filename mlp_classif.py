@@ -52,6 +52,9 @@ def load_csv(file_path, label_type='roi_small'):
     elif label_type == 'scanner':
         labels = data['SeriesDescription'].str[:2].values
     
+    print(f'Found {len(np.unique(labels))} unique labels for {label_type}')
+    print(f'Labeled classes: {np.unique(labels)} for {label_type}')
+    
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     if features.columns[0] == 'deepfeatures':
         features = features['deepfeatures'].apply(eval).apply(pd.Series)
@@ -74,7 +77,7 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small'):
     if one_hot:
         labels = to_categorical(labels)
     print(f'Found {len(np.unique(labels))} unique labels')
-    print(f'Labels: {labels}')
+    print(f'Labeled classes: {label_encoder.classes_}')
     
     gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
     train_idx, val_idx = next(gss.split(features, labels, groups=groups))
