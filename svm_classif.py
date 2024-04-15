@@ -3,7 +3,7 @@ from mlp_classif import load_data
 
 
 def train_svm(data_path,test_size,classif_type='roi_small'):
-    x_train, y_train, x_val, y_val,cw = load_data(data_path,test_size,one_hot=False,label_type=classif_type)
+    x_train, y_train, x_val, y_val,cw,_ = load_data(data_path,test_size,one_hot=False,label_type=classif_type)
     clf = svm.LinearSVC()
     clf.fit(x_train, y_train)
     
