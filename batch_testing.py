@@ -18,7 +18,7 @@ configurations = {
     'pyradiomics': ([1, 3, 5, 9], 86),
     'swinunetr': ([1, 3, 5, 9], 3072)
 }
-classif_type = 'roi_large'
+classif_type = 'roi_small'
 for model, info_list in configurations.items():
     scanners,latent_size = info_list
     for n_scanners in scanners:
