@@ -15,15 +15,15 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
         file.write(entry)
 
 configurations = {
-    'pyradiomics': ([1, 3, 5, 8], 86),
-    'swinunetr': ([1, 3, 5, 8], 3072)
+    'pyradiomics': ([1, 3, 5, 9], 86),
+    'swinunetr': ([1, 3, 5, 9], 3072)
 }
 classif_type = 'roi_small'
 for model, info_list in configurations.items():
     scanners,latent_size = info_list
     for n_scanners in scanners:
         print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
-        test_size = 1 - ((n_scanners+1)/13) - 0.02
+        test_size = 1 - ((n_scanners+1)/13) 
         data_path = f'features_{model}.csv'
         output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}scanners_mlp.h5'
 

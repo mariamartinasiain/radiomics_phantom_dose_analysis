@@ -74,7 +74,7 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small'):
     if one_hot:
         labels = to_categorical(labels)
     
-    gss = GroupShuffleSplit(n_splits=5, test_size=test_size, random_state=42)
+    gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
     train_idx, val_idx = next(gss.split(features, labels, groups=groups))
     x_train, x_val = features[train_idx], features[val_idx]
     y_train, y_val = labels[train_idx], labels[val_idx]
