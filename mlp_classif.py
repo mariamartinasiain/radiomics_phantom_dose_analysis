@@ -96,7 +96,7 @@ def define_classifier(input_size):
         return x
 
     input = tf.keras.Input(shape=(input_size,))
-    ff = mlp(input, 0.1, [150, 75])
+    ff = mlp(input, 0.1, [170,150, 75])
     classif = layers.Dense(4, activation='softmax')(ff)
 
     classifier = tf.keras.Model(inputs=input, outputs=classif)
