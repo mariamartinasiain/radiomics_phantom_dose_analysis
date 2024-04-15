@@ -67,7 +67,7 @@ def load_csv(file_path, label_type='roi_small'):
 def load_data(file_path,test_size,one_hot=True, label_type='roi_small'):
     scaler = StandardScaler()
     
-    features, labels,groups = load_csv(file_path, label_type='roi_small')
+    features, labels,groups = load_csv(file_path, label_type=label_type)
     features = scaler.fit_transform(features)
     class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
     class_weights = dict(enumerate(class_weights))
