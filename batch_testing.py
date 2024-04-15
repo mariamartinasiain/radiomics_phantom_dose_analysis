@@ -17,6 +17,7 @@ configurations = {
 }
 classif_type = 'roi_small'
 for model, info_list in configurations.items():
+    print(info_list)
     for (n_scanners,latent_size) in info_list:
         test_size = 1 - (n_scanners/13)
         data_path = f'data/output/features_{model}.csv'
