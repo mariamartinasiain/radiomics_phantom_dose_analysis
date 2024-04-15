@@ -25,6 +25,6 @@ for model, info_list in configurations.items():
         output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}scanners_mlp.h5'
 
         mlp_accuracy = train_mlp(latent_size,test_size, data_path, output_path_mlp,classif_type)
-        _,svm_accuracy = train_svm(test_size,data_path,classif_type)
+        _,svm_accuracy = train_svm(data_path,test_size,classif_type)
 
         update_performance_file(model, n_scanners, mlp_accuracy, svm_accuracy, output_path_mlp,classif_type)
