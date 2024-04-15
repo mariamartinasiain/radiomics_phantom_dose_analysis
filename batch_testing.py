@@ -19,15 +19,16 @@ configurations = {
     'swinunetr': ([1, 3, 5, 9], 3072)
 }
 classif_type = 'scanner'
+qmg = None#10
 for model, info_list in configurations.items():
     scanners,latent_size = info_list
     for n_scanners in scanners:
         print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
         test_size = 1 - ((n_scanners)/11) 
         data_path = f'features_{model}.csv'
-        output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_scanners_mlp.h5'
+        output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
 
-        mlp_accuracy = train_mlp(latent_size,test_size, data_path, output_path_mlp,classif_type)
-        _,svm_accuracy = train_svm(data_path,test_size,classif_type)
+        mlp_accuracy = train_mlp(latent_size,test_size, data_path, output_path_mlp,classif_type,mg_filter=qmg)
+        _,svm_accuracy = train_svm(data_path,test_size,classif_type,mg_filter=qmg)
 
         update_performance_file(model, n_scanners, mlp_accuracy, svm_accuracy, output_path_mlp,classif_type)

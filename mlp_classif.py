@@ -36,6 +36,7 @@ def group_data(data, mode='scanner'):
 def load_csv(file_path, label_type='roi_small',mg_filter=None):
     data = pd.read_csv(file_path)
     
+    print("mg filter",mg_filter)
     data['mg_value'] = data['SeriesDescription'].apply(extract_mg_value)
     if mg_filter is not None:
         data = data[data['mg_value'] == mg_filter]
