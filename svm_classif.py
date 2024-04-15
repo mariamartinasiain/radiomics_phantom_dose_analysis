@@ -12,6 +12,15 @@ def train_svm(data_path,test_size,classif_type='roi_small'):
 
     return clf, accuracy
 
+def train_svm_with_data(x_train, y_train, x_val, y_val):
+    clf = svm.LinearSVC()
+    clf.fit(x_train, y_train)
+    
+    accuracy = clf.score(x_val, y_val)
+    print(f"Accuracy sur l'ensemble de validation: {accuracy * 100:.2f}%")
+
+    return clf, accuracy
+
 def main():
     train_svm('data/output/features.csv')
 

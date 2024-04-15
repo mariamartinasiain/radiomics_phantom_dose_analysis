@@ -1,5 +1,8 @@
 from mlp_classif import train_mlp
+from mlp_classif import train_mlp_with_data
+from mlp_classif import load_data
 from svm_classif import train_svm
+from svm_classif import train_svm_with_data
 
 def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_path,classif_type='roi_small'):
     entry = f'''
@@ -20,7 +23,7 @@ for model, info_list in configurations.items():
     scanners,latent_size = info_list
     for n_scanners in scanners:
         print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
-        test_size = 1 - (n_scanners/13) - 0.05
+        test_size = 1 - (n_scanners/13) - 0.02
         data_path = f'features_{model}.csv'
         output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}scanners_mlp.h5'
 

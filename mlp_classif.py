@@ -96,7 +96,7 @@ def define_classifier(input_size):
         return x
 
     input = tf.keras.Input(shape=(input_size,))
-    ff = mlp(input, 0.1, [180,150, 75])
+    ff = mlp(input, 0.1, [150, 75])
     classif = layers.Dense(4, activation='softmax')(ff)
 
     classifier = tf.keras.Model(inputs=input, outputs=classif)
@@ -124,6 +124,24 @@ def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classi
     classifier = define_classifier(input_size)
     x_train, y_train, x_val, y_val,cw = load_data(data_path,test_size,label_type=classif_type)
 
+    history = classifier.fit(
+        x_train, y_train,
+        validation_data=(x_val, y_val),
+        batch_size=64,
+        epochs=70,
+        verbose=2,
+        class_weight=cw
+    )
+    save_classifier_performance(history)
+    classifier.save(output_path)
+    max_val_accuracy = max(history.history['val_accuracy'])
+    return max_val_accuracy
+ 
+def train_mlp_with_data(x_train, y_train, x_val, y_val, input_size, output_path='classifier.h5'):
+    classifier = define_classifier(input_size)
+    cw = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+    cw = dict(enumerate(cw))
+    
     history = classifier.fit(
         x_train, y_train,
         validation_data=(x_val, y_val),
