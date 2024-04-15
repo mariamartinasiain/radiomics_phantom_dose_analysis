@@ -32,16 +32,25 @@ def group_data(data, mode='scanner'):
     
     return np.array(gd['group_id'])
 
-def load_csv(file_path):
+def load_csv(file_path, label_type='roi_small'):
     data = pd.read_csv(file_path)
 
     print("Grouping data...")
-    groups = group_data(data)
+    if label_type == 'scanner':
+        groups = group_data(data, mode='repetition')
+    else:
+        groups = group_data(data)
     print(f'Found {len(np.unique(groups))} unique groups')
 
     # Standardize ROI labels
-    data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
-    labels = data['ROI'].values
+    if label_type == 'roi_small':
+        data['ROI'] = data['ROI'].str.replace(r'\d+', '', regex=True)
+        labels = data['ROI'].values
+    elif label_type == 'roi_large':
+        data['ROI'] = data['ROI']
+        labels = data['ROI'].values
+    elif label_type == 'scanner':
+        labels = data['SeriesDescription'].str[:2].values
     
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     if features.columns[0] == 'deepfeatures':
@@ -52,10 +61,10 @@ def load_csv(file_path):
     
     return features, labels,groups
 
-def load_data(file_path,one_hot=True):
+def load_data(file_path,test_size,one_hot=True, label_type='roi_small'):
     scaler = StandardScaler()
     
-    features, labels,groups = load_csv(file_path)
+    features, labels,groups = load_csv(file_path, label_type='roi_small')
     features = scaler.fit_transform(features)
     class_weights = compute_class_weight('balanced', classes=np.unique(labels), y=labels)
     class_weights = dict(enumerate(class_weights))
@@ -65,7 +74,7 @@ def load_data(file_path,one_hot=True):
     if one_hot:
         labels = to_categorical(labels)
     
-    gss = GroupShuffleSplit(n_splits=1, test_size=0.9, random_state=42)
+    gss = GroupShuffleSplit(n_splits=5, test_size=test_size, random_state=42)
     train_idx, val_idx = next(gss.split(features, labels, groups=groups))
     x_train, x_val = features[train_idx], features[val_idx]
     y_train, y_val = labels[train_idx], labels[val_idx]
@@ -111,9 +120,9 @@ def save_classifier_performance(history):
 
     
     
-def train_classifier(input_size, data_path):
+def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classif_type='roi_small'):
     classifier = define_classifier(input_size)
-    x_train, y_train, x_val, y_val,cw = load_data(data_path)
+    x_train, y_train, x_val, y_val,cw = load_data(data_path,test_size,label_type=classif_type)
 
     history = classifier.fit(
         x_train, y_train,
@@ -124,10 +133,12 @@ def train_classifier(input_size, data_path):
         class_weight=cw
     )
     save_classifier_performance(history)
-    classifier.save('classifier.h5')
+    classifier.save(output_path)
+    max_val_accuracy = max(history.history['val_accuracy'])
+    return max_val_accuracy
     
 def main():
-    train_classifier(86, 'data/output/features.csv')
+    train_mlp(86, 'data/output/features.csv')
     
 if __name__ == '__main__':
     main()
