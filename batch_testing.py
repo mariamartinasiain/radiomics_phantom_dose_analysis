@@ -25,7 +25,7 @@ for model, info_list in configurations.items():
         print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
         test_size = 1 - ((n_scanners)/11) 
         data_path = f'features_{model}.csv'
-        output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}scanners_mlp.h5'
+        output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_scanners_mlp.h5'
 
         mlp_accuracy = train_mlp(latent_size,test_size, data_path, output_path_mlp,classif_type)
         _,svm_accuracy = train_svm(data_path,test_size,classif_type)
