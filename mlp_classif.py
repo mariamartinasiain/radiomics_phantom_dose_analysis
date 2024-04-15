@@ -40,7 +40,7 @@ def load_csv(file_path, label_type='roi_small',mg_filter=None):
     datad = {}
     datad['mg_value'] = data['SeriesDescription'].apply(extract_mg_value)
     if mg_filter is not None:
-        data = datad[data['mg_value'] == mg_filter]
+        data = data[datad['mg_value'] == mg_filter]
 
     print("Grouping data...")
     if label_type == 'scanner':
