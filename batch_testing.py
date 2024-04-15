@@ -18,7 +18,8 @@ configurations = {
 classif_type = 'roi_small'
 for model, info_list in configurations.items():
     print(info_list)
-    for n_scanners,latent_size in info_list:
+    scanners,latent_size = info_list
+    for n_scanners in scanners:
         test_size = 1 - (n_scanners/13)
         data_path = f'data/output/features_{model}.csv'
         output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}scanners_mlp.h5'
