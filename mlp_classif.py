@@ -132,7 +132,10 @@ def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classi
     
     mean_val_accuracy = 0
     
-    print(f'Going to start training with {len(splits)} splits')
+    #print(f'Going to start training with {len(splits)} splits')
+#TypeError: object of type 'generator' has no len()
+    nsplits = len(list(splits))
+    print(f'Going to start training with {nsplits} splits')
     for train_idx, val_idx in splits:
         x_train, x_val = features[train_idx], features[val_idx]
         y_train, y_val = labels[train_idx], labels[val_idx]
@@ -157,7 +160,7 @@ def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classi
         classifier.save(output_path)
         max_val_accuracy = max(history.history['val_accuracy'])
         mean_val_accuracy += max_val_accuracy
-    mean_val_accuracy /= len(splits)
+    mean_val_accuracy /= nsplits
     return mean_val_accuracy
  
 def train_mlp_with_data(x_train, y_train, x_val, y_val, input_size, output_path='classifier.h5'):

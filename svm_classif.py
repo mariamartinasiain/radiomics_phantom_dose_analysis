@@ -7,8 +7,8 @@ def train_svm(data_path,test_size,classif_type='roi_small',mg_filter=None):
     features, labels, groups, splits, cw, classes_size = load_data(data_path,test_size,label_type=classif_type,mg_filter=mg_filter)
     
     mean_val_accuracy = 0
-    
-    print(f'Going to start training with {len(splits)} splits')
+    nsplits = len(list(splits))
+    print(f'Going to start training with {nsplits} splits')
     for train_idx, val_idx in splits:
         x_train, x_val = features[train_idx], features[val_idx]
         y_train, y_val = labels[train_idx], labels[val_idx]
@@ -26,7 +26,7 @@ def train_svm(data_path,test_size,classif_type='roi_small',mg_filter=None):
         print(f"Accuracy sur l'ensemble de validation: {accuracy * 100:.2f}%")
         mean_val_accuracy += accuracy
 
-    mean_val_accuracy /= len(splits)
+    mean_val_accuracy /= nsplits
     return clf, mean_val_accuracy
 
 def train_svm_with_data(x_train, y_train, x_val, y_val):
