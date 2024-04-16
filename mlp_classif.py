@@ -90,18 +90,9 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small',mg_filter
     classes_size = len(label_encoder.classes_)
     
     gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
-    train_idx, val_idx = next(gss.split(features, labels, groups=groups))
-    x_train, x_val = features[train_idx], features[val_idx]
-    y_train, y_val = labels[train_idx], labels[val_idx]
+    splits = gss.split(features, labels, groups=groups)
     
-    train_groups = np.unique(groups[train_idx])
-    val_groups = np.unique(groups[val_idx])
-    
-    print(f'Loaded {len(x_train)} training samples and {len(x_val)} validation samples')
-    print(f'Training groups: {train_groups}')
-    print(f'Validation groups: {val_groups}')
-    
-    return x_train, y_train, x_val, y_val,class_weights,classes_size
+    return features, labels, groups, splits, class_weights, classes_size
 
 def define_classifier(input_size,classes_size):
     def mlp(x, dropout_rate, hidden_units):
@@ -137,21 +128,37 @@ def save_classifier_performance(history):
     
 def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classif_type='roi_small',mg_filter=None):
     
-    x_train, y_train, x_val, y_val,cw, classes_size = load_data(data_path,test_size,label_type=classif_type,mg_filter=mg_filter)
-    classifier = define_classifier(input_size,classes_size)
+    features, labels, groups, splits, cw, classes_size = load_data(data_path,test_size,label_type=classif_type,mg_filter=mg_filter)
     
-    history = classifier.fit(
-        x_train, y_train,
-        validation_data=(x_val, y_val),
-        batch_size=64,
-        epochs=180,
-        verbose=2,
-        class_weight=cw
-    )
-    save_classifier_performance(history)
-    classifier.save(output_path)
-    max_val_accuracy = max(history.history['val_accuracy'])
-    return max_val_accuracy
+    mean_val_accuracy = 0
+    
+    print(f'Going to start training with {len(splits)} splits')
+    for train_idx, val_idx in splits:
+        x_train, x_val = features[train_idx], features[val_idx]
+        y_train, y_val = labels[train_idx], labels[val_idx]
+        train_groups = np.unique(groups[train_idx])
+        val_groups = np.unique(groups[val_idx])
+        
+        print(f'Loaded {len(x_train)} training samples and {len(x_val)} validation samples')
+        print(f'Training groups: {train_groups}')
+        print(f'Validation groups: {val_groups}')
+        
+        classifier = define_classifier(input_size,classes_size)
+        
+        history = classifier.fit(
+            x_train, y_train,
+            validation_data=(x_val, y_val),
+            batch_size=64,
+            epochs=180,
+            verbose=2,
+            class_weight=cw
+        )
+        save_classifier_performance(history)
+        classifier.save(output_path)
+        max_val_accuracy = max(history.history['val_accuracy'])
+        mean_val_accuracy += max_val_accuracy
+    mean_val_accuracy /= len(splits)
+    return mean_val_accuracy
  
 def train_mlp_with_data(x_train, y_train, x_val, y_val, input_size, output_path='classifier.h5'):
     classifier = define_classifier(input_size)
