@@ -31,7 +31,7 @@ for model, info_list in configurations.items():
     for n_scanners in scanners:
         print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
         test_size = 1 - ((n_scanners)/11) 
-        data_path = f'features_{model}.csv'
+        data_path = f'pcafeatures_{model}.csv'
         output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
 
         mlp_accuracy,mlp_max_accu,mlp_min_accu = train_mlp(latent_size,test_size, data_path, output_path_mlp,classif_type,mg_filter=qmg)
