@@ -89,7 +89,7 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small',mg_filter
     print(f'Labeled classes: {label_encoder.classes_}')
     classes_size = len(label_encoder.classes_)
     
-    splits = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
+    splits = GroupShuffleSplit(n_splits=5, test_size=test_size, random_state=42)
     
     
     return features, labels, groups, splits, class_weights, classes_size
