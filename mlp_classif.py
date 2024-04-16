@@ -65,7 +65,7 @@ def load_csv(file_path, label_type='roi_small',mg_filter=None):
     print(f'Labeled classes: {np.unique(labels)} for {label_type}')
     
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
-    if features.columns[0] == 'deepfeatures':
+    if 'deepfeatures' in data.columns:
         features = features['deepfeatures'].apply(eval).apply(pd.Series)
     features = features.values
     
