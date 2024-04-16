@@ -89,7 +89,7 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small',mg_filter
     print(f'Labeled classes: {label_encoder.classes_}')
     classes_size = len(label_encoder.classes_)
     
-    splits = GroupShuffleSplit(n_splits=5, test_size=test_size, random_state=42)
+    splits = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
     
     
     return features, labels, groups, splits, class_weights, classes_size
@@ -131,6 +131,8 @@ def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classi
     features, labels, groups, splits, cw, classes_size = load_data(data_path,test_size,label_type=classif_type,mg_filter=mg_filter)
     
     mean_val_accuracy = 0
+    min_accuracy = 1
+    max_accuracy = 0
     
     #print(f'Going to start training with {len(splits)} splits')
 #TypeError: object of type 'generator' has no len()
@@ -161,8 +163,13 @@ def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classi
         classifier.save(output_path)
         max_val_accuracy = max(history.history['val_accuracy'])
         mean_val_accuracy += max_val_accuracy
+        if max_accuracy < max_val_accuracy:
+            max_accuracy = max_val_accuracy
+        if min_accuracy > max_val_accuracy:
+            min_accuracy = max_val_accuracy
+            
     mean_val_accuracy /= nsplits
-    return mean_val_accuracy
+    return mean_val_accuracy,max_accuracy,min_accuracy
  
 def train_mlp_with_data(x_train, y_train, x_val, y_val, input_size, output_path='classifier.h5'):
     classifier = define_classifier(input_size)

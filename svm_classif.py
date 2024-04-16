@@ -7,6 +7,9 @@ def train_svm(data_path,test_size,classif_type='roi_small',mg_filter=None):
     features, labels, groups, splits, cw, classes_size = load_data(data_path,test_size,label_type=classif_type,mg_filter=mg_filter,one_hot=False)
     
     mean_val_accuracy = 0
+    min_accuracy = 1
+    max_accuracy = 0
+    
     nsplits = splits.get_n_splits()
     splits = splits.split(features, labels, groups=groups)
     print(f'Going to start training with {nsplits} splits')
@@ -26,9 +29,13 @@ def train_svm(data_path,test_size,classif_type='roi_small',mg_filter=None):
         accuracy = clf.score(x_val, y_val)
         print(f"Accuracy sur l'ensemble de validation: {accuracy * 100:.2f}%")
         mean_val_accuracy += accuracy
+        if max_accuracy < accuracy:
+            max_accuracy = accuracy
+        if min_accuracy > accuracy:
+            min_accuracy = accuracy
 
     mean_val_accuracy /= nsplits
-    return clf, mean_val_accuracy
+    return clf, mean_val_accuracy, max_accuracy, min_accuracy
 
 def train_svm_with_data(x_train, y_train, x_val, y_val):
     clf = svm.LinearSVC()
