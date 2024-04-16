@@ -89,8 +89,8 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small',mg_filter
     print(f'Labeled classes: {label_encoder.classes_}')
     classes_size = len(label_encoder.classes_)
     
-    gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
-    splits = gss.split(features, labels, groups=groups)
+    splits = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
+    
     
     return features, labels, groups, splits, class_weights, classes_size
 
@@ -135,6 +135,7 @@ def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classi
     #print(f'Going to start training with {len(splits)} splits')
 #TypeError: object of type 'generator' has no len()
     nsplits = splits.get_n_splits()
+    splits = splits.split(features, labels, groups=groups)
     print(f'Going to start training with {nsplits} splits')
     for train_idx, val_idx in splits:
         x_train, x_val = features[train_idx], features[val_idx]

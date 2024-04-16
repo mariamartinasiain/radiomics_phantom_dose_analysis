@@ -8,6 +8,7 @@ def train_svm(data_path,test_size,classif_type='roi_small',mg_filter=None):
     
     mean_val_accuracy = 0
     nsplits = splits.get_n_splits()
+    splits = splits.split(features, labels, groups=groups)
     print(f'Going to start training with {nsplits} splits')
     for train_idx, val_idx in splits:
         x_train, x_val = features[train_idx], features[val_idx]
