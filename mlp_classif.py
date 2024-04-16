@@ -134,7 +134,7 @@ def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classi
     
     #print(f'Going to start training with {len(splits)} splits')
 #TypeError: object of type 'generator' has no len()
-    nsplits = len(list(splits))
+    nsplits = splits.get_n_splits()
     print(f'Going to start training with {nsplits} splits')
     for train_idx, val_idx in splits:
         x_train, x_val = features[train_idx], features[val_idx]
