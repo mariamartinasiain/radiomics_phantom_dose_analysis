@@ -4,7 +4,7 @@ from mlp_classif import load_data
 
 
 def train_svm(data_path,test_size,classif_type='roi_small',mg_filter=None):
-    features, labels, groups, splits, cw, classes_size = load_data(data_path,test_size,label_type=classif_type,mg_filter=mg_filter)
+    features, labels, groups, splits, cw, classes_size = load_data(data_path,test_size,label_type=classif_type,mg_filter=mg_filter,one_hot=False)
     
     mean_val_accuracy = 0
     nsplits = splits.get_n_splits()
