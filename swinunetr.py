@@ -36,6 +36,7 @@ from monai.transforms import (
     MaskIntensityd,
     Transform,
     EnsureChannelFirstd,
+    AsDiscreted,
 )
 
 from monai.config import print_config
@@ -134,9 +135,10 @@ class CropOnROI(Crop):
 class CropOnROId(MapTransform, LazyTransform):
     backend = Crop.backend
 
-    def __init__(self, keys,roi_key,size, allow_missing_keys: bool = False, lazy: bool = False):
+    def __init__(self, keys,roi_key,size, allow_missing_keys: bool = False, lazy: bool = False,id_key="id"):
         MapTransform.__init__(self, keys, allow_missing_keys)
         LazyTransform.__init__(self, lazy)
+        self.id_key = id_key
         self.roi_key = roi_key
         self.size = size
 
@@ -153,7 +155,10 @@ class CropOnROId(MapTransform, LazyTransform):
         #print("LA SHAPE DE SIZE",(torch.tensor(self.size)).shape)
         for key in self.key_iterator(d):
             d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
+            d[self.id_key] = d[self.roi_key]
         return d
+
+
 
 def load_data(datalist_json_path):
         with open(datalist_json_path, 'r') as f:
@@ -193,6 +198,7 @@ def main():
         CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
         #DebugTransform(),  # Check the shape right after resizing
         #MaskIntensityd(keys=["image"], mask_key="roi"),
+        AsDiscreted(keys=["roi"], to_onehot=False, n_classes=6),
         ToTensord(keys=["image", "roi"]),
         #Orientationd(keys=["image", "roi"], axcodes="RAS"),
     ])
