@@ -127,7 +127,7 @@ class Train:
             embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, 768)
             labels = torch.arange(num_elements).repeat(btneck.shape[0]) 
             weigth = btneck.shape[0] / self.batch_size
-            contrast_loss += weigth * (self.contrast_loss(embeddings, labels))['losses']
+            contrast_loss += weigth * (self.contrast_loss(embeddings, labels))['loss']['losses']
             
         self.losses_dict['contrast_loss'] = contrast_loss
         
