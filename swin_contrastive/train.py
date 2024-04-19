@@ -48,6 +48,7 @@ class Train:
                 if self.epoch % self.log_summary_interval == 0:
                     self.test_epoch()
                     self.log_summary_writer()
+                self.lr_scheduler.step()
 
             self.total_progress_bar.write('Finish training')
             self.save_model('./model_final_weights.pth')
@@ -70,7 +71,6 @@ class Train:
         
     def train_step(self,batch):
         # update the learning rate of the optimizer
-        self.lr_scheduler.adjust_learning_rate(self.optimizer, self.epoch)
         self.optimizer.zero_grad()
 
         # prepare batch
