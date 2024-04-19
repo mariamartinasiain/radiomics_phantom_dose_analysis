@@ -129,7 +129,7 @@ class Train:
             weigth = btneck.shape[0] / self.batch_size
             llss = (self.contrast_loss(embeddings, labels))
             print("here is the loss" , llss)
-            contrast_loss += weigth * llss['loss']['losses']
+            contrast_loss += weigth * llss
             
         self.losses_dict['contrast_loss'] = contrast_loss
         
