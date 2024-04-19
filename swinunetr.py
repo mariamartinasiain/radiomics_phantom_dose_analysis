@@ -83,27 +83,29 @@ def custom_collate_fn(batch, default_spacing=None):
 
     if not filtered_batch or all(item is None for item in filtered_batch):
         raise ValueError("Batch is empty after filtering out None values.")
-    
-    # Set the maximum size
-    max_size = (1, 512, 512, 400)  # Assuming your data is always in the format (C, H, W, D)
 
-    # Pad each item in the batch to the max size
+    # Assuming the image tensor is stored under the key 'image' in the dictionary
+    max_size = (1, 512, 512, 400)  # Adjust based on the dimensions of your data
+
+    # Pad each item's tensor in the batch to the max size
     padded_batch = []
     for item in filtered_batch:
+        tensor = item['image']  # Access the tensor
         # Calculate the padding size required for each dimension
         pad_size = [
-            0, max_size[3] - item.shape[3],  # Padding for depth
-            0, max_size[2] - item.shape[2],  # Padding for height
-            0, max_size[1] - item.shape[1],  # Padding for width
+            0, max_size[3] - tensor.shape[3],  # Padding for depth
+            0, max_size[2] - tensor.shape[2],  # Padding for height
+            0, max_size[1] - tensor.shape[1],  # Padding for width
             0, 0  # No padding for channels in this example
         ]
-        # Pad the item and add to the padded batch
-        padded_item = F.pad(item, pad_size, "constant", 0)
-        padded_batch.append(padded_item)
+        # Pad the tensor
+        padded_tensor = F.pad(tensor, pad_size, "constant", 0)
+        item['image'] = padded_tensor  # Replace the original tensor with the padded one
+        padded_batch.append(item)
 
     try:
-        # Now that all items are the same size, we can use the default collate function
-        return torch.stack(padded_batch, dim=0)
+        # Use the default collate function to correctly handle the dictionaries
+        return torch.utils.data.dataloader.default_collate(padded_batch)
     except TypeError as e:
         raise RuntimeError(f"Failed to collate batch: {e}")
 
