@@ -107,7 +107,7 @@ class Train:
     def classification_step(self, features, labels):
         if self.classifier is None:
             print(f"the classifier is {self.classifier}")
-            self.classfier = self.autoclassifier(features.size(1), labels.max().item() + 1)
+            self.classifier = self.autoclassifier(features.size(1), labels.max().item() + 1)
             print(f"noy the classifier is {self.classifier}")
         logits = self.classifier(features)
         classification_loss = self.classification_loss(logits, labels)
