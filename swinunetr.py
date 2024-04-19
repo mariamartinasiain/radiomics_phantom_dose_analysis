@@ -198,7 +198,7 @@ def main():
         CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
         #DebugTransform(),  # Check the shape right after resizing
         #MaskIntensityd(keys=["image"], mask_key="roi"),
-        AsDiscreted(keys=["roi"], to_onehot=False, n_classes=6),
+        AsDiscreted(keys=["roi"], n_classes=6),
         ToTensord(keys=["image", "roi"]),
         #Orientationd(keys=["image", "roi"], axcodes="RAS"),
     ])
@@ -206,6 +206,7 @@ def main():
     datafiles = load_data(jsonpath)
     dataset = Dataset(data=datafiles, transform=transforms)
     dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
+    #qq chose comme testload = DataLoader(da.....
 
     slice_num = 20
 
