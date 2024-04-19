@@ -248,7 +248,7 @@ def main():
     transforms = Compose([
         LoadImaged(keys=["image", "roi"]),
         EnsureChannelFirstd(keys=["image", "roi"]),
-        CropOnROId(keys=["image"], roi_key="roi", size=(128, 128, 128)),  # Example size
+        CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
         AsDiscreted(keys=["roi"], n_classes=6),
         ToTensord(keys=["image", "roi"])
     ])
