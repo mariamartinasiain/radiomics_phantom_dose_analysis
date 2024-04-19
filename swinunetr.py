@@ -177,7 +177,7 @@ class CropOnROId(MapTransform, LazyTransform):
         #print("LA SHAPE DE SIZE",(torch.tensor(self.size)).shape)
         for key in self.key_iterator(d):
             d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
-            d[self.id_key] = d[self.roi_key]
+            #d[self.id_key] = d['roi_label']
         return d
 
 

@@ -77,7 +77,7 @@ class Train:
         # prepare batch
         imgs_s = batch["image"].cuda()
         all_labels = batch["roi_label"].cuda()
-        ids = batch["id"] 
+        ids = all_labels
 
         # model inference
         latents = self.model.swinViT(imgs_s)
