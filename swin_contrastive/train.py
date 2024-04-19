@@ -245,7 +245,6 @@ def get_model():
     return model
 
 def main():
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     transforms = Compose([
         LoadImaged(keys=["image", "roi"]),
         EnsureChannelFirstd(keys=["image", "roi"]),
