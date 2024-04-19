@@ -241,6 +241,7 @@ def get_model():
     weight = torch.load("./model_swinvit.pt")
     model.load_from(weights=weight)
     model = model.to('cuda')
+    return model
 
 def main():
     transforms = Compose([
