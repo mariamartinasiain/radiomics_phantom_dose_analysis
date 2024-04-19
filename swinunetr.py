@@ -67,18 +67,18 @@ jsonpath = "./dataset_info.json"
 
 
 def filter_none(data, default_spacing=1.0):
-    """Recursively filter out None values in the data and provide defaults for specific keys."""
+    """Recursively filter out None values in the data and provide defaults for missing keys."""
     if isinstance(data, dict):
-        data = {k: filter_none(v, default_spacing) for k, v in data.items() if v is not None}
+        filtered = {k: filter_none(v, default_spacing) for k, v in data.items() if v is not None}
         if 'SpacingBetweenSlices' not in data and default_spacing is not None:
-            data['SpacingBetweenSlices'] = default_spacing
-        return data
+            filtered['SpacingBetweenSlices'] = default_spacing
+        return filtered
     elif isinstance(data, list):
         return [filter_none(item, default_spacing) for item in data if item is not None]
     return data
 
 import torch.nn.functional as F
-def custom_collate_fn(batch, default_spacing=None):
+def custom_collate_fn(batch, default_spacing=1.0):
     filtered_batch = [filter_none(item, default_spacing) for item in batch]
 
     if not filtered_batch or all(item is None for item in filtered_batch):
