@@ -228,6 +228,17 @@ def create_datasets(data_list, test_size=0.2, seed=42):
     return train_data, test_data
 
 
+from monai.transforms import Transform
+
+class EncodeLabels(Transform):
+    def __init__(self, encoder):
+        self.encoder = encoder
+
+    def __call__(self, data):
+        data['roi_label'] = self.encoder.transform([data['roi_label']])[0]  # Encode the label
+        return data
+
+
 def get_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     target_size = (64, 64, 32)  
@@ -245,11 +256,15 @@ def get_model():
     return model
 
 def main():
+    from sklearn.preprocessing import LabelEncoder
+    labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
+    encoder = LabelEncoder()
+    encoder.fit(labels)
     transforms = Compose([
         LoadImaged(keys=["image", "roi"]),
         EnsureChannelFirstd(keys=["image", "roi"]),
         CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
-        AsDiscreted(keys=["roi_label"], n_classes=6),
+        EncodeLabels(encoder=encoder),
         DebugTransform(),
         ToTensord(keys=["image"])
     ])
