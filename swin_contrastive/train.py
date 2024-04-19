@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
 from monai.data import DataLoader, Dataset
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord
-from swinunetr import CropOnROId
+from ..swinunetr import CropOnROId
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 
