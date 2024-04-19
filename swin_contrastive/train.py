@@ -251,7 +251,7 @@ def main():
         CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
         AsDiscreted(keys=["roi_label"], n_classes=6),
         DebugTransform(),
-        ToTensord(keys=["image", "roi_label"])
+        ToTensord(keys=["image"])
     ])
 
     jsonpath = "./dataset_info.json"
