@@ -247,7 +247,7 @@ def main():
         LoadImaged(keys=["image", "roi"]),
         EnsureChannelFirstd(keys=["image", "roi"]),
         CropOnROId(keys=["image"], roi_key="roi", size=(128, 128, 128)),  # Example size
-        AsDiscreted(keys=["roi"], to_onehot=False, n_classes=6),
+        AsDiscreted(keys=["roi"], n_classes=6),
         ToTensord(keys=["image", "roi"])
     ])
 
