@@ -87,7 +87,7 @@ def custom_collate_fn(batch, default_spacing=1.0):
     max_size = (1, 512, 512, 400)  # Adjust based on the dimensions of your data
 
     # Pad each item's tensor in the batch to the max size
-    padded_batch = []
+    """padded_batch = []
     for item in filtered_batch:
         tensor = item['image']  # Access the tensor
         # Calculate the padding size required for each dimension
@@ -100,11 +100,11 @@ def custom_collate_fn(batch, default_spacing=1.0):
         # Pad the tensor
         padded_tensor = F.pad(tensor, pad_size, "constant", 0)
         item['image'] = padded_tensor  # Replace the original tensor with the padded one
-        padded_batch.append(item)
+        padded_batch.append(item)"""
 
     try:
         # Use the default collate function to correctly handle the dictionaries
-        return torch.utils.data.dataloader.default_collate(padded_batch)
+        return torch.utils.data.dataloader.default_collate(filtered_batch)
     except TypeError as e:
         raise RuntimeError(f"Failed to collate batch: {e}")
 
