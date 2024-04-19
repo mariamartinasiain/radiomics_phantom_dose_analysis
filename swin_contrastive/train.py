@@ -3,7 +3,7 @@ import queue
 import re
 import numpy as np
 from sklearn.model_selection import GroupShuffleSplit
-import tqdm
+from tqdm import tqdm
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
