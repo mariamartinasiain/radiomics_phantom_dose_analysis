@@ -66,16 +66,19 @@ import torch
 jsonpath = "./dataset_info.json"
 
 
-def filter_none(data):
-    """Recursively filter out None values in the data."""
+def filter_none(data, default_spacing=1.0):
+    """Recursively filter out None values in the data and provide defaults for specific keys."""
     if isinstance(data, dict):
-        return {k: filter_none(v) for k, v in data.items() if v is not None}
+        data = {k: filter_none(v, default_spacing) for k, v in data.items() if v is not None}
+        if 'SpacingBetweenSlices' not in data and default_spacing is not None:
+            data['SpacingBetweenSlices'] = default_spacing
+        return data
     elif isinstance(data, list):
-        return [filter_none(item) for item in data if item is not None]
+        return [filter_none(item, default_spacing) for item in data if item is not None]
     return data
 
-def custom_collate_fn(batch):
-    filtered_batch = [filter_none(item) for item in batch]
+def custom_collate_fn(batch, default_spacing=None):
+    filtered_batch = [filter_none(item, default_spacing) for item in batch]
 
     if not filtered_batch or all(item is None for item in filtered_batch):
         raise ValueError("Batch is empty after filtering out None values.")
@@ -83,8 +86,7 @@ def custom_collate_fn(batch):
     try:
         return default_collate(filtered_batch)
     except TypeError as e:
-        # Handle or log the TypeError if it still occurs
-        raise RuntimeError("Failed to collate batch: {}".format(e))
+        raise RuntimeError(f"Failed to collate batch: {e}")
 
 
 class DebugTransform(Transform):
