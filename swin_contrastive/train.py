@@ -76,7 +76,7 @@ class Train:
 
         # prepare batch
         imgs_s = batch["image"].cuda()
-        all_labels = batch["roi"].cuda()
+        all_labels = batch["roi_label"].cuda()
         ids = batch["id"] 
 
         # model inference
