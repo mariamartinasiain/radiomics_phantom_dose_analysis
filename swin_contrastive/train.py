@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
 from monai.data import DataLoader, Dataset
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord
-from swinunetr import CropOnROId, custom_collate_fn
+from swinunetr import CropOnROId, custom_collate_fn,DebugTransform
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 
@@ -250,6 +250,7 @@ def main():
         EnsureChannelFirstd(keys=["image", "roi"]),
         CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
         AsDiscreted(keys=["roi"], n_classes=6),
+        DebugTransform(),
         ToTensord(keys=["image", "roi"])
     ])
 
