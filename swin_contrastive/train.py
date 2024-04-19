@@ -246,7 +246,7 @@ def get_model():
 
 def main():
     transforms = Compose([
-        LoadImaged(keys=["image", "roi","roi_label"]),
+        LoadImaged(keys=["image", "roi"]),
         EnsureChannelFirstd(keys=["image", "roi"]),
         CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
         AsDiscreted(keys=["roi_label"], n_classes=6),
