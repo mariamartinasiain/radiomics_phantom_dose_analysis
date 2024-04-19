@@ -246,12 +246,12 @@ def get_model():
 
 def main():
     transforms = Compose([
-        LoadImaged(keys=["image", "roi"]),
+        LoadImaged(keys=["image", "roi","roi_label"]),
         EnsureChannelFirstd(keys=["image", "roi"]),
         CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
-        AsDiscreted(keys=["roi"], n_classes=6),
+        AsDiscreted(keys=["roi_label"], n_classes=6),
         DebugTransform(),
-        ToTensord(keys=["image", "roi"])
+        ToTensord(keys=["image", "roi_label"])
     ])
 
     jsonpath = "./dataset_info.json"
