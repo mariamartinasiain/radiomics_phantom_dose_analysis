@@ -325,16 +325,17 @@ Extension of PersistentDataset, tt can also cache the result of first N transfor
 """
 
 
-    dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.005,progress=True,num_init_workers=8, num_replace_workers=8)
-    train_loader = DataLoader(dataset, batch_size=16, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
-    test_loader = DataLoader(dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.07,progress=True,num_init_workers=8, num_replace_workers=8)
+    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
     data_loader = {'train': train_loader, 'test': test_loader}
     
     model = get_model()
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.01)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 25,dataset)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 25,train_dataset)
     
     trainer.train()
 
