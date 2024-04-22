@@ -107,6 +107,10 @@ class Train:
     def classification_step(self, features, labels):
         if self.classifier is None:
             print(f"the classifier is {self.classifier}")
+            print(f"the features size is {features.size}")
+            print(f"the labels size is {labels.size}")
+            print(f"the labels max is {labels.max().item()}")
+            print(f"the labels is {labels}")
             self.classifier = self.autoclassifier(features.size(1), labels.max().item() + 1)
             print(f"noy the classifier is {self.classifier}")
         logits = self.classifier(features)
@@ -242,6 +246,16 @@ class EncodeLabels(Transform):
         data['roi_label'] = self.encoder.transform([data['roi_label']])[0]  # Encode the label
         return data
 
+class DebugTransform2(Transform):
+    def __call__(self, data):
+        # Print the shape of the image tensor
+        print("Image shape:", data['image'].shape)
+        # Print the label and its type
+        print("Encoded label:", data['roi_label'], "Type:", type(data['roi_label']))
+        # Optionally, check the unique values in the label if it's a segmentation map
+        #if isinstance(data['roi_label'], np.ndarray):
+        #    print("Unique values in label:", np.unique(data['roi_label']))
+        return data
 
 def get_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -270,6 +284,7 @@ def main():
         CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
         EncodeLabels(encoder=encoder),
         DebugTransform(),
+        DebugTransform2(),
         ToTensord(keys=["image"])
     ])
 
