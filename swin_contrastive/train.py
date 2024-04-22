@@ -111,7 +111,7 @@ class Train:
             print(f"the labels size is {labels.size}")
             print(f"the labels max is {labels.max().item()}")
             print(f"the labels is {labels}")
-            self.classifier = self.autoclassifier(features.size(1), labels.max().item() + 1)
+            self.classifier = self.autoclassifier(features.size(1), 6)
             print(f"noy the classifier is {self.classifier}")
         logits = self.classifier(features)
         classification_loss = self.classification_loss(logits, labels)
