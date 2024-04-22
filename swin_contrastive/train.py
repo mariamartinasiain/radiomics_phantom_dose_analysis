@@ -49,7 +49,7 @@ class Train:
             self.train_epoch()
             if self.epoch % self.log_summary_interval == 0:
                 self.test_epoch()
-                self.log_summary_writer()
+                #self.log_summary_writer()
             self.lr_scheduler.step()
             self.dataset.update_cache()
         
