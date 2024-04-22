@@ -63,9 +63,9 @@ class Train:
         for step, batch in enumerate(epoch_iterator):
             self.model.train()
             loss,classif_acc = self.train_step(batch)
-            running_loss += loss.item()
+            running_loss += loss['total_loss'].item()
             average_loss = running_loss / (step + 1)
-            epoch_iterator.set_description("Training ({}/ {}) (loss={:.4f}), classif_acc={:.4f}".format(step + 1, total_batches, average_loss,classif_acc))
+            epoch_iterator.set_description("Training ({}/ {}) (loss={:.4f}), epoch contrastive loss={:.4f}, epoch classification loss={:.4f}, classif_acc={:.4f}".format(step + 1, total_batches, average_loss,loss['contrast_loss'],loss['classification_loss'],classif_acc))
             epoch_iterator.refresh()
         self.total_progress_bar.update(1)
         self.epoch += 1
@@ -102,18 +102,14 @@ class Train:
         self.optimizer.step()
 
         
-        return self.losses_dict['total_loss'], accu
+        return self.losses_dict, accu
 
     def classification_step(self, features, labels):
+        print(f"the labels is {labels}")
         if self.classifier is None:
-            print(f"the classifier is {self.classifier}")
-            print(f"the features size is {features.size}")
-            print(f"the labels size is {labels.size}")
-            print(f"the labels max is {labels.max().item()}")
-            print(f"the labels is {labels}")
             self.classifier = self.autoclassifier(features.size(1), 6)
-            print(f"noy the classifier is {self.classifier}")
         logits = self.classifier(features)
+        print(f"the logits is {logits}")
         classification_loss = self.classification_loss(logits, labels)
         self.losses_dict['classification_loss'] = classification_loss
 
@@ -169,7 +165,7 @@ class Train:
         torch.save(self.model.state_dict(), path)
         print(f'Model weights saved to {path}')
 
-def compute_accuracy(logits, true_labels, acc_metric='total_mean', print_result=False):
+def compute_accuracy(logits, true_labels, acc_metric='total_mean', print_result=False): #a revoir
     assert logits.size(0) == true_labels.size(0)
     if acc_metric == 'total_mean':
         predictions = torch.max(logits, dim=1)[1]
