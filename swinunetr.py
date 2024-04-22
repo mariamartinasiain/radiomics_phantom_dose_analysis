@@ -67,39 +67,26 @@ jsonpath = "./dataset_info.json"
 
 
 
-def filter_none(data, default_spacing=1.0):
-    """Recursively filter out None values in the data and provide defaults for missing keys."""
-    if isinstance(data, dict):
-        filtered = {k: filter_none(v, default_spacing) for k, v in data.items() if v is not None}
-        # Ensure SpacingBetweenSlices is a tensor if expected to be included in tensor operations
-        filtered['SpacingBetweenSlices'] = torch.tensor([default_spacing])
-        return filtered
-    elif isinstance(data, list):
-        return [filter_none(item, default_spacing) for item in data if item is not None]
-    return data
+def filter_images(batch):
+    """Extracts only image tensors from the batch for collation."""
+    images = []
+    for item in batch:
+        if 'image' in item:
+            images.append(item['image'])
+    return images
 
-def custom_collate_fn(batch, default_spacing=1.0):
-    filtered_batch = [filter_none(item, default_spacing) for item in batch]
+def custom_collate_fn(batch):
+    # Filter out everything except the images
+    images = filter_images(batch)
 
-    if not filtered_batch or all(item is None for item in filtered_batch):
-        raise ValueError("Batch is empty after filtering out None values.")
-
-    # Debugging: Print types and shapes of items in the batch
-    for item in filtered_batch:
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if isinstance(value, torch.Tensor):
-                    print(f"Key: {key}, Tensor Shape: {value.shape}, Type: {value.dtype}")
-                else:
-                    print(f"Key: {key}, Type: {type(value)}")
+    if not images:
+        raise ValueError("Batch is empty after filtering out non-image data.")
 
     try:
-        # Use the default collate function to correctly handle the dictionaries
-        return torch.utils.data.dataloader.default_collate(filtered_batch)
-    except TypeError as e:
-        raise RuntimeError(f"Failed to collate batch due to TypeError: {e}")
-    except RuntimeError as e:
-        raise RuntimeError(f"Failed to collate batch due to RuntimeError: {e}")
+        # Collate the images using the default collate function
+        return default_collate(images)
+    except Exception as e:
+        raise RuntimeError(f"Failed to collate batch: {str(e)}")
 
 
 class DebugTransform(Transform):
