@@ -156,7 +156,7 @@ class Train:
             testing_iterator = tqdm(self.test_loader, desc="Testing (X / X Steps) (loss=X.X)", dynamic_ncols=True)
             for step,batch in enumerate(testing_iterator):
                 imgs_s = batch["image"].cuda()
-                all_labels = batch["roi"].cuda()
+                all_labels = batch["roi_labels"].cuda()
                 logits = self.classifier(torch.mean(self.model.swinViT(imgs_s)[4], dim=(2, 3, 4)))
                 test_accuracy = compute_accuracy(logits, all_labels, acc_metric=self.acc_metric)
                 total_test_accuracy.append(test_accuracy)
