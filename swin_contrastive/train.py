@@ -299,9 +299,9 @@ def main():
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
 
-    dataset = CacheDataset(data=train_data, transform=transforms,cache_rate=0.5, num_workers=None)
-    train_loader = DataLoader(dataset, batch_size=32, shuffle=False,collate_fn=custom_collate_fn)
-    test_loader = DataLoader(dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
+    dataset = CacheDataset(data=train_data, transform=transforms,cache_rate=0.5, num_workers=16)
+    train_loader = DataLoader(dataset, batch_size=32, shuffle=False,collate_fn=custom_collate_fn, num_workers=2)
+    test_loader = DataLoader(dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=3)
     data_loader = {'train': train_loader, 'test': test_loader}
     
     model = get_model()
