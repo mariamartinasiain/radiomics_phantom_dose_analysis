@@ -326,7 +326,7 @@ Extension of PersistentDataset, tt can also cache the result of first N transfor
 
 
     dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.005,progress=True,num_init_workers=8, num_replace_workers=8)
-    train_loader = DataLoader(dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
+    train_loader = DataLoader(dataset, batch_size=16, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
     data_loader = {'train': train_loader, 'test': test_loader}
     
