@@ -67,24 +67,31 @@ jsonpath = "./dataset_info.json"
 
 
 
-def filter_images(batch):
-    """Extracts only image tensors from the batch for collation."""
-    images = []
-    for item in batch:
-        if 'image' in item:
-            images.append(item['image'])
-    return images
+def filter_none(data, default_spacing=1.0):
+    """Recursively filter out None values in the data and provide defaults for missing keys."""
+    if isinstance(data, dict):
+        filtered = {k: filter_none(v, default_spacing) for k, v in data.items() if v is not None}
+        # Ensure SpacingBetweenSlices is a tensor if expected to be included in tensor operations
+        filtered['SpacingBetweenSlices'] = torch.tensor([default_spacing])
+        return filtered
+    elif isinstance(data, list):
+        return [filter_none(item, default_spacing) for item in data if item is not None]
+    return data
 
-def custom_collate_fn(batch):
-    # Filter out everything except the images
-    images = filter_images(batch)
+def custom_collate_fn(batch, default_spacing=1.0):
+    filtered_batch = [filter_none(item, default_spacing) for item in batch]
 
-    if not images:
-        raise ValueError("Batch is empty after filtering out non-image data.")
+    if not filtered_batch or all(item is None for item in filtered_batch):
+        raise ValueError("Batch is empty after filtering out None values.")
+
+    # Remove the ROI from the data to be collated, since it's not needed after image resizing
+    for item in filtered_batch:
+        if 'roi' in item:
+            del item['roi']  # Remove the ROI key entirely if it's no longer needed
 
     try:
-        # Collate the images using the default collate function
-        return default_collate(images)
+        # Use the default collate function to correctly handle the dictionaries without the ROI
+        return torch.utils.data.dataloader.default_collate(filtered_batch)
     except Exception as e:
         raise RuntimeError(f"Failed to collate batch: {str(e)}")
 
