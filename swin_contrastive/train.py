@@ -266,7 +266,7 @@ class DebugTransform2(Transform):
 
 def get_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-    target_size = (64, 64, 32)  
+    target_size = (64, 64, 64)  
     model = SwinUNETR(
         img_size=target_size,
         in_channels=1,
@@ -288,7 +288,7 @@ def main():
     transforms = Compose([
         LoadImaged(keys=["image", "roi"]),
         EnsureChannelFirstd(keys=["image", "roi"]),
-        CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
+        CropOnROId(keys=["image"], roi_key="roi", size=(64, 64, 64)), 
         EncodeLabels(encoder=encoder),
         #DebugTransform(),
         #DebugTransform2(),
