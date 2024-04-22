@@ -124,8 +124,11 @@ class Train:
             print("boolids",boolids)
             
             #bottleneck
+            print("latents size",len(latents))
             btneck = latents[4]  # (batch_size, 768, D, H, W)
+            print("btneck size",btneck.size())
             btneck = btneck[boolids]
+            print("new btneck size",btneck.size())
             num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
             print("num_elements",num_elements)
         
