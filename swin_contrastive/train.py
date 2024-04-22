@@ -16,7 +16,7 @@ from pytorch_metric_learning.losses import NTXentLoss
 
 class Train:
     
-    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20)):
+    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20)):
         self.model = model
         self.classifier = classifier
         self.data_loader = data_loader
@@ -27,6 +27,7 @@ class Train:
         self.classification_loss = torch.nn.CrossEntropyLoss()
         self.acc_metric = acc_metric
         self.batch_size = data_loader['train'].batch_size
+        self.dataset = dataset
 
         self.epoch = 0
         self.log_summary_interval = 2
@@ -40,20 +41,22 @@ class Train:
         
     
     def train(self):
-            self.total_progress_bar.write('Start training')
-
-            while self.epoch < self.num_epoch:
-                self.train_loader = self.data_loader['train'] #il faudra que le dataloader monai ne mette pas dans le meme batch des ct scan de la meme serie (cad des memes repetitions d'un scan) -> voir Sampler pytorch
-                self.test_loader = self.data_loader['test']
-                self.train_epoch()
-                if self.epoch % self.log_summary_interval == 0:
-                    self.test_epoch()
-                    self.log_summary_writer()
-                self.lr_scheduler.step()
-
-            self.total_progress_bar.write('Finish training')
-            self.save_model('./model_final_weights.pth')
-            return self.acc_dict['best_test_acc']
+        self.total_progress_bar.write('Start training')
+        self.dataset.start()
+        while self.epoch < self.num_epoch:
+            self.train_loader = self.data_loader['train'] #il faudra que le dataloader monai ne mette pas dans le meme batch des ct scan de la meme serie (cad des memes repetitions d'un scan) -> voir Sampler pytorch
+            self.test_loader = self.data_loader['test']
+            self.train_epoch()
+            if self.epoch % self.log_summary_interval == 0:
+                self.test_epoch()
+                self.log_summary_writer()
+            self.lr_scheduler.step()
+            self.dataset.update_cache()
+        
+        self.dataset.shutdown()
+        self.total_progress_bar.write('Finish training')
+        self.save_model('./model_final_weights.pth')
+        return self.acc_dict['best_test_acc']
 
     def train_epoch(self):
         epoch_iterator = tqdm(self.train_loader, desc="Training (X / X Steps) (loss=X.X)", dynamic_ncols=True)
@@ -299,7 +302,7 @@ def main():
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
 
-    dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.3,progress=True)
+    dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.05,progress=True)
     train_loader = DataLoader(dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
     data_loader = {'train': train_loader, 'test': test_loader}
@@ -308,7 +311,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.01)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 25)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 25,dataset)
     
     trainer.train()
 
