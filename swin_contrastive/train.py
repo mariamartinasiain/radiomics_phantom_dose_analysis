@@ -105,11 +105,11 @@ class Train:
         return self.losses_dict, accu
 
     def classification_step(self, features, labels):
-        print(f"the labels is {labels}")
+        #print(f"the labels is {labels}")
         if self.classifier is None:
             self.classifier = self.autoclassifier(features.size(1), 6)
         logits = self.classifier(features)
-        print(f"the logits is {logits}")
+        #print(f"the logits is {logits}")
         classification_loss = self.classification_loss(logits, labels)
         self.losses_dict['classification_loss'] = classification_loss
 
@@ -117,31 +117,31 @@ class Train:
 
     def contrastive_step(self, latents,ids): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
         contrast_loss = 0
-        print("ids",ids)
+        #print("ids",ids)
         for id in torch.unique(ids):
-            print("id",id)
+            #print("id",id)
             boolids = (ids == id)
-            print("boolids",boolids)
+            #print("boolids",boolids)
             
             #bottleneck
-            print("latents size",len(latents))
+            #print("latents size",len(latents))
             btneck = latents[4]  # (batch_size, 768, D, H, W)
-            print("btneck size",btneck.size())
+            #print("btneck size",btneck.size())
             btneck = btneck[boolids]
-            print("new btneck size",btneck.size())
+            #print("new btneck size",btneck.size())
             num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
-            print("num_elements",num_elements)
+            #print("num_elements",num_elements)
         
             # (batch_size, D, H, W, 768) -> (batch_size * num_elements, 768)
             embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, 768)
             labels = torch.arange(num_elements).repeat(btneck.shape[0]) 
             weigth = btneck.shape[0] / self.batch_size
-            print("weigth",weigth)
-            print("embeddings size",embeddings.size())
-            print("labels size",labels.size())
+            #print("weigth",weigth)
+            #print("embeddings size",embeddings.size())
+            #print("labels size",labels.size())
             llss = (self.contrast_loss(embeddings, labels))
             
-            print("here is the loss" , llss)
+            #print("here is the loss" , llss)
             contrast_loss += weigth * llss
             
         self.losses_dict['contrast_loss'] = contrast_loss
