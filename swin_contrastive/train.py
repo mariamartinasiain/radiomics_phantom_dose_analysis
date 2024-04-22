@@ -117,6 +117,7 @@ class Train:
 
     def contrastive_step(self, latents,ids): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
         contrast_loss = 0
+        print("ids",ids)
         for id in torch.unique(ids):
             boolids = (ids == id)
         
@@ -279,8 +280,8 @@ def main():
         EnsureChannelFirstd(keys=["image", "roi"]),
         CropOnROId(keys=["image"], roi_key="roi", size=(32, 32, 32)), 
         EncodeLabels(encoder=encoder),
-        DebugTransform(),
-        DebugTransform2(),
+        #DebugTransform(),
+        #DebugTransform2(),
         ToTensord(keys=["image"])
     ])
 
