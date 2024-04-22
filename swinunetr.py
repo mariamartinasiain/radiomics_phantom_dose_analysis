@@ -66,18 +66,17 @@ import torch
 jsonpath = "./dataset_info.json"
 
 
+
 def filter_none(data, default_spacing=1.0):
     """Recursively filter out None values in the data and provide defaults for missing keys."""
     if isinstance(data, dict):
-        data['SpacingBetweenSlices'] = None
         filtered = {k: filter_none(v, default_spacing) for k, v in data.items() if v is not None}
-        #filtered['SpacingBetweenSlices'] = default_spacing
+        # Ensure SpacingBetweenSlices is a tensor if expected to be included in tensor operations
+        filtered['SpacingBetweenSlices'] = torch.tensor([default_spacing])
         return filtered
     elif isinstance(data, list):
         return [filter_none(item, default_spacing) for item in data if item is not None]
     return data
-
-import torch.nn.functional as F
 
 def custom_collate_fn(batch, default_spacing=1.0):
     filtered_batch = [filter_none(item, default_spacing) for item in batch]
@@ -85,30 +84,22 @@ def custom_collate_fn(batch, default_spacing=1.0):
     if not filtered_batch or all(item is None for item in filtered_batch):
         raise ValueError("Batch is empty after filtering out None values.")
 
-    # Assuming the image tensor is stored under the key 'image' in the dictionary
-    max_size = (1, 512, 512, 400)  # Adjust based on the dimensions of your data
-
-    # Pad each item's tensor in the batch to the max size
-    """padded_batch = []
+    # Debugging: Print types and shapes of items in the batch
     for item in filtered_batch:
-        tensor = item['image']  # Access the tensor
-        # Calculate the padding size required for each dimension
-        pad_size = [
-            0, max_size[3] - tensor.shape[3],  # Padding for depth
-            0, max_size[2] - tensor.shape[2],  # Padding for height
-            0, max_size[1] - tensor.shape[1],  # Padding for width
-            0, 0  # No padding for channels in this example
-        ]
-        # Pad the tensor
-        padded_tensor = F.pad(tensor, pad_size, "constant", 0)
-        item['image'] = padded_tensor  # Replace the original tensor with the padded one
-        padded_batch.append(item)"""
+        if isinstance(item, dict):
+            for key, value in item.items():
+                if isinstance(value, torch.Tensor):
+                    print(f"Key: {key}, Tensor Shape: {value.shape}, Type: {value.dtype}")
+                else:
+                    print(f"Key: {key}, Type: {type(value)}")
 
     try:
         # Use the default collate function to correctly handle the dictionaries
         return torch.utils.data.dataloader.default_collate(filtered_batch)
     except TypeError as e:
-        raise RuntimeError(f"Failed to collate batch: {e}")
+        raise RuntimeError(f"Failed to collate batch due to TypeError: {e}")
+    except RuntimeError as e:
+        raise RuntimeError(f"Failed to collate batch due to RuntimeError: {e}")
 
 
 class DebugTransform(Transform):
