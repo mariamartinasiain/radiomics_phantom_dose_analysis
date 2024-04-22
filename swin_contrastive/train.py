@@ -299,7 +299,7 @@ def main():
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
 
-    train_loader = DataLoader(Dataset(data=train_data, transform=transforms), batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
+    train_loader = DataLoader(Dataset(data=train_data, transform=transforms), batch_size=64, shuffle=False,collate_fn=custom_collate_fn)
     test_loader = DataLoader(Dataset(data=test_data, transform=transforms), batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
     data_loader = {'train': train_loader, 'test': test_loader}
     
