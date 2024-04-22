@@ -119,18 +119,25 @@ class Train:
         contrast_loss = 0
         print("ids",ids)
         for id in torch.unique(ids):
+            print("id",id)
             boolids = (ids == id)
-        
+            print("boolids",boolids)
+            
             #bottleneck
             btneck = latents[4]  # (batch_size, 768, D, H, W)
             btneck = btneck[boolids]
             num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
+            print("num_elements",num_elements)
         
             # (batch_size, D, H, W, 768) -> (batch_size * num_elements, 768)
             embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, 768)
             labels = torch.arange(num_elements).repeat(btneck.shape[0]) 
             weigth = btneck.shape[0] / self.batch_size
+            print("weigth",weigth)
+            print("embeddings size",embeddings.size())
+            print("labels size",labels.size())
             llss = (self.contrast_loss(embeddings, labels))
+            
             print("here is the loss" , llss)
             contrast_loss += weigth * llss
             
