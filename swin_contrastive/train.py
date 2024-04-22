@@ -308,7 +308,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.01)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 10)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 25)
     
     trainer.train()
 
