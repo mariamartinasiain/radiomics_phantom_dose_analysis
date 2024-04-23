@@ -24,7 +24,7 @@ configurations = {
     'pcapyradiomics': ([1, 3, 5, 9], 20),
     'pcaswinunetr': ([1, 3, 5, 9], 20)
 }
-classif_type = 'roi_large'
+classif_type = 'scanner'
 qmg = None#10
 for model, info_list in configurations.items():
     scanners,latent_size = info_list
