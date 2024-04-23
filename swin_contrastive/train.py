@@ -94,8 +94,10 @@ class Train:
         self.contrastive_step(latents,ids)
         
         features = torch.mean(bottleneck, dim=(2, 3, 4))
-        accu = self.classification_step(features, all_labels)
-        print(f"Train Accuracy: {accu}%")
+        #accu = self.classification_step(features, all_labels)
+        #print(f"Train Accuracy: {accu}%")
+        self.losses_dict['classification_loss'] = 0.0
+        
         
         #image reconstruction
         #reconstructed_imgs = self.reconstruct_image(latents)
