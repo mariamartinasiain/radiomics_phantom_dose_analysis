@@ -243,6 +243,9 @@ def group_data(data_list, mode='scanner'):
         group_ids.append(item['group_id'])  # Ajouter le group_id à la liste
 
     return np.array(group_ids)
+
+def create_datasets(data_list, test_size=0.2, seed=42):
+    groups = group_data(data_list, mode='scanner') 
     
     
     splitter = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=seed)
