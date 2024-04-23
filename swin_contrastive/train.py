@@ -218,25 +218,31 @@ def load_json(json_path):
         data_list = json.load(file)
     return data_list
 
-def extract_base(description):
-    """Extract the base part of the description, excluding any numeric suffix."""
-    match = re.match(r"(.+)(-\s#\d+)$", description)
-    if match:
-        return match.group(1).strip()
-    return description
-
 def group_data(data_list, mode='scanner'):
     group_map = {}
+
+    # Helper function to extract base description for 'repetition' mode
+    def extract_base(description):
+        base = re.match(r"(.+)(-\s#\d+)$", description)
+        if base:
+            return base.group(1).strip()
+        return description
+
+    group_ids = []  # Liste pour collecter les group_id
     for item in data_list:
+        series_description = item['info']['SeriesDescription']
         if mode == 'scanner':
-            group_key = item['info']['SeriesDescription'][:2]
+            group_key = series_description[:2]
         elif mode == 'repetition':
-            group_key = extract_base(item['info']['SeriesDescription'])
+            group_key = extract_base(series_description)
         
         if group_key not in group_map:
             group_map[group_key] = len(group_map)
+        
         item['group_id'] = group_map[group_key]
-    return data_list
+        group_ids.append(item['group_id'])  # Ajouter le group_id à la liste
+
+    return np.array(group_ids) 
 
 def create_datasets(data_list, test_size=0.2, seed=42):
     data_list = group_data(data_list, mode='scanner') 
