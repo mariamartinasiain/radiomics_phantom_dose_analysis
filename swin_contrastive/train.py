@@ -165,8 +165,9 @@ class Train:
             for step,batch in enumerate(testing_iterator):
                 imgs_s = batch["image"].cuda()
                 all_labels = batch["roi_label"].cuda()
-                logits = self.classifier(torch.mean(self.model.swinViT(imgs_s)[4], dim=(2, 3, 4)))
-                test_accuracy = compute_accuracy(logits, all_labels, acc_metric=self.acc_metric)
+                #logits = self.classifier(torch.mean(self.model.swinViT(imgs_s)[4], dim=(2, 3, 4)))
+                #test_accuracy = compute_accuracy(logits, all_labels, acc_metric=self.acc_metric)
+                test_accuracy = 0
                 total_test_accuracy.append(test_accuracy)
                 testing_iterator.set_description(f"Testing ({step + 1}/{len(self.test_loader)}) (accuracy={test_accuracy:.4f})")
         avg_test_accuracy = np.mean(total_test_accuracy)
