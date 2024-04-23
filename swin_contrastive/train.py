@@ -241,7 +241,7 @@ def group_data(data_list, mode='scanner'):
         
         item['group_id'] = group_map[group_key]
         group_ids.append(item['group_id'])  # Ajouter le group_id à la liste
-
+    print("Correspondance des clés et des numéros:", group_map)
     return np.array(group_ids)
 
 def create_datasets(data_list, test_size=0.2, seed=42):
