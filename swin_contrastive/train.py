@@ -256,6 +256,10 @@ def create_datasets(data_list, test_size=0.2, seed=42):
    
     print(f"Number of training samples: {len(train_data)}")
     print(f"Number of testing samples: {len(test_data)}")
+    train_groups = np.unique(groups[train_idx])
+    val_groups = np.unique(groups[test_idx])
+    print(f'Training groups: {train_groups}')
+    print(f'Validation groups: {val_groups}')
 
     return train_data, test_data
 
