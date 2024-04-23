@@ -27,7 +27,8 @@ class Train:
         self.classification_loss = torch.nn.CrossEntropyLoss()
         self.acc_metric = acc_metric
         self.batch_size = data_loader['train'].batch_size
-        self.dataset = dataset
+        self.dataset = dataset['train']
+        self.testdataset = dataset['test']
 
         self.epoch = 0
         self.log_summary_interval = 2
@@ -43,17 +44,20 @@ class Train:
     def train(self):
         self.total_progress_bar.write('Start training')
         self.dataset.start()
+        self.testdataset.start()
         while self.epoch < self.num_epoch:
             self.train_loader = self.data_loader['train'] #il faudra que le dataloader monai ne mette pas dans le meme batch des ct scan de la meme serie (cad des memes repetitions d'un scan) -> voir Sampler pytorch
             self.test_loader = self.data_loader['test']
             self.train_epoch()
             if self.epoch % self.log_summary_interval == 0:
                 self.test_epoch()
+                self.testdataset.update_cache()
                 #self.log_summary_writer()
             self.lr_scheduler.step()
             self.dataset.update_cache()
         
         self.dataset.shutdown()
+        self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
         self.save_model('./model_final_weights.pth')
         return self.acc_dict['best_test_acc']
@@ -330,12 +334,13 @@ Extension of PersistentDataset, tt can also cache the result of first N transfor
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
     data_loader = {'train': train_loader, 'test': test_loader}
+    dataset = {'train': train_dataset, 'test': test_dataset}
     
     model = get_model()
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.01)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 25,train_dataset)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 75,dataset)
     
     trainer.train()
 
