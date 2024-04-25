@@ -32,7 +32,7 @@ class Train:
         self.testdataset = dataset['test']
 
         self.epoch = 0
-        self.log_summary_interval = 2
+        self.log_summary_interval = 5
         self.total_progress_bar = tqdm(total=self.num_epoch, desc='Total Progress', dynamic_ncols=True)
         self.acc_dict = {'src_best_train_acc': 0, 'src_best_test_acc': 0, 'tgt_best_test_acc': 0}
         self.losses_dict = {'total_loss': 0, 'src_classification_loss': 0, 'contrast_loss': 0}
@@ -325,7 +325,7 @@ def main():
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
     
     data_loader = {'train': train_loader, 'test': test_loader}
