@@ -93,9 +93,11 @@ def run_inference():
         writer.writeheader()
         dataset.start()
         i = 0
-        for batch in tqdm(dataload):            
+        for batch in tqdm(dataload):
+            flattened_image = tf.reshape(image_tf, [-1, 131072])
+                      
             # Run TensorFlow session to extract features
-            features = sess.run(feature_tensor, feed_dict={x: image_tf.eval(session=sess, feed_dict={input_tensor: batch["image"].numpy()}), keepProb: 1.0})
+            features = sess.run(feature_tensor, feed_dict={x: sess.run(flattened_image, feed_dict={input_tensor: batch["image"].numpy()}), keepProb: 1.0})
             
             # Process and save features
             latentrep = tf.reshape(features, [-1]).numpy().tolist()
