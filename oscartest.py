@@ -89,13 +89,14 @@ def run_inference():
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         dataset.start()
+        input_tensor = tf.placeholder(tf.float32, shape=[None, 1, 64, 64, 32])
+        image_tf = tf.transpose(input_tensor, [0, 2, 3, 4, 1])  # Reorder dimensions
         i = 0
         for batch in tqdm(dataload):
-            image_tf = tf.transpose(batch["image"], [0, 2, 3, 4, 1])
-            flattened_image = tf.reshape(image_tf, [-1, 131072])
             
-            # Run TensorFlow session to extract features
-            features = sess.run(feature_tensor, feed_dict={x: flattened_image, keepProb: 1.0})  # Ensure placeholders match
+            flattened_image = tf.reshape(image_tf, [-1, 131072])  # Flatten the tensor to match the input placeholder
+            # Extract features using the reshaped tensor
+            features = sess.run(feature_tensor, feed_dict={x: sess.run(flattened_image, feed_dict={input_tensor: batch["image"].numpy()}), keepProb: 1.0})
             
             # Process and save features
             latentrep = tf.reshape(features, [-1]).numpy().tolist()
