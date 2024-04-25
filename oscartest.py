@@ -80,7 +80,8 @@ def run_inference():
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.05, progress=True, num_init_workers=8, num_replace_workers=8)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.005, progress=True, num_init_workers=8, num_replace_workers=8)
+    print("dataset length: ", len(dataset))
     dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
 
 
@@ -92,8 +93,9 @@ def run_inference():
         input_tensor = tf.placeholder(tf.float32, shape=[None, 1, 64, 64, 32])
         image_tf = tf.transpose(input_tensor, [0, 2, 3, 4, 1])  # Reorder dimensions
         i = 0
-        for batch in tqdm(dataload):
-            
+        #iterating over every entry in the data
+        for batch in tqdm(range(len(dataset))):
+                                            
             flattened_image = tf.reshape(image_tf, [-1, 131072])  # Flatten the tensor to match the input placeholder
             # Extract features using the reshaped tensor
             features = sess.run(feature_tensor, feed_dict={x: sess.run(flattened_image, feed_dict={input_tensor: batch["image"].numpy()}), keepProb: 1.0})
