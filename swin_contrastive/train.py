@@ -310,11 +310,12 @@ def main():
     encoder.fit(labels)
     transforms = Compose([
         LoadImaged(keys=["image", "roi"]),
+        DebugTransform2(),
         EnsureChannelFirstd(keys=["image", "roi"]),
         CropOnROId(keys=["image"], roi_key="roi", size=(64, 64, 64)), 
         EncodeLabels(encoder=encoder),
         #DebugTransform(),
-        #DebugTransform2(),
+        DebugTransform2(),
         ToTensord(keys=["image"])
     ])
 
