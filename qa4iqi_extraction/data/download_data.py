@@ -1,9 +1,9 @@
 import sys
 import logging
-import inquirer
+#import inquirer
 
 from functools import reduce
-from tcia_utils import nbia
+#from tcia_utils import nbia
 from tqdm import tqdm
 
 logger = logging.getLogger()
