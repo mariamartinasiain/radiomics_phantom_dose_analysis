@@ -1,7 +1,7 @@
 import os
 import logging
 
-from tcia_utils import nbia
+#from tcia_utils import nbia
 from qa4iqi_extraction.constants import TCIA_COLLECTION_NAME
 
 logger = logging.getLogger()
