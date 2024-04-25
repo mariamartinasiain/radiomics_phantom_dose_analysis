@@ -31,5 +31,6 @@ cons1 = graph.get_tensor_by_name("cons1:0")
 #Now, access the op that you want to run. 
 restoredGetFeats = graph.get_tensor_by_name("getFeats:0")
 
-for op in tf.get_default_graph().get_operations():
-    print(op.name) 
+for op in graph.get_operations():
+    if 'Conv3D' in op.type or 'MaxPool3D' in op.type or 'Relu' in op.type:
+        print(op.name, op.outputs[0].shape)
