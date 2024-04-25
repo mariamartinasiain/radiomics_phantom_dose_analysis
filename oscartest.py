@@ -11,7 +11,8 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, CropOnROId, AsDiscreted, ToTensord
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ToTensord
+from swinunetr import CropOnROId
 from monai.data import SmartCacheDataset, DataLoader
 
 def test():
