@@ -99,7 +99,7 @@ def run_inference():
             features = sess.run(feature_tensor, feed_dict={x: sess.run(flattened_image, feed_dict={input_tensor: batch["image"].numpy()}), keepProb: 1.0})
             
             # Process and save features
-            latentrep = tf.reshape(features, [-1]).numpy().tolist()
+            latentrep = sess.run(tf.reshape(features, [-1])).tolist()
             record = {
                 "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
                 "deepfeatures": latentrep,
