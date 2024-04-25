@@ -2,14 +2,13 @@ import json
 import os
 import queue
 import re
-import tempfile
 import numpy as np
 from sklearn.model_selection import GroupShuffleSplit
 from tqdm import tqdm
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
-from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,GDSDataset
+from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord
 from swinunetr import CropOnROId, custom_collate_fn,DebugTransform
 from monai.networks.nets import SwinUNETR
@@ -45,21 +44,21 @@ class Train:
     
     def train(self):
         self.total_progress_bar.write('Start training')
-        #self.dataset.start()
-        #self.testdataset.start()
+        self.dataset.start()
+        self.testdataset.start()
         while self.epoch < self.num_epoch:
             self.train_loader = self.data_loader['train'] #il faudra que le dataloader monai ne mette pas dans le meme batch des ct scan de la meme serie (cad des memes repetitions d'un scan) -> voir Sampler pytorch
             self.test_loader = self.data_loader['test']
             self.train_epoch()
             if self.epoch % self.log_summary_interval == 0:
                 self.test_epoch()
-                #self.testdataset.update_cache()
+                self.testdataset.update_cache()
                 #self.log_summary_writer()
             self.lr_scheduler.step()
-            #self.dataset.update_cache()
+            self.dataset.update_cache()
         
-        #self.dataset.shutdown()
-        #self.testdataset.shutdown()
+        self.dataset.shutdown()
+        self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
         self.save_model('./model_final_weights.pth')
         return self.acc_dict['best_test_acc']
@@ -319,18 +318,14 @@ def main():
         ToTensord(keys=["image"])
     ])
 
-    directory = os.environ.get("MONAI_DATA_DIRECTORY")
-    root_dir = tempfile.mkdtemp() if directory is None else directory
-    cache_dir = os.path.join(root_dir, "gds_cache_dir")
-
     jsonpath = "./dataset_info.json"
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
     
-    train_dataset = GDSDataset(data=train_data, transform=transforms,device=1,cache_dir=cache_dir)
-    test_dataset = GDSDataset(data=test_data, transform=transforms,device=1,cache_dir=cache_dir)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
+    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
     
     data_loader = {'train': train_loader, 'test': test_loader}
@@ -340,7 +335,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 60,dataset)
     
     trainer.train()
 
