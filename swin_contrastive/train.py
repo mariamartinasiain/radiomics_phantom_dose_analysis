@@ -45,21 +45,21 @@ class Train:
     
     def train(self):
         self.total_progress_bar.write('Start training')
-        self.dataset.start()
-        self.testdataset.start()
+        #self.dataset.start()
+        #self.testdataset.start()
         while self.epoch < self.num_epoch:
             self.train_loader = self.data_loader['train'] #il faudra que le dataloader monai ne mette pas dans le meme batch des ct scan de la meme serie (cad des memes repetitions d'un scan) -> voir Sampler pytorch
             self.test_loader = self.data_loader['test']
             self.train_epoch()
             if self.epoch % self.log_summary_interval == 0:
                 self.test_epoch()
-                self.testdataset.update_cache()
+                #self.testdataset.update_cache()
                 #self.log_summary_writer()
             self.lr_scheduler.step()
-            self.dataset.update_cache()
+            #self.dataset.update_cache()
         
-        self.dataset.shutdown()
-        self.testdataset.shutdown()
+        #self.dataset.shutdown()
+        #self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
         self.save_model('./model_final_weights.pth')
         return self.acc_dict['best_test_acc']
