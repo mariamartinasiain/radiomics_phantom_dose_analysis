@@ -2,6 +2,7 @@ import json
 import os
 import queue
 import re
+import tempfile
 import numpy as np
 from sklearn.model_selection import GroupShuffleSplit
 from tqdm import tqdm
@@ -318,12 +319,16 @@ def main():
         ToTensord(keys=["image"])
     ])
 
+    directory = os.environ.get("MONAI_DATA_DIRECTORY")
+    root_dir = tempfile.mkdtemp() if directory is None else directory
+    cache_dir = os.path.join(root_dir, "gds_cache_dir")
+
     jsonpath = "./dataset_info.json"
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
     
-    train_dataset = GDSDataset(data=train_data, transform=transforms,device=1)
-    test_dataset = GDSDataset(data=test_data, transform=transforms,device=1)
+    train_dataset = GDSDataset(data=train_data, transform=transforms,device=1,cache_dir=cache_dir)
+    test_dataset = GDSDataset(data=test_data, transform=transforms,device=1,cache_dir=cache_dir)
     
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
