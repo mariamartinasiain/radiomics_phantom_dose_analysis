@@ -83,6 +83,9 @@ def run_inference():
     dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.05, progress=True, num_init_workers=8, num_replace_workers=8)
     dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
 
+    input_tensor = tf.placeholder(tf.float32, shape=[None, 1, 64, 64, 32])
+    image_tf = tf.transpose(input_tensor, [0, 2, 3, 4, 1])
+
 
     with open("deepfeaturesoscar.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
@@ -90,11 +93,9 @@ def run_inference():
         writer.writeheader()
         dataset.start()
         i = 0
-        for batch in tqdm(dataload):
-            image_tf = tf.transpose(batch["image"], [0, 2, 3, 4, 1])
-            
+        for batch in tqdm(dataload):            
             # Run TensorFlow session to extract features
-            features = sess.run(feature_tensor, feed_dict={x: image_tf, keepProb: 1.0})  # Ensure placeholders match
+            features = sess.run(feature_tensor, feed_dict={x: image_tf.eval(session=sess, feed_dict={input_tensor: batch["image"].numpy()}), keepProb: 1.0})
             
             # Process and save features
             latentrep = tf.reshape(features, [-1]).numpy().tolist()
