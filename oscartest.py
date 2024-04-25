@@ -80,11 +80,8 @@ def run_inference():
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.001, progress=True, num_init_workers=8, num_replace_workers=8)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.05, progress=True, num_init_workers=8, num_replace_workers=8)
     dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
-
-    input_tensor = tf.placeholder(tf.float32, shape=[None, 1, 64, 64, 32])
-    image_tf = tf.transpose(input_tensor, [0, 2, 3, 4, 1])
 
 
     with open("deepfeaturesoscar.csv", "w", newline="") as csvfile:
@@ -94,10 +91,11 @@ def run_inference():
         dataset.start()
         i = 0
         for batch in tqdm(dataload):
+            image_tf = tf.transpose(batch["image"], [0, 2, 3, 4, 1])
             flattened_image = tf.reshape(image_tf, [-1, 131072])
-                      
+            
             # Run TensorFlow session to extract features
-            features = sess.run(feature_tensor, feed_dict={x: sess.run(flattened_image, feed_dict={input_tensor: batch["image"].numpy()}), keepProb: 1.0})
+            features = sess.run(feature_tensor, feed_dict={x: flattened_image, keepProb: 1.0})  # Ensure placeholders match
             
             # Process and save features
             latentrep = tf.reshape(features, [-1]).numpy().tolist()
