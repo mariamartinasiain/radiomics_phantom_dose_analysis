@@ -303,12 +303,20 @@ def get_model():
     model = model.to('cuda')
     return model
 
+#just print some dumy text
+class PrintDebug(Transform):
+    def __call__(self, data):
+        print("Debugging")
+        return data
+    
+
 def main():
     from sklearn.preprocessing import LabelEncoder
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
     encoder = LabelEncoder()
     encoder.fit(labels)
     transforms = Compose([
+        PrintDebug(),
         LoadImaged(keys=["image", "roi"]),
         DebugTransform2(),
         EnsureChannelFirstd(keys=["image", "roi"]),
