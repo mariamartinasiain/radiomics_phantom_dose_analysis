@@ -1,15 +1,15 @@
 DATASET_FOLDER = "../DICOM"
 #/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl
 #si le chemin est un fichier de ct scan, il va y avoir un pb car le .json va se mettre dedans et causer un pb de read sur le dicom, donc mettre dossier parent
-OUTPUT_FILE_NAME = "data/output/features.csv"
+OUTPUT_FILE_NAME = "data/output/features2.csv"
 PARAMETER_FILE_NAME = "params/qa4iqi_params.yml"
 TCIA_COLLECTION_NAME = "CT-Phantom4Radiomics"
 MODALITY_CT = "CT"
 MODALITY_SEG = "SEG"
 FIELD_NAME_IMAGE = "image"
 FIELD_NAME_SEG = "seg"
-FOLDER_NAME_IMAGE = "image"
-FOLDER_NAME_ROIS = "rois"
+FOLDER_NAME_IMAGE = "image2"
+FOLDER_NAME_ROIS = "rois2"
 ROI_NAMES = ["normal1", "normal2", "cyst1", "cyst2", "hemangioma", "metastasis"]
 ROI_NAME_FIELD = "ROI"
 DIAGNOSTICS_FEATURES_PREFIX = "diagnostics"

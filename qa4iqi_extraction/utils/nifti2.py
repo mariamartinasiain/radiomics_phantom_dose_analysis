@@ -55,12 +55,26 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     
     try:
         dicom_info[SERIES_NUMBER_FIELD] = dicom_datasets[0].SeriesNumber
+    except Exception as e:
+        print(f"Error reading DICOM metadata: {e}")
+    try:
         dicom_info[SERIES_DESCRIPTION_FIELD] = dicom_datasets[0].SeriesDescription
+    except Exception as e:
+        print(f"Error reading DICOM metadata: {e}")
+    try:
         dicom_info[MANUFACTURER_FIELD] = dicom_datasets[0].Manufacturer
+    except Exception as e:
+        print(f"Error reading DICOM metadata: {e}")
+    try:
         dicom_info[MANUFACTURER_MODEL_NAME_FIELD] = dicom_datasets[0].ManufacturerModelName
+    except Exception as e:
+        print(f"Error reading DICOM metadata: {e}")
+    try:
         dicom_info[SLICE_THICKNESS_FIELD] = dicom_datasets[0].SliceThickness
+    except Exception as e:
+        print(f"Error reading DICOM metadata: {e}")
+    try:
         dicom_info[SLICE_SPACING_FIELD] = dicom_datasets[0].SpacingBetweenSlices
-        
     except Exception as e:
         print(f"Error reading DICOM metadata: {e}")
 
@@ -119,7 +133,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
 
     # JSON update
-    json_filename = os.path.join(nifti_dir, "dataset_info.json")
+    json_filename = os.path.join(nifti_dir, "dataset_info2.json")
     if os.path.exists(json_filename):
         with open(json_filename, 'r') as json_file:
             json_data = json.load(json_file)
