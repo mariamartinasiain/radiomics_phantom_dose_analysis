@@ -8,7 +8,7 @@ from tqdm import tqdm
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
-from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset
+from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,GDSDataset
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord
 from swinunetr import CropOnROId, custom_collate_fn,DebugTransform
 from monai.networks.nets import SwinUNETR
@@ -322,8 +322,8 @@ def main():
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8)
-    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
+    train_dataset = GDSDataset(data=train_data, transform=transforms,device=1)
+    test_dataset = GDSDataset(data=test_data, transform=transforms,device=1)
     
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
