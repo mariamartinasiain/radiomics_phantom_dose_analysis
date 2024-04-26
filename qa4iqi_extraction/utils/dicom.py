@@ -20,7 +20,7 @@ def identify_images_rois(folder):
     logger.info("Identifying Image & ROI pairs...")
 
     # Check if map is already available
-    map_file_path = f"{folder}/studies_map.json"
+    map_file_path = f"{folder}/fstudies_map.json"
 
     if os.path.exists(map_file_path):
         logger.info("Existing mapping found!")
