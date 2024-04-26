@@ -78,11 +78,12 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     except Exception as e:
         print(f"Error reading DICOM metadata: {e}")
 
-    print("dicom_datasets is ", dicom_datasets[0])
+    #print("dicom_datasets is ", dicom_datasets[0])
     print("juste apres dicom_datasets")
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
+        print("ds is ", ds)
         stack.add_dcm(ds)
     nii = stack.to_nifti()
     unique_id = os.path.basename(dicom_image_folder)
