@@ -78,7 +78,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     except Exception as e:
         print(f"Error reading DICOM metadata: {e}")
 
-    print("dicom_datasets is ", dicom_datasets)
+    #print("dicom_datasets is ", dicom_datasets)
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
@@ -86,7 +86,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     nii = stack.to_nifti()
     unique_id = os.path.basename(dicom_image_folder)
     nifti_image_path = f"{output_folder_image}/image_{unique_id}.nii.gz"
-    print("nifti_image_path", nifti_image_path)
+    #print("nifti_image_path", nifti_image_path)
     nii.to_filename(nifti_image_path, dtype=np.uint16)
 
     # Read DICOM SEG & convert to NIfTI
@@ -102,7 +102,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
         float(ds.ImagePositionPatient[-1]) for ds in dicom_datasets
     ]
 
-    print("dicom seg is ", dicom_seg)
+    #print("dicom seg is ", dicom_seg)
 
     all_referenced_z_locations = [
         float(f.PlanePositionSequence[0].ImagePositionPatient[-1])
