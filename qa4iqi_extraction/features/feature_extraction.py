@@ -4,6 +4,8 @@ import pandas as pd
 
 from tqdm import tqdm
 from qa4iqi_extraction.constants import (
+    FIELD_NAME_IMAGE,
+    FIELD_NAME_SEG,
     SERIES_DESCRIPTION_FIELD,
     SERIES_NUMBER_FIELD,
     STUDY_UID_FIELD,
@@ -39,7 +41,7 @@ def run_feature_extraction(dicom_folders_map):
                     dicom_image_mask, dirr
                 )
             except Exception as e:
-                logger.error(f"Error converting study {study_uid}: {e}")
+                logger.error(f"Error converting study {study_uid}: {e} ... From file {dicom_image_mask} where image is {dicom_image_mask[FIELD_NAME_IMAGE]} and seg is {dicom_image_mask[FIELD_NAME_SEG]}. Skipping...")
                 print(f"Error converting study {study_uid}: {e} ... From file {dicom_image_mask}. Skipping...")
                 continue
             
