@@ -83,10 +83,11 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
-        #print("ds is ", ds)
-        print("juste avant stack.add_dcm")
+        if hasattr(ds, 'ProcedureCodeSequence'):
+            if not isinstance(ds.ProcedureCodeSequence, list):
+                ds.ProcedureCodeSequence = [ds.ProcedureCodeSequence]
+        # Similar checks for other sequences
         stack.add_dcm(ds)
-        print("juste apres stack.add_dcm")
     nii = stack.to_nifti()
     print("juste apres stack.to_nifti")
     unique_id = os.path.basename(dicom_image_folder)
