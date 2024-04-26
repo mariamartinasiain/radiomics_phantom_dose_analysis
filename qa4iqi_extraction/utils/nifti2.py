@@ -78,6 +78,8 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     except Exception as e:
         print(f"Error reading DICOM metadata: {e}")
 
+    print("dicom_datasets is ", dicom_datasets)
+
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
         stack.add_dcm(ds)
@@ -100,6 +102,8 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
         float(ds.ImagePositionPatient[-1]) for ds in dicom_datasets
     ]
 
+    print("dicom seg is ", dicom_seg)
+
     all_referenced_z_locations = [
         float(f.PlanePositionSequence[0].ImagePositionPatient[-1])
         for f in dicom_seg.PerFrameFunctionalGroupsSequence
@@ -113,6 +117,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     # Write out each ROI to a separate file (simpler for pyradiomics extraction)
     nifti_roi_paths = []
+    print("result is ", result)
     for segment_number in result.available_segments:
         segmentation_image_data = result.segment_data(segment_number)
 
