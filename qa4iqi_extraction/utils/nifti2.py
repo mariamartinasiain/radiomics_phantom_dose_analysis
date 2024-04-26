@@ -90,6 +90,8 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     print("nifti_image_path", nifti_image_path)
     nii.to_filename(nifti_image_path, dtype=np.uint16)
 
+    print("juste apres nii.to_filename")
+
     # Read DICOM SEG & convert to NIfTI
     dicom_seg = pydicom.dcmread(dicom_seg_file)
     reader = pydicom_seg.SegmentReader()
