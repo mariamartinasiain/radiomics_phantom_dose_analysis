@@ -79,6 +79,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
         print(f"Error reading DICOM metadata: {e}")
 
     #print("dicom_datasets is ", dicom_datasets)
+    print("juste apres dicom_datasets")
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
@@ -86,7 +87,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     nii = stack.to_nifti()
     unique_id = os.path.basename(dicom_image_folder)
     nifti_image_path = f"{output_folder_image}/image_{unique_id}.nii.gz"
-    #print("nifti_image_path", nifti_image_path)
+    print("nifti_image_path", nifti_image_path)
     nii.to_filename(nifti_image_path, dtype=np.uint16)
 
     # Read DICOM SEG & convert to NIfTI
