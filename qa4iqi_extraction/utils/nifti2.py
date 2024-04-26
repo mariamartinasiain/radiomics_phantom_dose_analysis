@@ -83,11 +83,12 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
-        if hasattr(ds, 'ProcedureCodeSequence'):
-            if not isinstance(ds.ProcedureCodeSequence, list):
-                ds.ProcedureCodeSequence = [ds.ProcedureCodeSequence]
-        # Similar checks for other sequences
-        stack.add_dcm(ds)
+        for sequence_name in ['ProcedureCodeSequence', 'ReferencedStudySequence', 'ReferencedPerformedProcedureStepSequence']:
+            if hasattr(ds, sequence_name):
+                seq = getattr(ds, sequence_name)
+                if not all(isinstance(item, pydicom.dataset.Dataset) for item in seq):
+                    print(f"Issue in {sequence_name}: Not all items are datasets")
+
     nii = stack.to_nifti()
     print("juste apres stack.to_nifti")
     unique_id = os.path.basename(dicom_image_folder)
