@@ -94,7 +94,7 @@ def run_inference():
         image_tf = tf.transpose(input_tensor, [0, 2, 3, 4, 1])  # Reorder dimensions
         i = 0
         #iterating over every entry in the data
-        for _ in tqdm(range(len(dataset))):
+        for _ in tqdm(range(len(datafiles))):
             batch = next(iter(dataload))                                 
             flattened_image = tf.reshape(image_tf, [-1, 131072])  # Flatten the tensor to match the input placeholder
             # Extract features using the reshaped tensor
@@ -113,7 +113,7 @@ def run_inference():
             }
             writer.writerow(record)
            
-            if i % 64 == 0:
+            if i % 32 == 0:
                 dataset.update_cache()
             i += 1
         dataset.shutdown()
