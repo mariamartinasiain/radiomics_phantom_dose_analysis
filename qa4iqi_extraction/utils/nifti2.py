@@ -88,6 +88,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
                 seq = getattr(ds, sequence_name)
                 if not all(isinstance(item, pydicom.dataset.Dataset) for item in seq):
                     print(f"Issue in {sequence_name}: Not all items are datasets")
+        stack.add_dcm(ds)
 
     nii = stack.to_nifti()
     print("juste apres stack.to_nifti")
