@@ -83,10 +83,14 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
-        print("in the looop")
-        print("ds is ", ds)
-        if ds is not None:
+        try:
             stack.add_dcm(ds)
+        except TypeError as e:
+            print(f"TypeError encountered: {e}")
+            print(f"Problematic dataset: {ds}")
+        except Exception as e:
+            print(f"General error: {e}")
+
 
     nii = stack.to_nifti()
     print("juste apres stack.to_nifti")
