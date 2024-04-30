@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord
-from swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform
+from swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
@@ -285,21 +285,6 @@ class DebugTransform2(Transform):
         #    print("Unique values in label:", np.unique(data['roi_label']))
         return data
 
-def get_model():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-    target_size = (64, 64, 64)  
-    model = SwinUNETR(
-        img_size=target_size,
-        in_channels=1,
-        out_channels=1,
-        feature_size=48,
-        use_checkpoint=True,
-    ).to(device)
-
-    weight = torch.load("./model_swinvit.pt")
-    model.load_from(weights=weight)
-    model = model.to('cuda')
-    return model
 
 class PrintDebug(Transform):
     def __call__(self, data):
