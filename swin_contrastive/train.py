@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord
-from swinunetr import CropOnROId, custom_collate_fn,DebugTransform
+from swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
@@ -232,7 +232,7 @@ def group_data(data_list, mode='scanner'):
             return base.group(1).strip()
         return description
 
-    group_ids = []  # Liste pour collecter les group_id
+    group_ids = []  
     for item in data_list:
         series_description = item['info']['SeriesDescription']
         if mode == 'scanner':
@@ -244,7 +244,7 @@ def group_data(data_list, mode='scanner'):
             group_map[group_key] = len(group_map)
         
         item['group_id'] = group_map[group_key]
-        group_ids.append(item['group_id'])  # Ajouter le group_id à la liste
+        group_ids.append(item['group_id']) 
     print("Groups correspondance", group_map)
     return np.array(group_ids)
 
@@ -278,9 +278,7 @@ class EncodeLabels(Transform):
 
 class DebugTransform2(Transform):
     def __call__(self, data):
-        # Print the shape of the image tensor
         print("Image shape:", data['image'].shape)
-        # Print the label and its type
         print("Encoded label:", data['roi_label'], "Type:", type(data['roi_label']))
         # Optionally, check the unique values in the label if it's a segmentation map
         #if isinstance(data['roi_label'], np.ndarray):
@@ -303,7 +301,6 @@ def get_model():
     model = model.to('cuda')
     return model
 
-#just print some dumy text
 class PrintDebug(Transform):
     def __call__(self, data):
         print("Debugging")

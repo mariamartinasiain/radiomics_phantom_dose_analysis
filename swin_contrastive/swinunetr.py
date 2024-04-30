@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
-from monai.data import Dataset, DataLoader
+from monai.data import Dataset, DataLoader,SmartCacheDataset
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
 from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type
@@ -175,19 +175,11 @@ def load_data(datalist_json_path):
                 datalist = json.load(f)
         return datalist
 
-
-def main():
-    print_config()
-
-
-
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
-    
-    
-
+def get_model():
     target_size = (64, 64, 32)
 
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     model = SwinUNETR(
         img_size=target_size,
         in_channels=1,
@@ -200,7 +192,14 @@ def main():
     model.load_from(weights=weight)
     model = model.to('cuda')
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
+    return model
 
+def run_inference(model):
+    print_config()
+
+
+
+    target_size = (64, 64, 32)
     transforms = Compose([
         LoadImaged(keys=["image", "roi"]),
         #DebugTransform(),
@@ -208,14 +207,13 @@ def main():
         CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
         #DebugTransform(),  # Check the shape right after resizing
         #MaskIntensityd(keys=["image"], mask_key="roi"),
-        AsDiscreted(keys=["roi"], n_classes=6),
-        ToTensord(keys=["image", "roi"]),
+        ToTensord(keys=["image"]),
         #Orientationd(keys=["image", "roi"], axcodes="RAS"),
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = Dataset(data=datafiles, transform=transforms)
-    dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.05,progress=True,num_init_workers=8, num_replace_workers=8)
+    dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn, num_workers=4)
     #qq chose comme testload = DataLoader(da.....
 
     slice_num = 20
@@ -224,6 +222,8 @@ def main():
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
+        dataset.start()
+        i=0
         for batch in tqdm(dataload):
             #plutot for roi in batch[rois] ...
             image = batch["image"]
@@ -250,8 +250,18 @@ def main():
             roi_label = batch["roi_label"][0]
             image_filename = f"{series_number}_{roi_label}.png"
             plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
+            if i%64 == 0:
+                dataset.update_cache()
+            i+=1
+        dataset.shutdown()
         
     print("Done !")
+
+
+
+def main():
+    model = get_model()
+    run_inference(model)
 
 if __name__ == "__main__":
     main()
