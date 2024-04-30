@@ -6,6 +6,7 @@ import nibabel as nib
 import dcmstack
 import pydicom
 import pydicom_seg
+import traceback
 
 
 from qa4iqi_extraction.constants import (
@@ -85,11 +86,9 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     for ds in dicom_datasets:
         try:
             stack.add_dcm(ds)
-        except TypeError as e:
-            print(f"TypeError encountered: {e}")
-            print(f"Problematic dataset: {ds}")
         except Exception as e:
-            print(f"General error: {e}")
+            print("An error occurred:", str(e))
+            traceback.print_exc()
 
 
     nii = stack.to_nifti()
