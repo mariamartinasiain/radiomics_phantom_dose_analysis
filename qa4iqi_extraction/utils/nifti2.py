@@ -88,6 +88,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
             stack.add_dcm(ds)
         except Exception as e:
             print("An error occurred:", str(e))
+            print("ds is ", ds)
             traceback.print_exc()
 
 
