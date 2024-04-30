@@ -94,8 +94,9 @@ def run_inference():
         image_tf = tf.transpose(input_tensor, [0, 2, 3, 4, 1])  # Reorder dimensions
         i = 0
         #iterating over every entry in the data
+        iterator = iter(dataload)
         for _ in tqdm(range(len(datafiles))):
-            batch = next(iter(dataload))                                 
+            batch = next(iterator)                      
             flattened_image = tf.reshape(image_tf, [-1, 131072])  # Flatten the tensor to match the input placeholder
             # Extract features using the reshaped tensor
             features = sess.run(feature_tensor, feed_dict={x: sess.run(flattened_image, feed_dict={input_tensor: batch["image"].numpy()}), keepProb: 1.0})
