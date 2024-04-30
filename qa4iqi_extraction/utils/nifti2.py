@@ -84,6 +84,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
         print("in the looop")
+        print("ds is ", ds)
         if ds is not None:
             stack.add_dcm(ds)
 
