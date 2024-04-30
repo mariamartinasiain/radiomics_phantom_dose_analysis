@@ -1,7 +1,7 @@
 import tensorflow.compat.v1 as tf
 
 from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_NAME_FIELD, SERIES_DESCRIPTION_FIELD, SERIES_NUMBER_FIELD, SLICE_THICKNESS_FIELD
-from swinunetr import custom_collate_fn, load_data
+from swin_contrastive.swinunetr import custom_collate_fn, load_data
 tf.disable_v2_behavior()
 import os
 import numpy as np
@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ToTensord
-from swinunetr import CropOnROId
+from swin_contrastive.swinunetr import CropOnROId
 from monai.data import SmartCacheDataset, DataLoader
 
 def test():
@@ -80,7 +80,7 @@ def run_inference():
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.04, progress=True, num_init_workers=8, num_replace_workers=8, pin_memory=True)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.04, progress=True, num_init_workers=8, num_replace_workers=8)
     print("dataset length: ", len(datafiles))
     dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
 
