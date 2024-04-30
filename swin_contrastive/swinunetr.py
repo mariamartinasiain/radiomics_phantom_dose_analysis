@@ -71,7 +71,6 @@ def filter_none(data, default_spacing=1.0):
     """Recursively filter out None values in the data and provide defaults for missing keys."""
     if isinstance(data, dict):
         filtered = {k: filter_none(v, default_spacing) for k, v in data.items() if v is not None}
-        # Ensure SpacingBetweenSlices is a tensor if expected to be included in tensor operations
         filtered['SpacingBetweenSlices'] = torch.tensor([default_spacing])
         return filtered
     elif isinstance(data, list):
@@ -80,17 +79,15 @@ def filter_none(data, default_spacing=1.0):
 
 def custom_collate_fn(batch, default_spacing=1.0):
     filtered_batch = [filter_none(item, default_spacing) for item in batch]
-
     if not filtered_batch or all(item is None for item in filtered_batch):
         raise ValueError("Batch is empty after filtering out None values.")
 
     # Remove the ROI from the data to be collated, since it's not needed after image resizing
     for item in filtered_batch:
         if 'roi' in item:
-            del item['roi']  # Remove the ROI key entirely if it's no longer needed
+            del item['roi']  
 
     try:
-        # Use the default collate function to correctly handle the dictionaries without the ROI
         return torch.utils.data.dataloader.default_collate(filtered_batch)
     except Exception as e:
         raise RuntimeError(f"Failed to collate batch: {str(e)}")
@@ -183,7 +180,7 @@ def get_model():
     model = SwinUNETR(
         img_size=target_size,
         in_channels=1,
-        out_channels=14,
+        out_channels=1,
         feature_size=48,
         use_checkpoint=True,
     ).to(device)
@@ -196,9 +193,6 @@ def get_model():
 
 def run_inference(model):
     print_config()
-
-
-
     target_size = (64, 64, 32)
     transforms = Compose([
         LoadImaged(keys=["image", "roi"]),
@@ -250,7 +244,7 @@ def run_inference(model):
             roi_label = batch["roi_label"][0]
             image_filename = f"{series_number}_{roi_label}.png"
             plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
-            if i%64 == 0:
+            if i%32 == 0:
                 dataset.update_cache()
             i+=1
         dataset.shutdown()
