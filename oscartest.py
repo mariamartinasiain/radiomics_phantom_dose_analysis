@@ -114,9 +114,9 @@ def run_inference():
             }
             writer.writerow(record)
            
-            if i % 32 == 0:
+            if i % 28 == 0:
                 dataset.update_cache()
-                
+                iterator = iter(dataload)
             i += 1
         dataset.shutdown()
 
