@@ -84,12 +84,11 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     stack = dcmstack.DicomStack()
     for ds in dicom_datasets:
-        try:
-            stack.add_dcm(ds)
-        except Exception as e:
+        stack.add_dcm(ds)
+        """except Exception as e:
             print("An error occurred:", str(e))
             print("ds is ", ds)
-            traceback.print_exc()
+            traceback.print_exc()"""
 
 
     nii = stack.to_nifti()
