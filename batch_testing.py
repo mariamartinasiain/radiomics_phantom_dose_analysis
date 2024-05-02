@@ -21,20 +21,21 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
         file.write(entry)
 
 configurations = {
-    'pcapyradiomics': ([1, 3, 5, 9], 20),
-    'pcaswinunetr': ([1, 3, 5, 9], 20)
+    'oscar': ([1, 3, 5, 9], 2048),
 }
-classif_type = 'scanner'
-qmg = None#10
-for model, info_list in configurations.items():
-    scanners,latent_size = info_list
-    for n_scanners in scanners:
-        print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
-        test_size = 1 - ((n_scanners)/11) 
-        data_path = f'pcafeatures_{model}.csv'
-        output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
+classif_types = ['roi_small','roi_large','scanner']
+qmgs = [None,10]
+for qmg in qmgs:
+    for classif_type in classif_types:
+        for model, info_list in configurations.items():
+            scanners,latent_size = info_list
+            for n_scanners in scanners:
+                print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
+                test_size = 1 - ((n_scanners)/11) 
+                data_path = f'features_{model}.csv'
+                output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
 
-        mlp_accuracy,mlp_max_accu,mlp_min_accu = train_mlp(latent_size,test_size, data_path, output_path_mlp,classif_type,mg_filter=qmg)
-        _,svm_accuracy,svm_max_accu,svm_min_accu = train_svm(data_path,test_size,classif_type,mg_filter=qmg)
+                mlp_accuracy,mlp_max_accu,mlp_min_accu = train_mlp(latent_size,test_size, data_path, output_path_mlp,classif_type,mg_filter=qmg)
+                _,svm_accuracy,svm_max_accu,svm_min_accu = train_svm(data_path,test_size,classif_type,mg_filter=qmg)
 
-        update_performance_file(model, n_scanners, mlp_accuracy, svm_accuracy, output_path_mlp,classif_type,mlp_max_accu,mlp_min_accu,svm_max_accu,svm_min_accu)
+                update_performance_file(model, n_scanners, mlp_accuracy, svm_accuracy, output_path_mlp,classif_type,mlp_max_accu,mlp_min_accu,svm_max_accu,svm_min_accu)
