@@ -130,7 +130,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     # Write out each ROI to a separate file (simpler for pyradiomics extraction)
     nifti_roi_paths = []
-    print("result is ", result)
+    #print("result is ", result)
     for segment_number in result.available_segments:
         segmentation_image_data = result.segment_data(segment_number)
 
