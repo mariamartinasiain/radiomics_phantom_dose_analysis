@@ -24,7 +24,7 @@ def extract_mg_value(series_description):
 def generate_advanced_markers(num_required):
     base_markers = ['o', 'X', 'H','s', '*','D', '^', 'v', '>', '<', 'p' ]
     line_styles = ['-', '--', '-.', ':']
-    marker_sizes = [6]  
+    marker_sizes = [3]  
     filled_markers = [True, False]
 
     generated_markers = []
@@ -71,8 +71,15 @@ def load_data(filepath, color_mode='roi', mg_filter=None):
     if color_mode == 'all':
         labels = data['ROI']
         supp_info = data['SeriesDescription'].str[:2]
+    if color_mode == 'manufacturer':
+        labels = data['Manufacturer']
+        supp_info = data['SeriesNumber']
+    if color_mode == 'mg':
+        labels = data['mg_value']
+        supp_info = data['SeriesNumber']
+    #if color_mode == 'reconstruction':
     
-    print(f"Loaded {len(features)} features")
+    print(f"Loaded {len(features)} features with a size of {len(features.columns)}")
     print(f"Loaded {len(labels)} labels")
     #print(f"Features: {features}")
     return features, labels, supp_info
@@ -91,11 +98,10 @@ def perform_tsne(features):
     return tsne_results
 
 
-def main(color_mode='all'):
+def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_dataset_features/averaged_swin_deepfeatures.csv',datasetname='averaged_swin_deepfeatures'):
     print("Analyzing data...")
 
-    filepath = "../df_test.csv"
-    features, labels, supp_info = load_data(filepath, color_mode)
+    features, labels, supp_info = load_data(filepath, color_mode, mg_filter=mg_filter)
 
     
     unique_labels = labels.unique()
@@ -133,9 +139,10 @@ def main(color_mode='all'):
     plt.xlabel(f'Principal Component 1 ({explained_variance[0]:.2f}%)')
     plt.ylabel(f'Principal Component 2 ({explained_variance[1]:.2f}%)')
     plt.grid(True)
-    plt.legend()
-    plt.savefig(f"{base_filename}_PCA.png")
-    plt.show()
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    plt.tight_layout()
+    plt.savefig(f"{datasetname}_{color_mode}_{mg_filter}_PCA.png")
+    #plt.show()
 
     print("Performing t-SNE")
 
@@ -160,12 +167,26 @@ def main(color_mode='all'):
     plt.xlabel('t-SNE 1')
     plt.ylabel('t-SNE 2')
     plt.grid(True)
-    plt.legend()
-    plt.savefig(f"{base_filename}_TSNE.png")
-    plt.show()
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    plt.tight_layout()
+    plt.savefig(f"{datasetname}_{color_mode}_{mg_filter}_tSNE.png")
+    #plt.show()
     
     
 
+def batch_analysis():
+    color_modes = ['roi', 'series_desc', 'all', 'manufacturer', 'mg']
+    mg_filters = [None, 10]
+    #features_files = ['../../all_dataset_features/pyradiomics_features.csv','../../all_dataset_features/swin_deepfeatures.csv','../../all_dataset_features/averaged_swin_deepfeatures.csv','../../all_dataset_features/pca_swin_deepfeatures.csv']
+    features_files = ['../../all_dataset_features/dfoscar.csv']
+    #datasetnames = ['pyradiomics_features','swin_deepfeatures','averaged_swin_deepfeatures','pca_swin_deepfeatures']
+    datasetnames = ['dfoscar']
+    for features_file in features_files:
+        for color_mode in color_modes:
+            for mg_filter in mg_filters:
+                print(f'Analyzing {features_file} with color mode {color_mode} and mg filter {mg_filter}')
+                datasetname = datasetnames[features_files.index(features_file)]
+                analysis(color_mode, mg_filter, features_file,datasetname)
 
 if __name__ == "__main__":
-    main()
+    batch_analysis()
