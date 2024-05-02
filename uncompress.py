@@ -2,7 +2,7 @@ import os
 import nibabel as nib
 from tqdm import tqdm
 
-source_directory = 'image2' # Update this path to your directory
+source_directory = 'image1' # Update this path to your directory
 
 parent_directory = os.path.dirname(source_directory)
 target_directory = os.path.join(parent_directory, 'uncompressed_images2')
