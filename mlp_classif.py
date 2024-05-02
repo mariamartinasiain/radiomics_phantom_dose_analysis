@@ -155,7 +155,7 @@ def train_mlp(input_size, test_size,data_path,output_path='classifier.h5',classi
             x_train, y_train,
             validation_data=(x_val, y_val),
             batch_size=64,
-            epochs=180,
+            epochs=90,
             verbose=2,
             class_weight=cw
         )
