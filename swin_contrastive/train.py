@@ -293,6 +293,9 @@ class PrintDebug(Transform):
         return data
     
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters())
+
 def main():
     from sklearn.preprocessing import LabelEncoder
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
@@ -324,6 +327,9 @@ def main():
     dataset = {'train': train_dataset, 'test': test_dataset}
     
     model = get_model()
+    
+    print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
+    
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     

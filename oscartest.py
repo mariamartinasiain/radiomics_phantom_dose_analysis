@@ -69,6 +69,16 @@ def run_inference():
     #names for input data and dropout:
     x = graph.get_tensor_by_name('x_start:0') 
     keepProb = graph.get_tensor_by_name('keepProb:0')  
+    
+    
+    try:
+        variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+
+        # Calculer le nombre total de poids
+        total_params = sum([sess.run(tf.size(var)) for var in variables])
+        print(f"Le nombre total de poids dans le modèle est : {total_params}")
+    except:
+        print("Error while calculating the number of parameters in the model")
 
 
     target_size = (64, 64, 32)
