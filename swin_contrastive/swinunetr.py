@@ -175,7 +175,7 @@ def load_data(datalist_json_path):
 def get_model():
     target_size = (64, 64, 32)
 
-    device_id = 1
+    device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
     torch.cuda.set_device(device_id)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
