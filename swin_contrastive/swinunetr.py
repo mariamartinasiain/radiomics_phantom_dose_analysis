@@ -244,7 +244,7 @@ def run_inference(model):
             roi_label = batch["roi_label"][0]
             image_filename = f"{series_number}_{roi_label}.png"
             plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
-            if i%16 == 0:
+            if i%22 == 0:
                 dataset.update_cache()
             i+=1
         dataset.shutdown()
