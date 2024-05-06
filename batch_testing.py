@@ -21,7 +21,7 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
         file.write(entry)
 
 configurations = {
-    'oscar': ([1, 3, 5, 9], 2048),
+    'pyradiomics_full': ([1, 3, 5, 9], 86),
 }
 classif_types = ['roi_small','roi_large','scanner']
 qmgs = [None,10]
