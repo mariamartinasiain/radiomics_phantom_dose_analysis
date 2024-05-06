@@ -175,7 +175,8 @@ def load_data(datalist_json_path):
 def get_model():
     target_size = (64, 64, 32)
 
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    device_id = 1
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     model = SwinUNETR(
         img_size=target_size,
