@@ -204,7 +204,7 @@ def run_inference(model):
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.2, progress=True, num_init_workers=8, num_replace_workers=8)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.5, progress=True, num_init_workers=8, num_replace_workers=8)
     print("dataset length: ", len(datafiles))
     dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
     #qq chose comme testload = DataLoader(da.....
@@ -243,7 +243,7 @@ def run_inference(model):
             roi_label = batch["roi_label"][0]
             image_filename = f"{series_number}_{roi_label}.png"
             plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
-            if i%23 == 0:
+            if i%16 == 0:
                 dataset.update_cache()
             i+=1
         dataset.shutdown()
