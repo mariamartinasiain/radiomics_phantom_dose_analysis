@@ -315,7 +315,7 @@ def main():
     train_data, test_data = create_datasets(data_list)
     
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
-    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
+    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.015,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
