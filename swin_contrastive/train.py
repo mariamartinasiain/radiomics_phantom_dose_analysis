@@ -46,6 +46,7 @@ class Train:
         self.total_progress_bar.write('Start training')
         self.dataset.start()
         self.testdataset.start()
+        self.model.train()
         while self.epoch < self.num_epoch:
             self.train_loader = self.data_loader['train'] #il faudra que le dataloader monai ne mette pas dans le meme batch des ct scan de la meme serie (cad des memes repetitions d'un scan) -> voir Sampler pytorch
             self.test_loader = self.data_loader['test']
@@ -69,7 +70,7 @@ class Train:
         running_loss = 0
         
         for step, batch in enumerate(epoch_iterator):
-            self.model.train()
+            
             loss,classif_acc = self.train_step(batch)
             running_loss += loss['total_loss'].item()
             average_loss = running_loss / (step + 1)
@@ -298,14 +299,14 @@ def main():
     encoder = LabelEncoder()
     encoder.fit(labels)
     transforms = Compose([
-        PrintDebug(),
+        #PrintDebug(),
         LoadImaged(keys=["image", "roi"]),
-        DebugTransform2(),
+        #DebugTransform2(),
         EnsureChannelFirstd(keys=["image", "roi"]),
         CropOnROId(keys=["image"], roi_key="roi", size=(64, 64, 64)), 
         EncodeLabels(encoder=encoder),
         #DebugTransform(),
-        DebugTransform2(),
+        #DebugTransform2(),
         ToTensord(keys=["image"])
     ])
 
@@ -316,7 +317,7 @@ def main():
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4,prefetech_factor=2)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
     
     data_loader = {'train': train_loader, 'test': test_loader}
