@@ -310,7 +310,7 @@ def main():
         ToTensord(keys=["image"])
     ])
 
-    jsonpath = "./dataset_info.json"
+    jsonpath = "./uncompressed_datasetinfo.json"
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
     
