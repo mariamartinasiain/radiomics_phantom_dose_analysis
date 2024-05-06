@@ -177,6 +177,7 @@ def get_model():
 
     device_id = 1
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    torch.cuda.set_device(device_id)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     model = SwinUNETR(
         img_size=target_size,
