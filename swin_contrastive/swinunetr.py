@@ -63,7 +63,7 @@ from qa4iqi_extraction.constants import (
 
 import torch
 
-jsonpath = "./dataset_info.json"
+jsonpath = "./dataset_info2.json"
 
 
 
@@ -198,18 +198,15 @@ def run_inference(model):
     target_size = (64, 64, 32)
     transforms = Compose([
         LoadImaged(keys=["image", "roi"]),
-        #DebugTransform(),
         EnsureChannelFirstd(keys=["image", "roi"]),
-        CropOnROId(keys=["image"], roi_key="roi",size=target_size), 
-        #DebugTransform(),  # Check the shape right after resizing
-        #MaskIntensityd(keys=["image"], mask_key="roi"),
+        CropOnROId(keys=["image"], roi_key="roi", size=target_size),
         ToTensord(keys=["image"]),
-        #Orientationd(keys=["image", "roi"], axcodes="RAS"),
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.05,progress=True,num_init_workers=8, num_replace_workers=8)
-    dataload = DataLoader(dataset, batch_size=1,collate_fn=custom_collate_fn, num_workers=4)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.04, progress=True, num_init_workers=8, num_replace_workers=8)
+    print("dataset length: ", len(datafiles))
+    dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
     #qq chose comme testload = DataLoader(da.....
 
     slice_num = 20
