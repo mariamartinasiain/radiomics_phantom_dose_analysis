@@ -50,7 +50,7 @@ def test():
 
 def run_inference():
     
-    jsonpath = "./dataset_info.json"
+    jsonpath = "./dataset_info2.json"
     # Define the path to your model files
     model_dir = './'
     model_file = model_dir + 'organs-5c-30fs-acc92-121.meta'
