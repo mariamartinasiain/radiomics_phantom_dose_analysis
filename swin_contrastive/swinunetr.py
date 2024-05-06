@@ -204,7 +204,7 @@ def run_inference(model):
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.5, progress=True, num_init_workers=8, num_replace_workers=8)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.3, progress=True, num_init_workers=8, num_replace_workers=8)
     print("dataset length: ", len(datafiles))
     dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
     #qq chose comme testload = DataLoader(da.....
@@ -217,8 +217,9 @@ def run_inference(model):
         writer.writeheader()
         dataset.start()
         i=0
-        for batch in tqdm(dataload):
-            #plutot for roi in batch[rois] ...
+        iterator = iter(dataload)
+        for _ in tqdm(range(len(datafiles))):
+            batch = next(iterator)               
             image = batch["image"]
             val_inputs = image.cuda()
             print(val_inputs.shape)
