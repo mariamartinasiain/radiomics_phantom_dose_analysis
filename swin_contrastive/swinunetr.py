@@ -239,11 +239,6 @@ def run_inference(model):
                 "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
             }
             writer.writerow(record)
-            
-            series_number = batch["info"][SERIES_NUMBER_FIELD][0]
-            roi_label = batch["roi_label"][0]
-            image_filename = f"{series_number}_{roi_label}.png"
-            plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
             if i%22 == 0:
                 dataset.update_cache()
             i+=1
