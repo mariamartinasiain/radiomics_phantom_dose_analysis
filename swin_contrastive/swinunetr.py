@@ -239,7 +239,7 @@ def run_inference(model):
                 "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
             }
             writer.writerow(record)
-            if i%22 == 0:
+            if i%23 == 0:
                 dataset.update_cache()
             i+=1
         dataset.shutdown()
