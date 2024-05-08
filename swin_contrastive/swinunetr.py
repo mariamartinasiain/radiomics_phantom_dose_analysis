@@ -241,6 +241,7 @@ def run_inference(model):
             writer.writerow(record)
             if i%23 == 0:
                 dataset.update_cache()
+                iterator = iter(dataload)
             i+=1
         dataset.shutdown()
         
