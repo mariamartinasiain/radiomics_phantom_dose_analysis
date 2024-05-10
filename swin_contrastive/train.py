@@ -61,7 +61,7 @@ class Train:
         self.dataset.shutdown()
         self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
-        self.save_model('./model_final_weights.pth')
+        self.save_model('./model_final_weights2.pth')
         return self.acc_dict['best_test_acc']
 
     def train_epoch(self):
