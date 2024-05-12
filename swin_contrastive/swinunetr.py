@@ -63,7 +63,8 @@ from qa4iqi_extraction.constants import (
 
 import torch
 
-jsonpath = "./dataset_info.json"
+jsonpath = "./uncompressed_datasetinfo.json"
+
 
 
 
