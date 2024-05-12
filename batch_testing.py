@@ -22,7 +22,7 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
 
 configurations = {
     'swinunetr_full': ([1,2,3,5,7,9,11], 3072),
-    'ocar_full': ([1,2,3,5,7,9,11], 2048),
+    'oscar_full': ([1,2,3,5,7,9,11], 2048),
 }
 classif_types = ['roi_small','roi_large','scanner']
 qmgs = [None,10]
