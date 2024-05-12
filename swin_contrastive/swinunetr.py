@@ -211,7 +211,7 @@ def run_inference(model):
 
     slice_num = 20
 
-    with open("deepfeatures.csv", "w", newline="") as csvfile:
+    with open("new_model_deepfeatures.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
