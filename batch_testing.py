@@ -22,6 +22,7 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
 
 configurations = {
     'swinunetr_full': ([1,2,3,5,7,9,11], 3072),
+    'ocar_full': ([1,2,3,5,7,9,11], 2048),
 }
 classif_types = ['roi_small','roi_large','scanner']
 qmgs = [None,10]
@@ -31,7 +32,7 @@ for qmg in qmgs:
             scanners,latent_size = info_list
             for n_scanners in scanners:
                 print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
-                test_size = 1 - ((n_scanners)/11) 
+                test_size = 1 - ((n_scanners)/13) 
                 data_path = f'features_{model}.csv'
                 output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
 

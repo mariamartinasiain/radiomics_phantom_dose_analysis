@@ -187,7 +187,7 @@ def get_model():
         use_checkpoint=True,
     ).to(device)
 
-    weight = torch.load("./model_swinvit.pt")
+    weight = torch.load("model_final_weights2.pth")
     model.load_from(weights=weight)
     model = model.to('cuda')
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
