@@ -61,7 +61,7 @@ class Train:
         self.dataset.shutdown()
         self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
-        self.save_model('./model_final_weights2.pth')
+        self.save_model('./new_weigths_full_dataset_training.pth')
         return self.acc_dict['best_test_acc']
 
     def train_epoch(self):
@@ -313,7 +313,7 @@ def main():
         ToTensord(keys=["image"])
     ])
 
-    jsonpath = "./uncompressed_datasetinfo.json"
+    jsonpath = "./dataset_info_full.json"
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
     
