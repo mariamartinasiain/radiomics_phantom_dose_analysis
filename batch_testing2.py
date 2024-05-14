@@ -22,6 +22,7 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
         file.write(entry)
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
+print("GPUS",gpus)
 if gpus:
     try:
         # Set memory growth to avoid taking all GPU memory
