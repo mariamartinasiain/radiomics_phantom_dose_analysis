@@ -21,7 +21,7 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
         file.write(entry)
 
 configurations = {
-    'swinunetr_finetune': ([1,9], 3072),
+    'swin_finetune': ([1,9], 3072),
 }
 classif_types = ['roi_large','scanner']
 qmgs = [None,10]
