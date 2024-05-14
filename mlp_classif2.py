@@ -187,16 +187,17 @@ def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='
     mean_val_accuracy /= len(results)
 
     print(f"Final results: Mean accuracy: {mean_val_accuracy}, Min accuracy: {min_accuracy}, Max accuracy: {max_accuracy}")
-    save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter)
+    save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path)
 
     return mean_val_accuracy, max_accuracy, min_accuracy
  
-def save_results_to_csv(results,classif_type='roi_small',mg_filter=None):
+def save_results_to_csv(results,classif_type='roi_small',mg_filter=None,data_path=""):
     df = pd.DataFrame(results)
     #adding columns
     df['classif_type'] = classif_type
     df['mg_filter'] = mg_filter
-    df.to_csv('performance_cross_val.csv', index=False)
+    csv_filename = f"results_{classif_type}_{mg_filter}_{data_path}.csv"
+    df.to_csv(csv_filename, index=False)
     
  
 def train_mlp_with_data(x_train, y_train, x_val, y_val, input_size, output_path='classifier.h5'):

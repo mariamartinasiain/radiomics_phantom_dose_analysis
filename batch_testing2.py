@@ -37,8 +37,11 @@ else:
 
 configurations = {
     'swin_finetune': (3072),
+    'swinunetr_full' : (3072),
+    'oscar_full' : (2048),
+    'pyradiomics_full' : (86),
 }
-classif_types = ['scanner']
+classif_types = ['scanner','roi_large']
 for classif_type in classif_types:
     for model, info_list in configurations.items():
         latent_size = info_list
