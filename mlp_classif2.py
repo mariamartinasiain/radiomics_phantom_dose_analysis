@@ -95,7 +95,7 @@ def load_data(file_path,one_hot=True, label_type='roi_small',mg_filter=None):
     #test will be the group leavead out and train will be the train from splits
     
     
-    return features, labels, groups, splits, class_weights, classes_size
+    return features, labels, groups, class_weights, classes_size
 
 def define_classifier(input_size,classes_size):
     def mlp(x, dropout_rate, hidden_units):
@@ -130,7 +130,7 @@ def save_classifier_performance(history):
     
     
 def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='roi_small', mg_filter=None):
-    features, labels, groups, splits, cw, classes_size = load_data(data_path, label_type=classif_type, mg_filter=mg_filter)
+    features, labels, groups, cw, classes_size = load_data(data_path, label_type=classif_type, mg_filter=mg_filter)
     
     mean_val_accuracy = 0
     min_accuracy = 1
