@@ -146,7 +146,7 @@ def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='
         y_train_all, y_test = labels[train_index], labels[test_index]
         groups_train_all = groups[train_index]
         unique_train_groups = np.unique(groups_train_all)
-        for N in range(1, len(unique_train_groups) + 1):
+        for N in range(1, len(unique_train_groups)):
             splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
             for train_indices, _ in splits.split(X_train_all, y_train_all, groups_train_all):
                 X_train = X_train_all[train_indices]
