@@ -20,6 +20,19 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
     with open('performance_classif.txt', 'a') as file:
         file.write(entry)
 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Set memory growth to avoid taking all GPU memory
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            tf.config.experimental.set_visible_devices(gpus, 'GPU')
+            print(f"Using GPU: {gpus}")
+        except RuntimeError as e:
+            print(e)
+    else:
+        print("No GPU found. Using CPU.")
+
 configurations = {
     'swin_finetune': (3072),
 }
