@@ -3,6 +3,7 @@ from mlp_classif2 import train_mlp_with_data
 from mlp_classif2 import load_data
 from svm_classif import train_svm
 from svm_classif import train_svm_with_data
+import tensorflow as tf
 
 def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_path,classif_type='roi_small',mlp_max_accu=None,mlp_min_accu=None,svm_max_accu=None,svm_min_accu=None):
     entry = f'''
@@ -21,17 +22,17 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
         file.write(entry)
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
-    if gpus:
-        try:
-            # Set memory growth to avoid taking all GPU memory
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            tf.config.experimental.set_visible_devices(gpus, 'GPU')
-            print(f"Using GPU: {gpus}")
-        except RuntimeError as e:
-            print(e)
-    else:
-        print("No GPU found. Using CPU.")
+if gpus:
+    try:
+        # Set memory growth to avoid taking all GPU memory
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        tf.config.experimental.set_visible_devices(gpus, 'GPU')
+        print(f"Using GPU: {gpus}")
+    except RuntimeError as e:
+        print(e)
+else:
+    print("No GPU found. Using CPU.")
 
 configurations = {
     'swin_finetune': (3072),
