@@ -31,7 +31,7 @@ for qmg in qmgs:
             scanners,latent_size = info_list
             for n_scanners in scanners:
                 print(f'Training {model} with {n_scanners} scanners on {classif_type} labels')
-                test_size = 1 - ((n_scanners)/13) 
+                test_size = 1 - ((n_scanners)/11) 
                 data_path = f'features_{model}.csv'
                 output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
 
