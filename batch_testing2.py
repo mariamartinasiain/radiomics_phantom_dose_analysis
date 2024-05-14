@@ -1,6 +1,6 @@
-from mlp_classif import train_mlp
-from mlp_classif import train_mlp_with_data
-from mlp_classif import load_data
+from mlp_classif2 import train_mlp
+from mlp_classif2 import train_mlp_with_data
+from mlp_classif2 import load_data
 from svm_classif import train_svm
 from svm_classif import train_svm_with_data
 
