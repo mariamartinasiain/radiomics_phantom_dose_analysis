@@ -35,6 +35,7 @@ def group_data(data, mode='scanner'):
     return np.array(gd['group_id'])
 
 def load_csv(file_path, label_type='roi_small',mg_filter=None):
+    print(f'Loading data from {file_path}')
     data = pd.read_csv(file_path)
     
     print("mg filter",mg_filter)
