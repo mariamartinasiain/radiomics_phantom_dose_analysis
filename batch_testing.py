@@ -21,10 +21,9 @@ def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_
         file.write(entry)
 
 configurations = {
-    'swinunetr_full': ([1,2,3,5,7,9,11], 3072),
-    'oscar_full': ([1,2,3,5,7,9,11], 2048),
+    'swinunetr_finetune': ([1,9], 3072),
 }
-classif_types = ['roi_small','roi_large','scanner']
+classif_types = ['roi_large','scanner']
 qmgs = [None,10]
 for qmg in qmgs:
     for classif_type in classif_types:
