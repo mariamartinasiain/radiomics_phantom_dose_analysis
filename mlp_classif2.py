@@ -22,7 +22,7 @@ def group_data(data, mode='scanner'):
     elif mode == 'repetition':
         # Extract the base part excluding the numeric suffix and map them to unique integers
         def extract_base(description):
-            base = re.match(r"(.+)(-\s#\d+)$", description)
+            base = re.match(r"(.+?)_(IR|FBP)(\s-\s#\d+)$", description)
             if base:
                 return base.group(1).strip()
             return description
