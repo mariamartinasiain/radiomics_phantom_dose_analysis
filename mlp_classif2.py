@@ -75,7 +75,7 @@ def load_csv(file_path, label_type='roi_small',mg_filter=None):
     
     return features, labels,groups
 
-def load_data(file_path,test_size,one_hot=True, label_type='roi_small',mg_filter=None):
+def load_data(file_path,one_hot=True, label_type='roi_small',mg_filter=None):
     scaler = StandardScaler()
     
     features, labels,groups = load_csv(file_path, label_type=label_type,mg_filter=mg_filter)
@@ -93,7 +93,6 @@ def load_data(file_path,test_size,one_hot=True, label_type='roi_small',mg_filter
     
     #leave one groupe out (do it as much times as there is scanner(loop is probably BEFORE this call))
     #test will be the group leavead out and train will be the train from splits
-    splits = GroupShuffleSplit(n_splits=8, test_size=test_size, random_state=42)
     
     
     return features, labels, groups, splits, class_weights, classes_size
@@ -130,8 +129,8 @@ def save_classifier_performance(history):
 
     
     
-def train_mlp(input_size, test_size, data_path, output_path='classifier.h5', classif_type='roi_small', mg_filter=None):
-    features, labels, groups, splits, cw, classes_size = load_data(data_path, test_size, label_type=classif_type, mg_filter=mg_filter)
+def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='roi_small', mg_filter=None):
+    features, labels, groups, splits, cw, classes_size = load_data(data_path, label_type=classif_type, mg_filter=mg_filter)
     
     mean_val_accuracy = 0
     min_accuracy = 1
