@@ -136,19 +136,31 @@ def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='
     min_accuracy = 1
     max_accuracy = 0
     
-    logo = LeaveOneGroupOut()
+    
 
     results = {}
 
     save_results_to_csv([])
 
+    #in the case we are in scanner classif, we need to do something like 10% of groups instead of logo, and then do for every 10%, 20%, ... 90% of data avaible for training
+    if classif_type == 'scanner':
+        pass
+    else:
+        logo = LeaveOneGroupOut()
+        it1 = enumerate(logo.split(features, labels, groups))
+        
+
     # Iterate over each group to be used as the test set
-    for test_index, (train_index, test_index) in enumerate(logo.split(features, labels, groups)):
+    for _, (train_index, test_index) in it1:
         X_train_all, X_test = features[train_index], features[test_index]
         y_train_all, y_test = labels[train_index], labels[test_index]
         groups_train_all = groups[train_index]
         unique_train_groups = np.unique(groups_train_all)
-        for N in range(1, len(unique_train_groups)):
+        if classif_type == 'scanner':
+            pass
+        else:
+            it2 = range(1, len(unique_train_groups))
+        for N in it2:
             splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
             for train_indices, _ in splits.split(X_train_all, y_train_all, groups_train_all):
                 X_train = X_train_all[train_indices]
