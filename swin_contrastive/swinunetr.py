@@ -188,7 +188,7 @@ def get_model(target_size = (64, 64, 32)):
         use_checkpoint=True,
     ).to(device)
 
-    weight = torch.load("model_final_weights2.pth")
+    weight = torch.load("model_swinvit.pt")
     print("Loaded weight keys:", weight.keys())
     model.load_state_dict(weight)
     model = model.to('cuda')
