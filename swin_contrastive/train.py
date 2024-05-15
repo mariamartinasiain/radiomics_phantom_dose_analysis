@@ -41,6 +41,15 @@ class Train:
         self.best_loss_dict = {'total_loss': float('inf'), 'src_classification_loss': float('inf'), 'contrast_loss': float('inf')}
         self.best_log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
         
+        self.train_losses = []
+        self.val_losses = []
+        
+        
+    def save_losses(self, train_loss, val_loss):
+        self.train_losses.append(train_loss)
+        self.val_losses.append(val_loss)
+        with open('losses.json', 'w') as f:
+            json.dump({'train_losses': self.train_losses, 'val_losses': self.val_losses}, f)
     
     def train(self):
         self.total_progress_bar.write('Start training')
@@ -78,6 +87,7 @@ class Train:
             epoch_iterator.refresh()
         self.total_progress_bar.update(1)
         self.epoch += 1
+        self.save_losses(average_loss, self.val_losses[-1] if self.val_losses else None)
         
     def train_step(self,batch):
         # update the learning rate of the optimizer
@@ -95,10 +105,10 @@ class Train:
         self.contrastive_step(latents,ids)
         
         features = torch.mean(bottleneck, dim=(2, 3, 4))
-        #accu = self.classification_step(features, all_labels)
-        #print(f"Train Accuracy: {accu}%")
-        accu = 0
-        self.losses_dict['classification_loss'] = 0.0
+        accu = self.classification_step(features, all_labels)
+        print(f"Train Accuracy: {accu}%")
+        #accu = 0
+        #self.losses_dict['classification_loss'] = 0.0
         
         
         #image reconstruction
@@ -170,10 +180,13 @@ class Train:
                 #test_accuracy = compute_accuracy(logits, all_labels, acc_metric=self.acc_metric)
                 test_accuracy = 0
                 total_test_accuracy.append(test_accuracy)
+                running_val_loss += self.losses_dict['total_loss'].item()
                 testing_iterator.set_description(f"Testing ({step + 1}/{len(self.test_loader)}) (accuracy={test_accuracy:.4f})")
         avg_test_accuracy = np.mean(total_test_accuracy)
+        avg_val_loss = running_val_loss / len(self.test_loader)
         self.acc_dict['best_test_acc'] = avg_test_accuracy
-        print(f"Test Accuracy: {avg_test_accuracy}%") 
+        self.save_losses(self.train_losses[-1] if self.train_losses else None, avg_val_loss)  # Save the validation loss
+        print(f"Test Accuracy: {avg_test_accuracy}%")
         
     def autoclassifier(self, in_features, num_classes):
         #simple mlp with dropout
@@ -326,7 +339,7 @@ def main():
     data_loader = {'train': train_loader, 'test': test_loader}
     dataset = {'train': train_dataset, 'test': test_dataset}
     
-    model = get_model()
+    model = get_model(target_size=(64, 64, 32))
     
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     

@@ -173,8 +173,8 @@ def load_data(datalist_json_path):
                 datalist = json.load(f)
         return datalist
 
-def get_model():
-    target_size = (64, 64, 32)
+def get_model(target_size = (64, 64, 32)):
+    
 
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
