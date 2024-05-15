@@ -46,14 +46,28 @@ class Train:
         self.val_losses = []
         
         
-    def save_losses(self, train_loss, val_loss,loss_file='losses.json'):
+    def save_losses(self, train_loss, val_loss, loss_file='losses.json'):
         self.train_losses.append(train_loss)
         self.val_losses.append(val_loss)
         self.contrast_losses.append(self.losses_dict['contrast_loss'])
+        
+        # Convert torch.Tensor to a JSON-serializable format
+        def convert_to_serializable(obj):
+            if isinstance(obj, torch.Tensor):
+                return obj.tolist()  # Convert tensor to list
+            elif isinstance(obj, list):
+                return [convert_to_serializable(item) for item in obj]
+            else:
+                return obj
+        
+        serializable_train_losses = convert_to_serializable(self.train_losses)
+        serializable_val_losses = convert_to_serializable(self.val_losses)
+        serializable_contrast_losses = convert_to_serializable(self.contrast_losses)
+        
         with open(loss_file, 'w') as f:
-            json.dump({'train_losses': self.train_losses, 'val_losses': self.val_losses}, f)
+            json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
         with open('contrast_losses.json', 'w') as f:
-            json.dump({'contrast_losses': self.contrast_losses}, f)
+            json.dump({'contrast_losses': serializable_contrast_losses}, f)
     
     def train(self):
         self.total_progress_bar.write('Start training')
