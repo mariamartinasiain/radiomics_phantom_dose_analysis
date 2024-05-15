@@ -333,6 +333,7 @@ def main():
     jsonpath = "./dataset_info_full.json"
     data_list = load_json(jsonpath)
     train_data, test_data = create_datasets(data_list)
+    model = get_model(target_size=(64, 64, 32))
     
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.015,progress=True,num_init_workers=8, num_replace_workers=8)
@@ -343,7 +344,7 @@ def main():
     data_loader = {'train': train_loader, 'test': test_loader}
     dataset = {'train': train_dataset, 'test': test_dataset}
     
-    model = get_model(target_size=(64, 64, 32))
+    
     
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     
