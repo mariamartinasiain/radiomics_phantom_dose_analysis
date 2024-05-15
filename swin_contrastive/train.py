@@ -42,14 +42,18 @@ class Train:
         self.best_log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
         
         self.train_losses = []
+        self.contrast_losses = []
         self.val_losses = []
         
         
-    def save_losses(self, train_loss, val_loss):
+    def save_losses(self, train_loss, val_loss,loss_file='losses.json'):
         self.train_losses.append(train_loss)
         self.val_losses.append(val_loss)
-        with open('losses.json', 'w') as f:
+        self.contrast_losses.append(self.losses_dict['contrast_loss'])
+        with open(loss_file, 'w') as f:
             json.dump({'train_losses': self.train_losses, 'val_losses': self.val_losses}, f)
+        with open('contrast_losses.json', 'w') as f:
+            json.dump({'contrast_losses': self.contrast_losses}, f)
     
     def train(self):
         self.total_progress_bar.write('Start training')
@@ -70,7 +74,7 @@ class Train:
         self.dataset.shutdown()
         self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
-        self.save_model('./new_weigths_full_dataset_training.pth')
+        self.save_model('./new_weigths_full_dataset_training_with_classification_loss.pth')
         return self.acc_dict['best_test_acc']
 
     def train_epoch(self):
