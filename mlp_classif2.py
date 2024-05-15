@@ -140,6 +140,8 @@ def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='
 
     results = {}
 
+    save_results_to_csv([])
+
     # Iterate over each group to be used as the test set
     for test_index, (train_index, test_index) in enumerate(logo.split(features, labels, groups)):
         X_train_all, X_test = features[train_index], features[test_index]
