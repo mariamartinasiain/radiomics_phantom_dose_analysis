@@ -191,6 +191,7 @@ class Train:
         total_test_accuracy = []
         with torch.no_grad():
             testing_iterator = tqdm(self.test_loader, desc="Testing (X / X Steps) (loss=X.X)", dynamic_ncols=True)
+            running_val_loss = 0
             for step,batch in enumerate(testing_iterator):
                 imgs_s = batch["image"].cuda()
                 all_labels = batch["roi_label"].cuda()
