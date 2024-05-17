@@ -88,7 +88,7 @@ class Train:
         self.dataset.shutdown()
         self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
-        self.save_model('./new_weigths_full_dataset_training_with_classification_loss.pth')
+        self.save_model('./working_contrastive_full_dataset_training.pth')
         return self.acc_dict['best_test_acc']
 
     def train_epoch(self):
@@ -122,11 +122,11 @@ class Train:
         
         self.contrastive_step(latents,ids)
         
-        features = torch.mean(bottleneck, dim=(2, 3, 4))
-        accu = self.classification_step(features, all_labels)
+        #features = torch.mean(bottleneck, dim=(2, 3, 4))
+        #accu = self.classification_step(features, all_labels)
         print(f"Train Accuracy: {accu}%")
-        #accu = 0
-        #self.losses_dict['classification_loss'] = 0.0
+        accu = 0
+        self.losses_dict['classification_loss'] = 0.0
         
         
         #image reconstruction
@@ -358,8 +358,8 @@ def main():
     train_data, test_data = create_datasets(data_list)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.0069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
-    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.0015,progress=True,num_init_workers=8, num_replace_workers=8)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
+    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.015,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
