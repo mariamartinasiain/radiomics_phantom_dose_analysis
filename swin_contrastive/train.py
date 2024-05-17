@@ -180,7 +180,7 @@ class Train:
         
             # (nbatch_size, 768,D, H, W) -> (nbatch_size * num_elements, 768)
             embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, 768)
-            labels = torch.arange(num_elements,offset).repeat(btneck.shape[0]) 
+            labels = torch.arange(offset,offset+num_elements).repeat(btneck.shape[0]) 
             #print("weigth",weigth)
             #print("embeddings size",embeddings.size())
             #print("labels size",labels.size())           
