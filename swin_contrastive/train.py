@@ -124,7 +124,7 @@ class Train:
         
         #features = torch.mean(bottleneck, dim=(2, 3, 4))
         #accu = self.classification_step(features, all_labels)
-        print(f"Train Accuracy: {accu}%")
+        #print(f"Train Accuracy: {accu}%")
         accu = 0
         self.losses_dict['classification_loss'] = 0.0
         
