@@ -1,4 +1,4 @@
-from mlp_classif2 import train_mlp
+from mlp_classif2 import train_mlp_svm
 from mlp_classif2 import train_mlp_with_data
 from mlp_classif2 import load_data
 from svm_classif import train_svm
@@ -47,6 +47,6 @@ for classif_type in classif_types:
         latent_size = info_list
         data_path = f'features_{model}.csv'
         #output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
-        mlp_accuracy,mlp_max_accu,mlp_min_accu = train_mlp(latent_size, data_path, "",classif_type,mg_filter=None)
+        mlp_accuracy,mlp_max_accu,mlp_min_accu = train_mlp_svm(latent_size, data_path, "",classif_type,mg_filter=None)
         #_,svm_accuracy,svm_max_accu,svm_min_accu = train_svm(data_path,classif_type,mg_filter=None)
         #update_performance_file(model, n_scanners, mlp_accuracy, svm_accuracy, output_path_mlp,classif_type,mlp_max_accu,mlp_min_accu,svm_max_accu,svm_min_accu)

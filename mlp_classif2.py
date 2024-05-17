@@ -9,7 +9,8 @@ from sklearn.preprocessing import LabelEncoder
 from keras.utils import to_categorical
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.model_selection import GroupShuffleSplit, LeaveOneGroupOut
+from sklearn.model_selection import GroupShuffleSplit, LeaveOneGroupOut,LeavePGroupsOut,GroupKFold
+from sklearn import svm
 import numpy as np
 
 def group_data(data, mode='scanner'):
@@ -129,7 +130,7 @@ def save_classifier_performance(history):
 
     
     
-def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='roi_small', mg_filter=None):
+def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_type='roi_small', mg_filter=None):
     features, labels, groups, cw, classes_size = load_data(data_path, label_type=classif_type, mg_filter=mg_filter)
     
     mean_val_accuracy = 0
@@ -139,12 +140,14 @@ def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='
     
 
     results = {}
+    results_svm = {}
 
     save_results_to_csv([])
 
     #in the case we are in scanner classif, we need to do something like 10% of groups instead of logo, and then do for every 10%, 20%, ... 90% of data avaible for training
     if classif_type == 'scanner':
-        pass
+        splits = GroupKFold(n_splits=10)
+        it1 = enumerate(splits.split(features, labels, groups))
     else:
         logo = LeaveOneGroupOut()
         it1 = enumerate(logo.split(features, labels, groups))
@@ -157,10 +160,12 @@ def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='
         groups_train_all = groups[train_index]
         unique_train_groups = np.unique(groups_train_all)
         if classif_type == 'scanner':
-            pass
+            it2 = range(1, 9)
         else:
             it2 = range(1, len(unique_train_groups))
         for N in it2:
+            if classif_type == 'scanner':
+                N = N/10
             splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
             for train_indices, _ in splits.split(X_train_all, y_train_all, groups_train_all):
                 X_train = X_train_all[train_indices]
@@ -177,6 +182,13 @@ def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='
                     verbose=2,
                     class_weight=cw
                 )
+                
+                clf = svm.LinearSVC()
+                clf.fit(X_train, y_train)
+                svm_accuracy = clf.score(X_test, y_test)
+                if N not in results_svm:
+                    results_svm[N] = []
+                results_svm[N].append(svm_accuracy)
                 
                 # Save the classifier's performance
                 save_classifier_performance(history)
@@ -201,16 +213,19 @@ def train_mlp(input_size, data_path, output_path='classifier.h5', classif_type='
     mean_val_accuracy /= len(results)
 
     print(f"Final results: Mean accuracy: {mean_val_accuracy}, Min accuracy: {min_accuracy}, Max accuracy: {max_accuracy}")
+    
     save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path)
+    save_results_to_csv(results_svm, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="svm")
 
     return mean_val_accuracy, max_accuracy, min_accuracy
  
-def save_results_to_csv(results,classif_type='roi_small',mg_filter=None,data_path=""):
+
+def save_results_to_csv(results,classif_type='roi_small',mg_filter=None,data_path="",plus=""):
     df = pd.DataFrame(results)
     #adding columns
     df['classif_type'] = classif_type
     df['mg_filter'] = mg_filter
-    csv_filename = f"results_{classif_type}_{mg_filter}_{data_path}.csv"
+    csv_filename = f"results_{classif_type}_{plus}_{mg_filter}_{data_path}.csv"
     df.to_csv(csv_filename, index=False)
     
  
@@ -245,7 +260,7 @@ def main():
             print(e)
     else:
         print("No GPU found. Using CPU.")
-    train_mlp(86, 'data/output/features.csv')
+    train_mlp_svm(86, 'data/output/features.csv')
     
 if __name__ == '__main__':
     main()
