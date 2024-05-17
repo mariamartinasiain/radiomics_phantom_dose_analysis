@@ -41,7 +41,7 @@ configurations = {
     'oscar_full' : (2048),
     'pyradiomics_full' : (86),
 }
-classif_types = ['roi_large','scanner']
+classif_types = ['scanner','roi_large']
 for classif_type in classif_types:
     for model, info_list in configurations.items():
         latent_size = info_list
