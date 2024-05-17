@@ -156,8 +156,14 @@ class Train:
         return compute_accuracy(logits, labels, acc_metric=self.acc_metric)
 
     def contrastive_step(self, latents,ids): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
-        contrast_loss = 0
         #print("ids",ids)
+        
+        total_num_elements = latents[4].shape[0] * latents[4].shape[2] * latents[4].shape[3] * latents[4].shape[4]
+        all_embeddings = torch.empty(total_num_elements, 768)
+        all_labels = torch.empty(total_num_elements, dtype=torch.long)
+        
+        offset = 0
+        start_idx = 0
         for id in torch.unique(ids):
             #print("id",id)
             boolids = (ids == id)
@@ -172,19 +178,21 @@ class Train:
             num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
             #print("num_elements",num_elements)
         
-            # (batch_size, D, H, W, 768) -> (batch_size * num_elements, 768)
+            # (nbatch_size, 768,D, H, W) -> (nbatch_size * num_elements, 768)
             embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, 768)
-            labels = torch.arange(num_elements).repeat(btneck.shape[0]) 
-            weigth = btneck.shape[0] / self.batch_size
+            labels = torch.arange(num_elements,offset).repeat(btneck.shape[0]) 
             #print("weigth",weigth)
             #print("embeddings size",embeddings.size())
-            #print("labels size",labels.size())
-            llss = (self.contrast_loss(embeddings, labels))
+            #print("labels size",labels.size())           
+            end_idx = start_idx + embeddings.shape[0]
+            all_embeddings[start_idx:end_idx, :] = embeddings
+            all_labels[start_idx:end_idx] = labels
+            start_idx = end_idx
             
-            #print("here is the loss" , llss)
-            contrast_loss += weigth * llss
-            
-        self.losses_dict['contrast_loss'] = contrast_loss
+            offset += num_elements
+        
+        llss = (self.contrast_loss(all_embeddings, all_labels)) #au lieu de calculer la loss ici, on peut le faire en fin de boucle, avec un labels qui serait al concatenation de tout les labels dans les boucles shifté de la bonne quantité (à priori num_elements) et un embeddings qui serait la concatenation de tout les embedggings de la boucle
+        self.losses_dict['contrast_loss'] = llss
         
     def test_epoch(self):
         self.model.eval()
@@ -350,8 +358,8 @@ def main():
     train_data, test_data = create_datasets(data_list)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
-    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.015,progress=True,num_init_workers=8, num_replace_workers=8)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.0069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
+    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.0015,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
