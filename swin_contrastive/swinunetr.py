@@ -207,7 +207,7 @@ def run_inference(model):
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.069, progress=True, num_init_workers=8, num_replace_workers=8)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.059, progress=True, num_init_workers=8, num_replace_workers=8)
     print("dataset length: ", len(datafiles))
     dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
     #qq chose comme testload = DataLoader(da.....
