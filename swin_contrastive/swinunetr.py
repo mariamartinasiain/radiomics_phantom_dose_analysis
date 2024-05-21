@@ -63,7 +63,7 @@ from qa4iqi_extraction.constants import (
 
 import torch
 
-jsonpath = "./uncompressed_datasetinfo.json"
+jsonpath = "./dataset_info_full_uncompressed.json"
 
 
 
@@ -214,7 +214,7 @@ def run_inference(model):
 
     slice_num = 20
 
-    with open("new_model_deepfeatures.csv", "w", newline="") as csvfile:
+    with open("correct_contrastive_deepfeatures.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
