@@ -196,7 +196,7 @@ def get_model(target_size = (64, 64, 32)):
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
 
-def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
+def run_inference(model,jsonpath = "./10mg.json"):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
