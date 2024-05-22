@@ -207,8 +207,8 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
-        LoadImaged(keys=["image", "roi"], ensure_channel_first=True),
-        EnsureTyped(keys=["image", "roi"], device=device, track_meta=False),
+        LoadImaged(keys=["image"], ensure_channel_first=True),
+        EnsureTyped(keys=["image"], device=device, track_meta=False),
         #CropOnROId(keys=["image"], roi_key="roi", size=target_size),
         #ToTensord(keys=["image"]),
     ])
