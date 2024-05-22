@@ -248,9 +248,9 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
             }
             writer.writerow(record)"""
             if i%23 == 0:
-                print("Sleeping for 20 seconds")
+                """print("Sleeping for 20 seconds")
                 time.sleep(20)
-                print("Woke up")
+                print("Woke up")"""
                 dataset.update_cache()
                 iterator = iter(dataload)
             i+=1
