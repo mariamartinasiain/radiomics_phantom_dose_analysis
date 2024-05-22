@@ -220,7 +220,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
         #dataset.start()
         i=0
         iterator = iter(dataload)
-        for _ in tqdm(range(len(datafiles))):
+        for _ in iter(dataload):
             batch = next(iterator)               
             image = batch["image"]
             val_inputs = image.cuda()
@@ -244,8 +244,8 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
             roi_label = batch["roi_label"][0]
             image_filename = f"{series_number}_{roi_label}.png"
             plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
-            if i%23 == 0:
-                dataset.update_cache()
+            #if i%23 == 0:
+                #dataset.update_cache()
                 #iterator = iter(dataload)
             i+=1
         #dataset.shutdown()
