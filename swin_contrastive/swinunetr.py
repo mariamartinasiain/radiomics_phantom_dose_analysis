@@ -196,7 +196,7 @@ def get_model(target_size = (64, 64, 32)):
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
 
-def run_inference(model,jsonpath = "./10mg.json"):
+def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
@@ -220,12 +220,11 @@ def run_inference(model,jsonpath = "./10mg.json"):
         #dataset.start()
         i=0
         iterator = iter(dataload)
-        for _ in iter(dataload):
+        for _ in tqdm(iter(dataload)):
             batch = next(iterator)               
             image = batch["image"]
             val_inputs = image.cuda()
             print(val_inputs.shape)
-            slice_to_save = val_inputs[:,:, :,:,slice_num].cpu().squeeze().squeeze()
             #val_outputs = model.swinViT(val_inputs)
             #latentrep = val_outputs[4] #48*2^4 = 768
             #latentrep = model.encoder10(latentrep)
@@ -240,10 +239,6 @@ def run_inference(model,jsonpath = "./10mg.json"):
                 "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
             }
             writer.writerow(record)"""
-            series_number = batch["info"][SERIES_NUMBER_FIELD][0]
-            roi_label = batch["roi_label"][0]
-            image_filename = f"{series_number}_{roi_label}.png"
-            plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
             #if i%23 == 0:
                 #dataset.update_cache()
                 #iterator = iter(dataload)
