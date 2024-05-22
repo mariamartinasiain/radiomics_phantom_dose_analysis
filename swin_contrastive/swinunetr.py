@@ -232,9 +232,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
             image = batch["image"]
             val_inputs = image.cuda()
             print(val_inputs.shape)
-            print("Sleeping for 20 seconds")
-            time.sleep(20)
-            print("Woke up")
+            
             #val_outputs = model.swinViT(val_inputs)
             #latentrep = val_outputs[4] #48*2^4 = 768
             #latentrep = model.encoder10(latentrep)
@@ -250,6 +248,9 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
             }
             writer.writerow(record)"""
             if i%23 == 0:
+                print("Sleeping for 20 seconds")
+                time.sleep(20)
+                print("Woke up")
                 dataset.update_cache()
                 iterator = iter(dataload)
             i+=1
