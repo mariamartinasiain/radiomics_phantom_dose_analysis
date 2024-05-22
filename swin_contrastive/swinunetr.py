@@ -223,10 +223,10 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        #dataset.start()
+        dataset.start()
         i=0
         iterator = iter(dataload)
-        for _ in tqdm(iter(dataload)):
+        for _ in tqdm(iterator):
             batch = next(iterator)               
             image = batch["image"]
             val_inputs = image.cuda()
@@ -245,11 +245,11 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
                 "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
             }
             writer.writerow(record)"""
-            #if i%23 == 0:
-                #dataset.update_cache()
-                #iterator = iter(dataload)
+            if i%23 == 0:
+                dataset.update_cache()
+                iterator = iter(dataload)
             i+=1
-        #dataset.shutdown()
+        dataset.shutdown()
         
     print("Done !")
 
