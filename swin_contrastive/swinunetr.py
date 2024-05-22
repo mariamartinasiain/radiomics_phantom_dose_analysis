@@ -198,6 +198,11 @@ def get_model(target_size = (64, 64, 32)):
 
 def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
     
+    import multiprocessing as mp
+
+    # Set start method to 'spawn'
+    mp.set_start_method('spawn')
+    
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
     torch.cuda.set_device(device_id)
