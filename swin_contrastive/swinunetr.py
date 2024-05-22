@@ -197,20 +197,26 @@ def get_model(target_size = (64, 64, 32)):
     return model
 
 def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
+    
+    device_id = 0
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    torch.cuda.set_device(device_id)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+    
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
-        LoadImaged(keys=["image", "roi"]),
-        EnsureChannelFirstd(keys=["image", "roi"]),
+        LoadImaged(keys=["image", "roi"], ensure_channel_first=True),
+        EnsureTyped(keys=["image", "roi"], device=device, track_meta=False),
         CropOnROId(keys=["image"], roi_key="roi", size=target_size),
         ToTensord(keys=["image"]),
     ])
 
     datafiles = load_data(jsonpath)
     #dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
-    dataset = Dataset(data=datafiles, transform=transforms)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.0069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
     print("dataset length: ", len(datafiles))
-    dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn,num_workers=4, prefetch_factor=2)
+    dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
     with open("aaa.csv", "w", newline="") as csvfile:
