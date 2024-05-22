@@ -198,10 +198,7 @@ def get_model(target_size = (64, 64, 32)):
 
 def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
     
-    import multiprocessing as mp
-
-    # Set start method to 'spawn'
-    mp.set_start_method('spawn')
+    
     
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
@@ -220,7 +217,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
     #dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
     dataset = Dataset(data=datafiles, transform=transforms)
     print("dataset length: ", len(datafiles))
-    dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4,prefetch_factor=16)
+    dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
     with open("aaa.csv", "w", newline="") as csvfile:
