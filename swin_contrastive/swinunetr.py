@@ -217,7 +217,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        dataset.start()
+        #dataset.start()
         i=0
         iterator = iter(dataload)
         for _ in tqdm(range(len(datafiles))):
@@ -246,9 +246,9 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
             plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
             if i%23 == 0:
                 dataset.update_cache()
-                iterator = iter(dataload)
+                #iterator = iter(dataload)
             i+=1
-        dataset.shutdown()
+        #dataset.shutdown()
         
     print("Done !")
 
