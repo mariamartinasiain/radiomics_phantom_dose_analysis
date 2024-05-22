@@ -63,7 +63,7 @@ from qa4iqi_extraction.constants import (
 
 import torch
 
-jsonpath = "./dataset_info_full_uncompressed.json"
+
 
 
 
@@ -196,7 +196,7 @@ def get_model(target_size = (64, 64, 32)):
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
 
-def run_inference(model):
+def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
@@ -207,14 +207,12 @@ def run_inference(model):
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.059, progress=True, num_init_workers=8, num_replace_workers=8)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
     print("dataset length: ", len(datafiles))
     dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
     #qq chose comme testload = DataLoader(da.....
-
-    slice_num = 20
-
-    with open("correct_contrastive_deepfeatures.csv", "w", newline="") as csvfile:
+    slice_num = 32
+    with open("aaa.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -227,11 +225,10 @@ def run_inference(model):
             val_inputs = image.cuda()
             print(val_inputs.shape)
             slice_to_save = val_inputs[:,:, slice_num, :, :].cpu().squeeze().squeeze()
-            print(slice_to_save.shape)
-            val_outputs = model.swinViT(val_inputs)
-            latentrep = val_outputs[4] #48*2^4 = 768
+            #val_outputs = model.swinViT(val_inputs)
+            #latentrep = val_outputs[4] #48*2^4 = 768
             #latentrep = model.encoder10(latentrep)
-            print(latentrep.shape)
+            """print(latentrep.shape)
             record = {
                 "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
                 "deepfeatures": latentrep.flatten().tolist(),
@@ -241,7 +238,11 @@ def run_inference(model):
                 "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
                 "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
             }
-            writer.writerow(record)
+            writer.writerow(record)"""
+            series_number = batch["info"][SERIES_NUMBER_FIELD][0]
+            roi_label = batch["roi_label"][0]
+            image_filename = f"{series_number}_{roi_label}.png"
+            plt.imsave(os.path.join("./", image_filename), slice_to_save, cmap='gray')
             if i%23 == 0:
                 dataset.update_cache()
                 iterator = iter(dataload)

@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord
-from swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model
+from swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model, load_data
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
@@ -258,11 +258,6 @@ def compute_accuracy(logits, true_labels, acc_metric='total_mean', print_result=
     else:
         raise ValueError(f'acc_metric, {acc_metric} is not available.')
     
-def load_json(json_path):
-    with open(json_path, 'r') as file:
-        data_list = json.load(file)
-    return data_list
-
 def group_data(data_list, mode='scanner'):
     group_map = {}
 
@@ -354,7 +349,7 @@ def main():
     ])
 
     jsonpath = "./dataset_info_full_uncompressed.json"
-    data_list = load_json(jsonpath)
+    data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list)
     model = get_model(target_size=(64, 64, 32))
     
