@@ -226,7 +226,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
         dataset.start()
         i=0
         iterator = iter(dataload)
-        for _ in tqdm(iterator):
+        for _ in tqdm(range(len(datafiles))):
             batch = next(iterator)               
             image = batch["image"]
             val_inputs = image.cuda()
