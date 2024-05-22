@@ -209,7 +209,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
     transforms = Compose([
         LoadImaged(keys=["image", "roi"], ensure_channel_first=True),
         EnsureTyped(keys=["image", "roi"], device=device, track_meta=False),
-        CropOnROId(keys=["image"], roi_key="roi", size=target_size),
+        #CropOnROId(keys=["image"], roi_key="roi", size=target_size),
         #ToTensord(keys=["image"]),
     ])
 
@@ -230,7 +230,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
         for _ in tqdm(range(len(datafiles))):
             batch = next(iterator)               
             image = batch["image"]
-            val_inputs = image.cuda()
+            val_inputs = image#.cuda()
             print(val_inputs.shape)
             
             #val_outputs = model.swinViT(val_inputs)
