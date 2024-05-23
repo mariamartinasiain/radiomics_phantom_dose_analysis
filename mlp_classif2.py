@@ -174,7 +174,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
             else:
                 N = N/len(unique_train_groups)
                 
-            print(f"Training with {N} of the data")
+            #print(f"Training with {N} of the data")
             if N == 1:
                 full_indexes = np.arange(len(X_train_all))
                 it3 = [(full_indexes,None)]
@@ -183,8 +183,8 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                 it3 = splits.split(X_train_all, y_train_all, groups_train_all)
             
             for train_indices, _ in it3:
-                print("Groups Used:", np.unique(groups_train_all[train_indices]))
-                continue
+                #print("Groups Used:", np.unique(groups_train_all[train_indices]))
+                
                 
                 X_train = X_train_all[train_indices]
                 y_train = y_train_all[train_indices]

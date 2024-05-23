@@ -36,8 +36,10 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
+    'swinunetr_full_averaged': (768),
     'swin_finetune': (3072),
     'swinunetr_full' : (3072),
+    'swin_finetune_averaged': (768),
     'oscar_full' : (2048),
     'pyradiomics_full' : (86),
 }
