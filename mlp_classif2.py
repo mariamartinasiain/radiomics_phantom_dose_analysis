@@ -32,6 +32,8 @@ def group_data(data, mode='scanner'):
         unique_bases = gd['base'].unique()
         base_map = {base: i for i, base in enumerate(unique_bases)}
         gd['group_id'] = gd['base'].apply(lambda x: base_map[x])
+    #printing group id  <-> group name mapping
+    print({v: k for k, v in group_map.items()})
     
     return np.array(gd['group_id'])
 
@@ -132,6 +134,7 @@ def save_classifier_performance(history):
     
 def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_type='roi_small', mg_filter=None):
     features, labels, groups, cw, classes_size = load_data(data_path, label_type=classif_type, mg_filter=mg_filter)
+    return 0,0,0
     
     mean_val_accuracy = 0
     min_accuracy = 1
