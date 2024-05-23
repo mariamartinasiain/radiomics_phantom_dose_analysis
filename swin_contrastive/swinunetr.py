@@ -197,7 +197,7 @@ def get_model(target_size = (64, 64, 32)):
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
 
-def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
+def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
     
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
@@ -207,9 +207,9 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
-        LoadImaged(keys=["image"], ensure_channel_first=True),
-        EnsureTyped(keys=["image"], device=device, track_meta=False),
-        #CropOnROId(keys=["image"], roi_key="roi", size=target_size),
+        LoadImaged(keys=["image", "roi"], ensure_channel_first=True),
+        EnsureTyped(keys=["image", "roi"], device=device, track_meta=False),
+        CropOnROId(keys=["image"], roi_key="roi", size=target_size),
         #ToTensord(keys=["image"]),
     ])
 
@@ -247,6 +247,18 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed.json"):
                 "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
             }
             writer.writerow(record)"""
+            #save 3d image
+            print("Saving 3d image")
+            image = image[0].cpu().numpy()
+            image = np.squeeze(image)
+            print("Image shape",image.shape)
+            image = nib.Nifti1Image(image, np.eye(4))
+            name = datafiles[i]["info"]["roi"]
+            #remobing file path information and only keeping file name of the path
+            name = os.path.basename(name)
+            nib.save(image, name)
+            
+            
             if i%23 == 0:
                 """print("Sleeping for 20 seconds")
                 time.sleep(20)
