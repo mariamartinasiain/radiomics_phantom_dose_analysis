@@ -173,7 +173,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
             
             for train_indices, _ in splits.split(X_train_all, y_train_all, groups_train_all):
                 print("Groups Used:", np.unique(groups_train_all[train_indices]))
-                return
+                continue
                 
                 X_train = X_train_all[train_indices]
                 y_train = y_train_all[train_indices]
@@ -217,7 +217,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                 results[N].append(max_val_accuracy)
                 
                 print(f"Test group: {test_index+1}, Training with N={N} scanners, Accuracy: {max_val_accuracy}")
-
+        return 0,0,0
     # Average the mean validation accuracy
     mean_val_accuracy /= len(results)
 
