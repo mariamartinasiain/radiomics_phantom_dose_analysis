@@ -165,7 +165,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
         if classif_type == 'scanner':
             it2 = range(1, 9)
         else:
-            it2 = range(1, len(unique_train_groups))
+            it2 = range(1, len(unique_train_groups)+1)
         for N in it2:
             if classif_type == 'scanner':
                 N = N/10
