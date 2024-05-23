@@ -217,7 +217,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                 results[N].append(max_val_accuracy)
                 
                 print(f"Test group: {test_index+1}, Training with N={N} scanners, Accuracy: {max_val_accuracy}")
-        return 0,0,0
+    return 0,0,0
     # Average the mean validation accuracy
     mean_val_accuracy /= len(results)
 
