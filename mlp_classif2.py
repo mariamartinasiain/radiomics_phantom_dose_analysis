@@ -176,7 +176,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                 
             print(f"Training with {N} of the data")
             if N == 1:
-                it3 = [train_index]
+                it3 = [(train_index,_)]
             else:
                 splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
                 it3 = splits.split(X_train_all, y_train_all, groups_train_all)
