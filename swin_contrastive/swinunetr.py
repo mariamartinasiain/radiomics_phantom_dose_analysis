@@ -216,7 +216,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
 
     datafiles = load_data(jsonpath)
     #dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.00049,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.2)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.049,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.2)
     print("dataset length: ", len(datafiles))
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
