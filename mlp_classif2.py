@@ -182,7 +182,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                 it3 = splits.split(X_train_all, y_train_all, groups_train_all)
             
             for train_indices, _ in it3:
-                print("Groups Used:", np.unique(groups_train_all[train_indices]))
+                print("Groups Used:", np.unique(groups[train_indices]))
                 continue
                 
                 X_train = X_train_all[train_indices]
