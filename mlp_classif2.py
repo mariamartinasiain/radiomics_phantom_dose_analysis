@@ -19,6 +19,8 @@ def group_data(data, mode='scanner'):
         # Extract the first two characters and map them to unique integers
         unique_groups = data['SeriesDescription'].apply(lambda x: x[:2]).unique()
         group_map = {group: i for i, group in enumerate(unique_groups)}
+        #printing group id  <-> group name mapping
+        print({v: k for k, v in group_map.items()})
         gd['group_id'] = data['SeriesDescription'].apply(lambda x: group_map[x[:2]])
     elif mode == 'repetition':
         # Extract the base part excluding the numeric suffix and map them to unique integers
@@ -32,8 +34,7 @@ def group_data(data, mode='scanner'):
         unique_bases = gd['base'].unique()
         base_map = {base: i for i, base in enumerate(unique_bases)}
         gd['group_id'] = gd['base'].apply(lambda x: base_map[x])
-    #printing group id  <-> group name mapping
-    print({v: k for k, v in group_map.items()})
+    
     
     return np.array(gd['group_id'])
 
