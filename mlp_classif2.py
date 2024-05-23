@@ -135,7 +135,6 @@ def save_classifier_performance(history):
     
 def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_type='roi_small', mg_filter=None):
     features, labels, groups, cw, classes_size = load_data(data_path, label_type=classif_type, mg_filter=mg_filter)
-    return 0,0,0
     
     mean_val_accuracy = 0
     min_accuracy = 1
@@ -171,7 +170,11 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
             if classif_type == 'scanner':
                 N = N/10
             splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
+            
             for train_indices, _ in splits.split(X_train_all, y_train_all, groups_train_all):
+                print("Groups Used:", np.unique(groups_train_all[train_indices]))
+                return
+                
                 X_train = X_train_all[train_indices]
                 y_train = y_train_all[train_indices]
                 
