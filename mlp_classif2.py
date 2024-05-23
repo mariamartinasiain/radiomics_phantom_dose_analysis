@@ -171,6 +171,8 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
         for N in it2:
             if classif_type == 'scanner':
                 N = N/10
+            else:
+                N = N/len(unique_train_groups)
             splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
             
             for train_indices, _ in splits.split(X_train_all, y_train_all, groups_train_all):
