@@ -158,6 +158,8 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
 
     # Iterate over each group to be used as the test set
     for _, (train_index, test_index) in it1:
+        print("Test group:", np.unique(groups[test_index]))
+        print("Number of remaining groups:", len(np.unique(groups[train_index])))
         X_train_all, X_test = features[train_index], features[test_index]
         y_train_all, y_test = labels[train_index], labels[test_index]
         groups_train_all = groups[train_index]
