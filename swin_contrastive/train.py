@@ -180,7 +180,10 @@ class Train:
         
             # (nbatch_size, 768,D, H, W) -> (nbatch_size * num_elements, 768)
             embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, 768)
-            labels = torch.arange(offset,offset+num_elements).repeat(btneck.shape[0]) 
+            
+            #contrast_ind = torch.arange(offset,offset+num_elements) #with this one under patch of the cropped ROI patch will be compared to each other : negatives within same roi
+            contrast_ind = torch.full((num_elements,), offset) #negatives only between different r
+            labels = contrast_ind.repeat(btneck.shape[0]) 
             #print("weigth",weigth)
             #print("embeddings size",embeddings.size())
             #print("labels size",labels.size())           
@@ -191,7 +194,7 @@ class Train:
             
             offset += num_elements
         
-        llss = (self.contrast_loss(all_embeddings, all_labels)) #au lieu de calculer la loss ici, on peut le faire en fin de boucle, avec un labels qui serait al concatenation de tout les labels dans les boucles shifté de la bonne quantité (à priori num_elements) et un embeddings qui serait la concatenation de tout les embedggings de la boucle
+        llss = (self.contrast_loss(all_embeddings, all_labels))
         self.losses_dict['contrast_loss'] = llss
         
     def test_epoch(self):
