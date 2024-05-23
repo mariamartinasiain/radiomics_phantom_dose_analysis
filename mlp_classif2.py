@@ -175,8 +175,13 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                 N = N/len(unique_train_groups)
                 
             print(f"Training with {N} of the data")
-            splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
-            for train_indices, _ in splits.split(X_train_all, y_train_all, groups_train_all):
+            if N == 1:
+                it3 = [train_index]
+            else:
+                splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
+                it3 = splits.split(X_train_all, y_train_all, groups_train_all)
+            
+            for train_indices, _ in it3:
                 print("Groups Used:", np.unique(groups_train_all[train_indices]))
                 continue
                 
