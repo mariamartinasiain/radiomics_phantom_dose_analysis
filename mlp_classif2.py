@@ -173,8 +173,9 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                 N = N/10
             else:
                 N = N/len(unique_train_groups)
+                
+            print(f"Training with {N} of the data")
             splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
-            
             for train_indices, _ in splits.split(X_train_all, y_train_all, groups_train_all):
                 print("Groups Used:", np.unique(groups_train_all[train_indices]))
                 continue
