@@ -256,8 +256,8 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
             image = nib.Nifti1Image(image, np.eye(4))
             name = datafiles[i]["roi"]
             #remobing file path information and only keeping file name of the path
-            name = os.path.basename("uncompress_cropped/"+name)
-            nib.save(image, name)
+            name = os.path.basename(name)
+            nib.save(image, "uncompress_cropped/"+name)
             
             
             if i%70 == 0:
