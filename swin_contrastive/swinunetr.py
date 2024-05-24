@@ -20,6 +20,7 @@ from monai.utils import ensure_tuple,convert_to_tensor
 from monai.transforms.croppad.array import Crop
 from torch.utils.data._utils.collate import default_collate
 from monai.transforms import (
+    ScaleIntensityd,
     AsDiscrete,
     Compose,
     CropForegroundd,
@@ -208,14 +209,8 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     target_size = (64, 64, 32)
     transforms = Compose([
         LoadImaged(keys=["image"], ensure_channel_first=True),
-        ScaleIntensityRanged(
-            keys=["image"],
-            a_min=-175,
-            a_max=250,
-            b_min=0.0,
-            b_max=1.0,
-            clip=True,
-        ),
+        ScaleIntensityd(keys=["image"],
+        minv=0.0, maxv=1.0),
         Spacingd(
             keys=["image"],
             pixdim=(1.5, 1.5, 2.0),
