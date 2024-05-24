@@ -9,7 +9,7 @@ import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped
 from swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model, load_data
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
@@ -336,28 +336,32 @@ def count_parameters(model):
 
 def main():
     from sklearn.preprocessing import LabelEncoder
+    device_id = 0
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    torch.cuda.set_device(device_id)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
     encoder = LabelEncoder()
     encoder.fit(labels)
     transforms = Compose([
         #PrintDebug(),
-        LoadImaged(keys=["image", "roi"]),
+        LoadImaged(keys=["image"]),
         #DebugTransform2(),
-        EnsureChannelFirstd(keys=["image", "roi"]),
-        CropOnROId(keys=["image"], roi_key="roi", size=(64, 64, 64)), 
+        EnsureChannelFirstd(keys=["image"]),
+        EnsureTyped(keys=["image"], device=device, track_meta=False),
         EncodeLabels(encoder=encoder),
         #DebugTransform(),
         #DebugTransform2(),
-        ToTensord(keys=["image"])
+        
     ])
 
-    jsonpath = "./dataset_info_full_uncompressed.json"
+    jsonpath = "./dataset_info_cropped.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.069,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.25)
-    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.015,progress=True,num_init_workers=8, num_replace_workers=8)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.10)
+    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
