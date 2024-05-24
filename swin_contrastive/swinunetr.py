@@ -219,7 +219,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
         Spacingd(
             keys=["image"],
             pixdim=(1.5, 1.5, 2.0),
-            mode=("bilinear", "nearest"),
+            mode=("bilinear"),
         ),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         
