@@ -215,7 +215,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
 
     datafiles = load_data(jsonpath)
     #dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.49,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     print("dataset length: ", len(datafiles))
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
@@ -231,7 +231,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
             batch = next(iterator)               
             image = batch["image"]
             val_inputs = image#.cuda()
-            print(val_inputs.shape)
+            #print(val_inputs.shape)
             
             val_outputs = model.swinViT(val_inputs)
             latentrep = val_outputs[4] #48*2^4 = 768
