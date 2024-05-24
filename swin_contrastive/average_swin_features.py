@@ -3,7 +3,7 @@ import numpy as np
 import ast
 
 # Load the dataset
-df = pd.read_csv('../../all_dataset_features/correct_contrastive_deepfeatures.csv')
+df = pd.read_csv('../../all_dataset_features/features_swinunetr_full.csv')
 
 # Function to parse and average the deepfeatures column
 def average_features(row):

@@ -197,7 +197,7 @@ def get_model(target_size = (64, 64, 32)):
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
 
-def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
+def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
@@ -216,12 +216,12 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
 
     datafiles = load_data(jsonpath)
     #dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.049,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.2)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.49,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     print("dataset length: ", len(datafiles))
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open("aaa.csv", "w", newline="") as csvfile:
+    with open("aaaaa.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -234,10 +234,10 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
             val_inputs = image#.cuda()
             print(val_inputs.shape)
             
-            #val_outputs = model.swinViT(val_inputs)
-            #latentrep = val_outputs[4] #48*2^4 = 768
-            #latentrep = model.encoder10(latentrep)
-            """print(latentrep.shape)
+            val_outputs = model.swinViT(val_inputs)
+            latentrep = val_outputs[4] #48*2^4 = 768
+            latentrep = model.encoder10(latentrep)
+            print(latentrep.shape)
             record = {
                 "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
                 "deepfeatures": latentrep.flatten().tolist(),
@@ -247,8 +247,8 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
                 "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
                 "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
             }
-            writer.writerow(record)"""
-            #save 3d image
+            writer.writerow(record)
+            """#save 3d image
             print("Saving 3d image")
             image = image[0].cpu().numpy()
             image = np.squeeze(image)
@@ -258,7 +258,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
             #remobing file path information and only keeping file name of the path
             name = os.path.basename(name)
             nib.save(image, "uncompress_cropped/"+name)
-            
+            """
             
             if i%70 == 0:
                 """print("Sleeping for 20 seconds")
