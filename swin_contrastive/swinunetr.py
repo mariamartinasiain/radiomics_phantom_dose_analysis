@@ -272,13 +272,6 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
             nib.save(image, "uncompress_cropped/"+name)
             """
             
-            if i%1 == 0:
-                """print("Sleeping for 20 seconds")
-                time.sleep(20)
-                print("Woke up")"""
-                dataset.update_cache()
-                iterator = iter(dataload)
-            i+=1
         dataset.shutdown()
         
     print("Done !")
