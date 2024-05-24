@@ -8,7 +8,7 @@ from tqdm import tqdm
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
-from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset
+from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped
 from swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model, load_data
 from monai.networks.nets import SwinUNETR
@@ -360,11 +360,11 @@ def main():
     train_data, test_data = create_datasets(data_list)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.10)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn, num_workers=4)
-    test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn,num_workers=4)
+    train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
+    test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
     
     data_loader = {'train': train_loader, 'test': test_loader}
     dataset = {'train': train_dataset, 'test': test_dataset}
