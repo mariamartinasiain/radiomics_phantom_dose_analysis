@@ -238,8 +238,9 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing
         i=0
         iterator = iter(dataload)
         for _ in tqdm(range(len(datafiles))):
-            true_path = batch["roi_path"] 
-            batch = next(iterator)               
+            
+            batch = next(iterator)
+            true_path = batch["roi_path"]                
             image = batch["image"]
             val_inputs = image#.cuda()
             print(val_inputs.shape)
