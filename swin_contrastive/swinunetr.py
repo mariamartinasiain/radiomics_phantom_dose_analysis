@@ -217,8 +217,9 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing
     transforms = Compose([
         LoadImaged(keys=["image", "roi"], ensure_channel_first=True),
         CropOnROId(keys=["image"], roi_key="roi", size=target_size),
-        EnsureTyped(keys=["image"], device=device, track_meta=False),
         CopyPathd(keys=["roi"]),
+        EnsureTyped(keys=["image"], device=device, track_meta=False),
+        
         #ToTensord(keys=["image"]),
     ])
 
@@ -239,8 +240,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing
         iterator = iter(dataload)
         for _ in tqdm(range(len(datafiles))):
             
-            batch = next(iterator)
-            true_path = batch["roi_path"]                
+            batch = next(iterator)               
             image = batch["image"]
             val_inputs = image#.cuda()
             print(val_inputs.shape)
@@ -265,6 +265,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing
             image = np.squeeze(image)
             print("Image shape",image.shape)
             image = nib.Nifti1Image(image, np.eye(4))
+            true_path = batch["roi_path"] 
             name = true_path[0]
             #remobing file path information and only keeping file name of the path
             name = os.path.basename(name)
