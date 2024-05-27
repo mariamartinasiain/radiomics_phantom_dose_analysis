@@ -198,6 +198,15 @@ def get_model(target_size = (64, 64, 32)):
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
 
+class CopyPathd(MapTransform):
+    def __init__(self, keys, allow_missing_keys=False):
+        super().__init__(keys, allow_missing_keys)
+
+    def __call__(self, data):
+        for key in self.keys:
+            data[f"{key}_path"] = data[key]  # Copier le chemin du fichier dans une nouvelle clé
+        return data
+
 def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     
     device_id = 0
@@ -208,7 +217,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
-        LoadImaged(keys=["image"], ensure_channel_first=True),
+        CopyPathd(keys=["roi"]),
         #ScaleIntensityd(keys=["image"],minv=0.0, maxv=1.0),
         # Spacingd(
         #     keys=["image"],
@@ -222,7 +231,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
 
     datafiles = load_data(jsonpath)
     #dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.049,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.2)
     print("dataset length: ", len(datafiles))
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
@@ -234,26 +243,33 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
         dataset.start()
         i=0
         iterator = iter(dataload)
+        name_correspondance = {}
         for _ in tqdm(range(len(datafiles))):
-            batch = next(iterator)               
-            image = batch["image"]
-            val_inputs = image#.cuda()
-            #print(val_inputs.shape)
+            batch = next(iterator)  
+            true_path = batch["roi_path"]             
+            # image = batch["image"]
+            # val_inputs = image#.cuda()
+            # #print(val_inputs.shape)
             
-            val_outputs = model.swinViT(val_inputs)
-            latentrep = val_outputs[4] #48*2^4 = 768
-            latentrep = model.encoder10(latentrep)
-            print(latentrep.shape)
-            record = {
-                "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
-                "deepfeatures": latentrep.flatten().tolist(),
-                "ROI": batch["roi_label"][0],
-                "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD][0],
-                "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD][0],
-                "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
-                "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
-            }
-            writer.writerow(record)
+            # val_outputs = model.swinViT(val_inputs)
+            # latentrep = val_outputs[4] #48*2^4 = 768
+            # latentrep = model.encoder10(latentrep)
+            # print(latentrep.shape)
+            # record = {
+            #     "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
+            #     "deepfeatures": latentrep.flatten().tolist(),
+            #     "ROI": batch["roi_label"][0],
+            #     "SeriesDescription": batch["info"][SERIES_DESCRIPTION_FIELD][0],
+            #     "ManufacturerModelName" : batch["info"][MANUFACTURER_MODEL_NAME_FIELD][0],
+            #     "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
+            #     "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
+            # }
+            # writer.writerow(record)
+            name = datafiles[i]["roi"]
+            name = os.path.basename(name)
+            true_name = os.path.basename(true_path[0])
+            name_correspondance[name] = true_name
+            
             """#save 3d image
             print("Saving 3d image")
             image = image[0].cpu().numpy()
@@ -265,8 +281,17 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
             name = os.path.basename(name)
             nib.save(image, "uncompress_cropped/"+name)
             """
-            
+            if i%70 == 0:
+                """print("Sleeping for 20 seconds")
+                time.sleep(20)
+                print("Woke up")"""
+                dataset.update_cache()
+                iterator = iter(dataload)
+            i+=1
         dataset.shutdown()
+        #putting the dict in a json file
+        with open("name_correspondance.json", "w") as f:
+            json.dump(name_correspondance, f)
         
     print("Done !")
 
