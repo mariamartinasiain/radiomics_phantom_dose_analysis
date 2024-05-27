@@ -273,12 +273,6 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing
             nib.save(image, "uncompress_cropped/"+name)
             
             
-            if i%7 == 0:
-                """print("Sleeping for 20 seconds")
-                time.sleep(20)
-                print("Woke up")"""
-                dataset.update_cache()
-                iterator = iter(dataload)
             i+=1
         dataset.shutdown()
         
