@@ -268,8 +268,9 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing
             true_path = batch["roi_path"] 
             name = true_path[0]
             #remobing file path information and only keeping file name of the path
-            name = os.path.basename(name)
             print("Name",name)
+            name = os.path.basename(name)
+            
             nib.save(image, "uncompress_cropped/"+name)
             
             
