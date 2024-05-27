@@ -207,7 +207,7 @@ class CopyPathd(MapTransform):
             data[f"{key}_path"] = data[key]  # Copier le chemin du fichier dans une nouvelle clé
         return data
 
-def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
+def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
     
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
