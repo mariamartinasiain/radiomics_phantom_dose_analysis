@@ -1,5 +1,6 @@
 import os
 import json
+from tqdm import tqdm
 
 # Load the mapping from the JSON file
 with open('name_correspondance.json', 'r') as f:
@@ -12,7 +13,7 @@ directory = 'uncompress_cropped/'
 temp_names = []
 
 # First pass: rename all files to a temporary name using an index
-for index, current_name in enumerate(name_mapping.keys()):
+for index, current_name in tqdm(enumerate(name_mapping.keys())):
     current_path = os.path.join(directory, current_name)
     temp_name = f'temp_{index}'  # Generate a temporary name using the index
     temp_path = os.path.join(directory, temp_name)
@@ -22,7 +23,7 @@ for index, current_name in enumerate(name_mapping.keys()):
         temp_names.append(temp_name)  # Store the temporary name
 
 # Second pass: rename all temporary names to the desired names
-for temp_name in temp_names:
+for temp_name in tqdm(temp_names):
     index = int(temp_name.split('_')[1])
     current_name = list(name_mapping.keys())[index]
     desired_name = name_mapping[current_name]
