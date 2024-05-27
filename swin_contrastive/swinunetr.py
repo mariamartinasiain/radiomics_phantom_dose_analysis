@@ -215,9 +215,9 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
+        CopyPathd(keys=["roi"]),
         LoadImaged(keys=["image", "roi"], ensure_channel_first=True),
         CropOnROId(keys=["image"], roi_key="roi", size=target_size),
-        CopyPathd(keys=["roi"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         
         #ToTensord(keys=["image"]),
