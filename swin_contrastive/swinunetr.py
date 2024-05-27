@@ -205,7 +205,7 @@ def get_model(target_size = (64, 64, 32)):
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
 
-def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
+def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing.json"):
     
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
@@ -215,13 +215,8 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
-        LoadImaged(keys=["image"], ensure_channel_first=True),
-        #ScaleIntensityd(keys=["image"],minv=0.0, maxv=1.0),
-        # Spacingd(
-        #     keys=["image"],
-        #     pixdim=(1.5, 1.5, 2.0),
-        #     mode=("bilinear"),
-        # ),
+        LoadImaged(keys=["image", "roi"], ensure_channel_first=True),
+        CropOnROId(keys=["image"], roi_key="roi", size=target_size),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         
         #ToTensord(keys=["image"]),
@@ -229,12 +224,13 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
 
     datafiles = load_data(jsonpath)
     #dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.00049,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.2)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.049,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.2)
     print("dataset length: ", len(datafiles))
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open("normalized_swin_features.csv", "w", newline="") as csvfile:
+    with open("aaa.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -245,12 +241,12 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
             batch = next(iterator)               
             image = batch["image"]
             val_inputs = image#.cuda()
-            #print(val_inputs.shape)
+            print(val_inputs.shape)
             
-            val_outputs = model.swinViT(val_inputs)
-            latentrep = val_outputs[4] #48*2^4 = 768
-            latentrep = model.encoder10(latentrep)
-            print(latentrep.shape)
+            #val_outputs = model.swinViT(val_inputs)
+            #latentrep = val_outputs[4] #48*2^4 = 768
+            #latentrep = model.encoder10(latentrep)
+            """print(latentrep.shape)
             record = {
                 "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
                 "deepfeatures": latentrep.flatten().tolist(),
@@ -260,8 +256,8 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
                 "Manufacturer" : batch["info"][MANUFACTURER_FIELD][0],
                 "SliceThickness": batch["info"][SLICE_THICKNESS_FIELD][0],        
             }
-            writer.writerow(record)
-            """#save 3d image
+            writer.writerow(record)"""
+            #save 3d image
             print("Saving 3d image")
             image = image[0].cpu().numpy()
             image = np.squeeze(image)
@@ -271,8 +267,15 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
             #remobing file path information and only keeping file name of the path
             name = os.path.basename(name)
             nib.save(image, "uncompress_cropped/"+name)
-            """
             
+            
+            if i%70 == 0:
+                """print("Sleeping for 20 seconds")
+                time.sleep(20)
+                print("Woke up")"""
+                dataset.update_cache()
+                iterator = iter(dataload)
+            i+=1
         dataset.shutdown()
         
     print("Done !")
