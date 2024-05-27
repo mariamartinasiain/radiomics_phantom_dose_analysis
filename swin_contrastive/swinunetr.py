@@ -205,7 +205,7 @@ def get_model(target_size = (64, 64, 32)):
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
 
-def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing.json"):
+def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS_missing2.json"):
     
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
