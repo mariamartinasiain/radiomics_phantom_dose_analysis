@@ -18,6 +18,8 @@ def group_data(data, mode='scanner'):
     if mode == 'scanner':
         # Extract the first two characters and map them to unique integers
         unique_groups = data['SeriesDescription'].apply(lambda x: x[:2]).unique()
+        #lexicographic order of unique groups
+        unique_groups.sort()
         group_map = {group: i for i, group in enumerate(unique_groups)}
         #printing group id  <-> group name mapping
         print({v: k for k, v in group_map.items()})
@@ -27,11 +29,13 @@ def group_data(data, mode='scanner'):
         def extract_base(description):
             base = re.match(r"(.+?)_(IR|FBP)(\s-\s#\d+)$", description)
             if base:
+                print(f"base: {base.group(1).strip()}")
                 return base.group(1).strip()
             return description
         
         gd['base'] = data['SeriesDescription'].apply(extract_base)
         unique_bases = gd['base'].unique()
+        unique_bases.sort()
         base_map = {base: i for i, base in enumerate(unique_bases)}
         gd['group_id'] = gd['base'].apply(lambda x: base_map[x])
     
@@ -165,7 +169,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
         groups_train_all = groups[train_index]
         unique_train_groups = np.unique(groups_train_all)
         if classif_type == 'scanner':
-            it2 = range(1, 9)
+            it2 = range(1, 10)
         else:
             it2 = range(1, len(unique_train_groups)+1)
         for N in it2:
