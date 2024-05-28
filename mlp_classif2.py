@@ -60,6 +60,7 @@ def load_csv(file_path, label_type='roi_small',mg_filter=None):
     else:
         groups = group_data(data)
     print(f'Found {len(np.unique(groups))} unique groups')
+    print(f'Groups are {np.unique(groups)}')
 
     # Standardize ROI labels
     if label_type == 'roi_small':
