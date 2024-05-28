@@ -249,7 +249,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
             
             val_outputs = model.swinViT(val_inputs)
             latentrep = val_outputs[4] #48*2^4 = 768
-            latentrep = model.encoder10(latentrep)
+            #latentrep = model.encoder10(latentrep)
             print(latentrep.shape)
             record = {
                 "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
