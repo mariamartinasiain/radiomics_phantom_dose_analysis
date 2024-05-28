@@ -155,11 +155,11 @@ class Train:
 
         return compute_accuracy(logits, labels, acc_metric=self.acc_metric)
 
-    def contrastive_step(self, latents,ids): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
+    def contrastive_step(self, latents,ids,latentsize = 768): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
         #print("ids",ids)
         
         total_num_elements = latents[4].shape[0] * latents[4].shape[2] * latents[4].shape[3] * latents[4].shape[4]
-        all_embeddings = torch.empty(total_num_elements, 768)
+        all_embeddings = torch.empty(total_num_elements, latentsize)
         all_labels = torch.empty(total_num_elements, dtype=torch.long)
         
         offset = 0
@@ -171,15 +171,15 @@ class Train:
             
             #bottleneck
             #print("latents size",len(latents))
-            btneck = latents[4]  # (batch_size, 768, D, H, W)
+            btneck = latents[4]  # (batch_size, latentsize, D, H, W)
             #print("btneck size",btneck.size())
             btneck = btneck[boolids]
             #print("new btneck size",btneck.size())
             num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
             #print("num_elements",num_elements)
         
-            # (nbatch_size, 768,D, H, W) -> (nbatch_size * num_elements, 768)
-            embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, 768)
+            # (nbatch_size, 768,D, H, W) -> (nbatch_size * num_elements, latentsize)
+            embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, latentsize)
             
             #contrast_ind = torch.arange(offset,offset+num_elements) #with this one under patch of the cropped ROI patch will be compared to each other : negatives within same roi
             contrast_ind = torch.full((num_elements,), offset) #negatives only between different r
