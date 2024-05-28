@@ -5,21 +5,6 @@ from svm_classif import train_svm
 from svm_classif import train_svm_with_data
 import tensorflow as tf
 
-def update_performance_file(model, scanners, mlp_accuracy, svm_accuracy, output_path,classif_type='roi_small',mlp_max_accu=None,mlp_min_accu=None,svm_max_accu=None,svm_min_accu=None):
-    entry = f'''
-    {model}_classif_{classif_type}_{scanners}_scanners:
-        mlp: 
-            mean : {mlp_accuracy:.4f}
-            max : {mlp_max_accu:.4f}
-            min : {mlp_min_accu:.4f}
-        svm: 
-            mean: {svm_accuracy:.4f}
-            max: {svm_max_accu:.4f}
-            min: {svm_min_accu:.4f}
-        path : {output_path}
-    '''
-    with open('performance_classif.txt', 'a') as file:
-        file.write(entry)
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print("GPUS",gpus)
@@ -43,7 +28,7 @@ configurations = {
     'oscar_full' : (2048),
     'pyradiomics_full' : (86),
 }
-classif_types = ['roi_large','scanner']
+classif_types = ['scanner']
 for classif_type in classif_types:
     for model, info_list in configurations.items():
         latent_size = info_list
