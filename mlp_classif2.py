@@ -37,6 +37,8 @@ def group_data(data, mode='scanner'):
         unique_bases = gd['base'].unique()
         unique_bases.sort()
         base_map = {base: i for i, base in enumerate(unique_bases)}
+        #printing group id  <-> group name mapping
+        print({v: k for k, v in base_map.items()})
         gd['group_id'] = gd['base'].apply(lambda x: base_map[x])
     
     
@@ -60,7 +62,6 @@ def load_csv(file_path, label_type='roi_small',mg_filter=None):
     else:
         groups = group_data(data)
     print(f'Found {len(np.unique(groups))} unique groups')
-    print(f'Groups are {np.unique(groups)}')
 
     # Standardize ROI labels
     if label_type == 'roi_small':
