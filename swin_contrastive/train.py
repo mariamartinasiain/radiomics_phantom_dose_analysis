@@ -2,9 +2,11 @@ import json
 import os
 import queue
 import re
+from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.model_selection import GroupShuffleSplit
 from tqdm import tqdm
+from analyze.analyze import perform_tsne
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
@@ -14,10 +16,11 @@ from swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransf
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
+import imageio
 
 class Train:
     
-    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20)):
+    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768):
         self.model = model
         self.classifier = classifier
         self.data_loader = data_loader
@@ -30,6 +33,7 @@ class Train:
         self.batch_size = data_loader['train'].batch_size
         self.dataset = dataset['train']
         self.testdataset = dataset['test']
+        self.contrastive_latentsize = contrastive_latentsize
 
         self.epoch = 0
         self.log_summary_interval = 5
@@ -40,6 +44,7 @@ class Train:
         self.best_acc_dict = {'src_best_train_acc': 0, 'src_best_test_acc': 0, 'tgt_best_test_acc': 0}
         self.best_loss_dict = {'total_loss': float('inf'), 'src_classification_loss': float('inf'), 'contrast_loss': float('inf')}
         self.best_log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
+        tsne_plots = []
         
         self.train_losses = []
         self.contrast_losses = []
@@ -84,11 +89,17 @@ class Train:
                 #self.log_summary_writer()
             self.lr_scheduler.step()
             self.dataset.update_cache()
+            if self.epoch % 10 == 0:
+                try:
+                    self.plot_latent_space(self.epoch)
+                except Exception as e:
+                    print(f"Error plotting latent space: {e}")
         
         self.dataset.shutdown()
         self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
         self.save_model('./working_contrastive_full_dataset_training.pth')
+        self.create_gif()
         return self.acc_dict['best_test_acc']
 
     def train_epoch(self):
@@ -114,29 +125,37 @@ class Train:
         # prepare batch
         imgs_s = batch["image"].cuda()
         all_labels = batch["roi_label"].cuda()
+        scanner_labels = batch["scanner_label"].cuda()
         ids = all_labels
 
         # model inference
         latents = self.model.swinViT(imgs_s)
+        
+        
+        #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
+        
+        self.contrastive_step(latents,ids,latentsize = self.contrastive_latentsize)
+        
         bottleneck = latents[4]
         
-        self.contrastive_step(latents,ids)
+        #narrow bottleneck to the classification latent space
         
-        #features = torch.mean(bottleneck, dim=(2, 3, 4))
-        #accu = self.classification_step(features, all_labels)
-        #print(f"Train Accuracy: {accu}%")
-        accu = 0
-        self.losses_dict['classification_loss'] = 0.0
+        features = torch.mean(bottleneck, dim=(2, 3, 4))
+        accu = self.classification_step(features, all_labels)
+        print(f"Train Accuracy: {accu}%")
+        #accu = 0
+        #self.losses_dict['classification_loss'] = 0.0
         
         
         #image reconstruction
-        #reconstructed_imgs = self.reconstruct_image(latents)
+        reconstructed_imgs = self.reconstruct_image(latents) #a implementer
+        self.reconstruction_step(reconstructed_imgs, imgs_s) #a implementer (surement juste MSE ? voir dqns le papier swin ce qui est fait)
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
-            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss']
+            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss']
         else:
-            self.losses_dict['total_loss'] = self.losses_dict['classification_loss']
+            self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
 
         self.losses_dict['total_loss'].backward()
         self.optimizer.step()
@@ -232,6 +251,40 @@ class Train:
         torch.save(self.model.state_dict(), path)
         print(f'Model weights saved to {path}')
 
+    def plot_latent_space(self, epoch):
+        self.model.eval()  # Set the model to evaluation mode
+        latents = []
+        labels = []  # Assuming you have labels to color the points
+
+        with torch.no_grad():
+            for batch in self.data_loader['train']:
+                images = batch['image'].cuda()
+                batch_latents = self.model.swinViT(images)[4].squeeze().detach().cpu().numpy()
+                latents.append(batch_latents)
+                labels.extend(batch['label'].cpu().numpy())  # Adjust as per your dataset structure
+
+        latents_2d = perform_tsne(latents)
+
+        # Plotting and saving to disk
+        plt.figure(figsize=(10, 10))
+        scatter = plt.scatter(latents_2d[:, 0], latents_2d[:, 1], c=labels, cmap='viridis')
+        plt.colorbar(scatter, label='Labels')
+        plt.title('Latent Space t-SNE')
+        plt.xlabel('Dimension 1')
+        plt.ylabel('Dimension 2')
+
+        plot_path = f'latent_space_tsne_epoch_{epoch}.png'
+        plt.savefig(plot_path)
+        plt.close()  # Close the figure to free memory
+
+        self.tsne_plots.append(plot_path)
+
+    def create_gif(self):
+        images = []
+        for plot_path in self.tsne_plots:
+            images.append(imageio.imread(plot_path))
+        imageio.mimsave('latent_space_evolution.gif', images, duration=1)
+    
 def compute_accuracy(logits, true_labels, acc_metric='total_mean', print_result=False): #a revoir
     assert logits.size(0) == true_labels.size(0)
     if acc_metric == 'total_mean':
@@ -260,6 +313,9 @@ def compute_accuracy(logits, true_labels, acc_metric='total_mean', print_result=
         return torch.mean(class_accuracies)
     else:
         raise ValueError(f'acc_metric, {acc_metric} is not available.')
+    
+
+   
     
 def group_data(data_list, mode='scanner'):
     group_map = {}
