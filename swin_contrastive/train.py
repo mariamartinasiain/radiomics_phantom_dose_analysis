@@ -90,7 +90,7 @@ class Train:
                 #self.log_summary_writer()
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 1 == 0:
+            if self.epoch % 5 == 0:
                 try:
                     self.plot_latent_space(self.epoch)
                 except Exception as e:
@@ -455,7 +455,7 @@ def main():
     train_data, test_data = create_datasets(data_list)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
@@ -471,7 +471,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 10,dataset,contrastive_latentsize=700,savename="model.pth")#"FT_contrastive_classification_model.pth"
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="FT_contrastive_classification_model.pth")
     trainer.train()
 
 if __name__ == '__main__':
