@@ -136,8 +136,9 @@ class Train:
         nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents.size(1) - self.contrastive_latentsize], dim=1)
         nlatents = latents
         nlatents[4] = nlatents4
-        print("nlatents[4] size",nlatents[4].size())
         print("bottleneck size",bottleneck.size())
+        print("nlatents[4] size",nlatents[4].size())
+        
         
         self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
         
