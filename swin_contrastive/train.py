@@ -89,7 +89,7 @@ class Train:
                 #self.log_summary_writer()
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 10 == 0:
+            if self.epoch % 3 == 0:
                 try:
                     self.plot_latent_space(self.epoch)
                 except Exception as e:
@@ -98,7 +98,7 @@ class Train:
         self.dataset.shutdown()
         self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
-        self.save_model('./working_contrastive_full_dataset_training.pth')
+        self.save_model('./fasttest.pth')
         self.create_gif()
         return self.acc_dict['best_test_acc']
 
@@ -128,28 +128,32 @@ class Train:
         scanner_labels = batch["scanner_label"].cuda()
         ids = all_labels
 
-        # model inference
+        # encoder inference
         latents = self.model.swinViT(imgs_s)
         
         
         #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
+        nlatents = latents
+        nlatents[4] = torch.narrow(nlatents[4], 1, 0, self.contrastive_latentsize)
         
-        self.contrastive_step(latents,ids,latentsize = self.contrastive_latentsize)
+        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+        
         
         bottleneck = latents[4]
-        
         #narrow bottleneck to the classification latent space
+        bottleneck = torch.narrow(bottleneck, 1, self.contrastive_latentsize, -1)
         
         features = torch.mean(bottleneck, dim=(2, 3, 4))
-        accu = self.classification_step(features, all_labels)
+        accu = self.classification_step(features, scanner_labels)
         print(f"Train Accuracy: {accu}%")
         #accu = 0
         #self.losses_dict['classification_loss'] = 0.0
         
         
-        #image reconstruction
-        reconstructed_imgs = self.reconstruct_image(latents) #a implementer
-        self.reconstruction_step(reconstructed_imgs, imgs_s) #a implementer (surement juste MSE ? voir dqns le papier swin ce qui est fait)
+        #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
+        #reconstructed_imgs = self.reconstruct_image(imgs_s,latents) #a implementer
+        #self.reconstruction_step(reconstructed_imgs, imgs_s) #a implementer (surement juste MSE ? voir dqns le papier swin ce qui est fait) torch.nn.L1Loss().cuda()
+        self.losses_dict['reconstruction_loss'] = 0.0
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
@@ -215,6 +219,24 @@ class Train:
         
         llss = (self.contrast_loss(all_embeddings, all_labels))
         self.losses_dict['contrast_loss'] = llss
+        
+    def reconstruction_step(self, reconstructed_imgs, original_imgs): #ici on calcul la loss L1 entre l'image d'origine et la supposée image RECONSTRUIRE (pas segmentee)
+        reconstruction_loss = torch.nn.L1Loss()(reconstructed_imgs, original_imgs)
+        self.losses_dict['reconstruction_loss'] = reconstruction_loss
+        
+    def reconstruct_image(self,x_in, hidden_states_out): #pas coherent avec reconstruction step, ici on reconstruit la segmentation (et pas l'image d'origine)
+        enc0 = self.encoder1(x_in)
+        enc1 = self.encoder2(hidden_states_out[0])
+        enc2 = self.encoder3(hidden_states_out[1])
+        enc3 = self.encoder4(hidden_states_out[2])
+        dec4 = self.encoder10(hidden_states_out[4])
+        dec3 = self.decoder5(dec4, hidden_states_out[3])
+        dec2 = self.decoder4(dec3, enc3)
+        dec1 = self.decoder3(dec2, enc2)
+        dec0 = self.decoder2(dec1, enc1)
+        out = self.decoder1(dec0, enc0)
+        logits = self.out(out)
+        return logits
         
     def test_epoch(self):
         self.model.eval()
@@ -364,11 +386,12 @@ def create_datasets(data_list, test_size=0.2, seed=42):
 
 
 class EncodeLabels(Transform):
-    def __init__(self, encoder):
+    def __init__(self, encoder, key='roi_label'):
         self.encoder = encoder
+        self.key = key
 
     def __call__(self, data):
-        data['roi_label'] = self.encoder.transform([data['roi_label']])[0]  # Encode the label
+        data[self.key] = self.encoder.transform([data[self.key]])[0]  # Encode the label
         return data
 
 class DebugTransform2(Transform):
@@ -380,6 +403,10 @@ class DebugTransform2(Transform):
         #    print("Unique values in label:", np.unique(data['roi_label']))
         return data
 
+class ExtractScannerLabel(Transform):
+    def __call__(self, data):
+        data['scanner_label'] = data['info']['SeriesDescription'][:2]
+        return data
 
 class PrintDebug(Transform):
     def __call__(self, data):
@@ -397,8 +424,11 @@ def main():
     torch.cuda.set_device(device_id)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
+    scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
     encoder = LabelEncoder()
+    scanner_encoder = LabelEncoder()
     encoder.fit(labels)
+    scanner_encoder.fit(scanner_labels)
     transforms = Compose([
         #PrintDebug(),
         LoadImaged(keys=["image"]),
@@ -406,6 +436,8 @@ def main():
         EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         EncodeLabels(encoder=encoder),
+        ExtractScannerLabel(),
+        EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
         #DebugTransform2(),
         
@@ -432,7 +464,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 30,dataset)
     
     trainer.train()
 
