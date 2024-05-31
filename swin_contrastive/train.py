@@ -284,7 +284,7 @@ class Train:
                 batch_latents = self.model.swinViT(images)[4]
                 print("batch_latents size",batch_latents.size())
                 batch_latents = batch_latents.flatten().squeeze().detach().cpu().numpy()
-                latents.extend(batch_latents)
+                latents.append(batch_latents)
                 labels.extend(batch['roi_label'].cpu().numpy())  # Adjust as per your dataset structure
 
         latents_2d = perform_tsne(latents)
