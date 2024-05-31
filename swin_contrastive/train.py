@@ -44,7 +44,7 @@ class Train:
         self.best_acc_dict = {'src_best_train_acc': 0, 'src_best_test_acc': 0, 'tgt_best_test_acc': 0}
         self.best_loss_dict = {'total_loss': float('inf'), 'src_classification_loss': float('inf'), 'contrast_loss': float('inf')}
         self.best_log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
-        tsne_plots = []
+        self.tsne_plots = []
         
         self.train_losses = []
         self.contrast_losses = []
