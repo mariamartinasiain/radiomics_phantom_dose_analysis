@@ -135,13 +135,15 @@ class Train:
         #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
         nlatents = latents
         nlatents[4] = torch.narrow(nlatents[4], 1, 0, self.contrastive_latentsize)
+        print("nlatents[4] size",nlatents[4].size())
         
         self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
         
         
         bottleneck = latents[4]
         #narrow bottleneck to the classification latent space
-        bottleneck = torch.narrow(bottleneck, 1, self.contrastive_latentsize, -1)
+        bottleneck = torch.narrow(bottleneck, 1, self.contrastive_latentsize, bottleneck.size(1)-self.contrastive_latentsize)
+        print("bottleneck size",bottleneck.size())
         
         features = torch.mean(bottleneck, dim=(2, 3, 4))
         accu = self.classification_step(features, scanner_labels)
