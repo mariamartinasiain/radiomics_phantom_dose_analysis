@@ -142,6 +142,7 @@ class Train:
         
         bottleneck = latents[4]
         #narrow bottleneck to the classification latent space
+        print("bottleneck size",bottleneck.size())
         bottleneck = torch.narrow(bottleneck, 1, self.contrastive_latentsize, bottleneck.size(1)-self.contrastive_latentsize)
         print("bottleneck size",bottleneck.size())
         
