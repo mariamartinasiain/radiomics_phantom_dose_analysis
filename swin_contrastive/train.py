@@ -281,8 +281,9 @@ class Train:
         with torch.no_grad():
             for batch in self.data_loader['train']:
                 images = batch['image'].cuda()
-                batch_latents = self.model.swinViT(images)[4].squeeze().detach().cpu().numpy()
+                batch_latents = self.model.swinViT(images)[4]
                 print("batch_latents size",batch_latents.size())
+                batch_latents = batch_latents.flatten().squeeze().detach().cpu().numpy()
                 latents.extend(batch_latents)
                 labels.extend(batch['roi_label'].cpu().numpy())  # Adjust as per your dataset structure
 
