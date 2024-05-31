@@ -145,8 +145,8 @@ class Train:
         
         features = torch.mean(bottleneck, dim=(2, 3, 4))
         accu = self.classification_step(features, scanner_labels)
-        print(f"Train Accuracy: {accu}%")
-        #accu = 0
+        #print(f"Train Accuracy: {accu}%")
+        accu = 0
         #self.losses_dict['classification_loss'] = 0.0
         
         
@@ -175,8 +175,7 @@ class Train:
         #print(f"the logits is {logits}")
         classification_loss = self.classification_loss(logits, labels)
         self.losses_dict['classification_loss'] = classification_loss
-
-        return compute_accuracy(logits, labels, acc_metric=self.acc_metric)
+        #return compute_accuracy(logits, labels, acc_metric=self.acc_metric)
 
     def contrastive_step(self, latents,ids,latentsize = 768): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
         #print("ids",ids)
@@ -426,8 +425,8 @@ def main():
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
     scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
     encoder = LabelEncoder()
-    scanner_encoder = LabelEncoder()
     encoder.fit(labels)
+    scanner_encoder = LabelEncoder()
     scanner_encoder.fit(scanner_labels)
     transforms = Compose([
         #PrintDebug(),
