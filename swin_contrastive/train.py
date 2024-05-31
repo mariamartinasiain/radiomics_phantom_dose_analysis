@@ -139,9 +139,9 @@ class Train:
         print("bottleneck size",bottleneck.size())
         print("nlatents[4] size",nlatents[4].size())
         
-        
+        print("ids size",ids.size())
         self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
-        
+        print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
         
         features = torch.mean(bottleneck, dim=(2, 3, 4))
         accu = self.classification_step(features, scanner_labels)
