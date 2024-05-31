@@ -90,7 +90,7 @@ class Train:
                 #self.log_summary_writer()
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 50 == 0:
+            if self.epoch % 1 == 0:
                 try:
                     self.plot_latent_space(self.epoch)
                 except Exception as e:
