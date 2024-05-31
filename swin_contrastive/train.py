@@ -283,7 +283,7 @@ class Train:
                 images = batch['image'].cuda()
                 batch_latents = self.model.swinViT(images)[4].squeeze().detach().cpu().numpy()
                 latents.append(batch_latents)
-                labels.extend(batch['label'].cpu().numpy())  # Adjust as per your dataset structure
+                labels.extend(batch['roi_label'].cpu().numpy())  # Adjust as per your dataset structure
 
         latents_2d = perform_tsne(latents)
 
