@@ -286,7 +286,7 @@ class Train:
                 batch_size, channels, *dims = latents_tensor.size()
                 flatten_size = torch.prod(torch.tensor(dims)).item()
                 
-                latents_tensor = latents_tensor.view(batch_size, channels * flatten_size)
+                latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
                 latents.extend(latents_tensor.cpu().numpy())
                 labels.extend(batch['roi_label'].cpu().numpy())  # Adjust as per your dataset structure
 
