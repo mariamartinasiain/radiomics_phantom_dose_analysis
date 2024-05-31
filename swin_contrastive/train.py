@@ -146,7 +146,7 @@ class Train:
         features = torch.mean(bottleneck, dim=(2, 3, 4))
         accu = self.classification_step(features, scanner_labels)
         #print(f"Train Accuracy: {accu}%")
-        accu = 0
+        #accu = 0
         #self.losses_dict['classification_loss'] = 0.0
         
         
@@ -170,12 +170,13 @@ class Train:
     def classification_step(self, features, labels):
         #print(f"the labels is {labels}")
         if self.classifier is None:
-            self.classifier = self.autoclassifier(features.size(1), 13)
+            self.classifier = self.autoclassifier(features.size(1), )
         logits = self.classifier(features)
         #print(f"the logits is {logits}")
         classification_loss = self.classification_loss(logits, labels)
         self.losses_dict['classification_loss'] = classification_loss
-        #return compute_accuracy(logits, labels, acc_metric=self.acc_metric)
+        
+        return compute_accuracy(logits, labels, acc_metric=self.acc_metric)
 
     def contrastive_step(self, latents,ids,latentsize = 768): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
         #print("ids",ids)
