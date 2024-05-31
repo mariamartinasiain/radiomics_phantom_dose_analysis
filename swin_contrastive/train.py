@@ -301,8 +301,9 @@ class Train:
         plt.xlabel('Dimension 1')
         plt.ylabel('Dimension 2')
 
-        plot_path = self.save_name + f'latent_space_tsne_epoch_{epoch}.png'
-        plt.savefig( plot_path)
+        plot_path =  f'{self.save_name}_latent_space_tsne_epoch_{epoch}.png'
+        print(f'Saving latent space plot to {plot_path}')
+        plt.savefig(plot_path)
         plt.close()  # Close the figure to free memory
 
         self.tsne_plots.append(plot_path)
