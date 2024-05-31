@@ -20,7 +20,7 @@ import imageio
 
 class Train:
     
-    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768):
+    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth'):
         self.model = model
         self.classifier = classifier
         self.data_loader = data_loader
@@ -34,6 +34,7 @@ class Train:
         self.dataset = dataset['train']
         self.testdataset = dataset['test']
         self.contrastive_latentsize = contrastive_latentsize
+        self.save_name = savename
 
         self.epoch = 0
         self.log_summary_interval = 5
@@ -89,7 +90,7 @@ class Train:
                 #self.log_summary_writer()
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 1 == 0:
+            if self.epoch % 50 == 0:
                 try:
                     self.plot_latent_space(self.epoch)
                 except Exception as e:
@@ -98,7 +99,7 @@ class Train:
         self.dataset.shutdown()
         self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
-        self.save_model('./fasttest.pth')
+        self.save_model(self.save_name)
         self.create_gif()
         return self.acc_dict['best_test_acc']
 
@@ -301,7 +302,7 @@ class Train:
         plt.ylabel('Dimension 2')
 
         plot_path = f'latent_space_tsne_epoch_{epoch}.png'
-        plt.savefig(plot_path)
+        plt.savefig(self.save_name + plot_path)
         plt.close()  # Close the figure to free memory
 
         self.tsne_plots.append(plot_path)
@@ -310,7 +311,7 @@ class Train:
         images = []
         for plot_path in self.tsne_plots:
             images.append(imageio.imread(plot_path))
-        imageio.mimsave('latent_space_evolution.gif', images, duration=1)
+        imageio.mimsave(self.save_name+'_latent_space_evolution.gif', images, duration=1)
     
 def compute_accuracy(logits, true_labels, acc_metric='total_mean', print_result=False): #a revoir
     assert logits.size(0) == true_labels.size(0)
