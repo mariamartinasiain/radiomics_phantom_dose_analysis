@@ -301,8 +301,8 @@ class Train:
         plt.xlabel('Dimension 1')
         plt.ylabel('Dimension 2')
 
-        plot_path = f'latent_space_tsne_epoch_{epoch}.png'
-        plt.savefig(self.save_name + plot_path)
+        plot_path = self.save_name + f'latent_space_tsne_epoch_{epoch}.png'
+        plt.savefig( plot_path)
         plt.close()  # Close the figure to free memory
 
         self.tsne_plots.append(plot_path)
@@ -470,8 +470,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 10,dataset,contrastive_latentsize=700)
-    
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 10,dataset,contrastive_latentsize=700,savename="model.pth")#"FT_contrastive_classification_model.pth"
     trainer.train()
 
 if __name__ == '__main__':
