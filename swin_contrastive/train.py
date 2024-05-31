@@ -133,7 +133,10 @@ class Train:
         
         
         #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
-        nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents.size(1) - self.contrastive_latentsize], dim=1)
+        splits = torch.split(latents[4], [self.contrastive_latentsize, latents.size(1) - self.contrastive_latentsize], dim=1)
+        print("splits",splits)
+        bottleneck = splits[0]
+        nlatents4 = splits[1]
         nlatents = latents
         nlatents[4] = nlatents4
         print("bottleneck size",bottleneck.size())
