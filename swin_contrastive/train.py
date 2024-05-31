@@ -89,7 +89,7 @@ class Train:
                 #self.log_summary_writer()
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 3 == 0:
+            if self.epoch % 1 == 0:
                 try:
                     self.plot_latent_space(self.epoch)
                 except Exception as e:
@@ -136,12 +136,12 @@ class Train:
         nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
         nlatents = latents
         nlatents[4] = nlatents4
-        print("bottleneck size",bottleneck.size())
-        print("nlatents[4] size",nlatents[4].size())
+        #print("bottleneck size",bottleneck.size())
+        #print("nlatents[4] size",nlatents[4].size())
         
-        print("ids size",ids.size())
+        #print("ids size",ids.size())
         self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
-        print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
+        #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
         
         features = torch.mean(bottleneck, dim=(2, 3, 4))
         accu = self.classification_step(features, scanner_labels)
@@ -464,7 +464,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 30,dataset,contrastive_latentsize=700)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 10,dataset,contrastive_latentsize=700)
     
     trainer.train()
 
