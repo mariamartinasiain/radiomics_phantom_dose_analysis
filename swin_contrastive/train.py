@@ -276,13 +276,14 @@ class Train:
     def plot_latent_space(self, epoch):
         self.model.eval()  # Set the model to evaluation mode
         latents = []
-        labels = []  # Assuming you have labels to color the points
+        labels = []  
 
         with torch.no_grad():
             for batch in self.data_loader['train']:
                 images = batch['image'].cuda()
                 batch_latents = self.model.swinViT(images)[4].squeeze().detach().cpu().numpy()
-                latents.append(batch_latents)
+                print("batch_latents size",batch_latents.size())
+                latents.extend(batch_latents)
                 labels.extend(batch['roi_label'].cpu().numpy())  # Adjust as per your dataset structure
 
         latents_2d = perform_tsne(latents)
