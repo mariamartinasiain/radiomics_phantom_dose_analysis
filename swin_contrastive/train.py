@@ -281,10 +281,13 @@ class Train:
         with torch.no_grad():
             for batch in self.data_loader['train']:
                 images = batch['image'].cuda()
-                batch_latents = self.model.swinViT(images)[4]
-                print("batch_latents size",batch_latents.size())
-                batch_latents = batch_latents.flatten().squeeze().detach().cpu().numpy()
-                latents.append(batch_latents)
+                latents_tensor = self.model.swinViT(images)[4]
+                
+                batch_size, channels, *dims = latents_tensor.size()
+                flatten_size = torch.prod(torch.tensor(dims)).item()
+                
+                latents_tensor = latents_tensor.view(batch_size, channels * flatten_size)
+                latents.extend(latents_tensor.cpu().numpy())
                 labels.extend(batch['roi_label'].cpu().numpy())  # Adjust as per your dataset structure
 
         latents_2d = perform_tsne(latents)
