@@ -214,12 +214,12 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     target_size = (64, 64, 32)
     transforms = Compose([
         LoadImaged(keys=["image"], ensure_channel_first=True),
-        ScaleIntensityd(keys=["image"],minv=0.0, maxv=1.0),
-        Spacingd(
-            keys=["image"],
-            pixdim=(1.5, 1.5, 2.0),
-            mode=("bilinear"),
-        ),
+        # ScaleIntensityd(keys=["image"],minv=0.0, maxv=1.0),
+        # Spacingd(
+        #     keys=["image"],
+        #     pixdim=(1.5, 1.5, 2.0),
+        #     mode=("bilinear"),
+        # ),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         
         #ToTensord(keys=["image"]),
@@ -232,7 +232,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open("normalized_swin_features.csv", "w", newline="") as csvfile:
+    with open("contrastive_classification_swin_features.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
