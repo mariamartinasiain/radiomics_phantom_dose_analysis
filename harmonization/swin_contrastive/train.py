@@ -38,9 +38,9 @@ class Train:
         self.testdataset = dataset['test']
         self.contrastive_latentsize = contrastive_latentsize
         self.save_name = savename
-        self.reconstruct = self.get_reconstruction_model()
         self.device = self.get_device()
-
+        self.reconstruct = self.get_reconstruction_model()
+        
         self.epoch = 0
         self.log_summary_interval = 5
         self.total_progress_bar = tqdm(total=self.num_epoch, desc='Total Progress', dynamic_ncols=True)
