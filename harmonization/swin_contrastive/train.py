@@ -470,7 +470,7 @@ def count_parameters(model):
 
 def main():
     from sklearn.preprocessing import LabelEncoder
-    device = self.device 
+    device = Train.get_device()
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
     scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
     encoder = LabelEncoder()
