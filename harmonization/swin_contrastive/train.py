@@ -39,6 +39,7 @@ class Train:
         self.contrastive_latentsize = contrastive_latentsize
         self.save_name = savename
         self.reconstruct = self.get_reconstruction_model()
+        self.device = self.get_device()
 
         self.epoch = 0
         self.log_summary_interval = 5
@@ -54,6 +55,13 @@ class Train:
         self.train_losses = []
         self.contrast_losses = []
         self.val_losses = []
+    
+    def get_device(self):
+        device_id = 0
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+        torch.cuda.set_device(device_id)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return device
         
     def get_reconstruction_model(self, reconstruction_type='vae',dim=768):
         if reconstruction_type == 'vae':
@@ -80,6 +88,7 @@ class Train:
                 nn.Upsample(scale_factor=2, mode="trilinear", align_corners=False),
                 nn.Conv3d(dim // 16, self.in_channels, kernel_size=1, stride=1),
             )
+            model.to(self.device)
             return model
         elif reconstruction_type == 'deconv':
             model= nn.Sequential(
@@ -89,6 +98,7 @@ class Train:
                 nn.ConvTranspose3d(dim // 8, dim // 16, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
                 nn.ConvTranspose3d(dim // 16, self.in_channels, kernel_size=(2, 2, 2), stride=(2, 2, 2)),
             )
+            model.to(self.device)
             return model
         else:
             raise ValueError(f"Invalid reconstruction type: {reconstruction_type}")
@@ -460,10 +470,7 @@ def count_parameters(model):
 
 def main():
     from sklearn.preprocessing import LabelEncoder
-    device_id = 0
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
-    torch.cuda.set_device(device_id)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+    device = self.device 
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
     scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
     encoder = LabelEncoder()
