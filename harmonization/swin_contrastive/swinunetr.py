@@ -232,7 +232,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open("contrastive_swin_features.csv", "w", newline="") as csvfile:
+    with open("contrastive_reconstruction_swin_features.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
