@@ -195,7 +195,7 @@ def get_model(target_size = (64, 64, 32)):
         use_checkpoint=True,
     ).to(device)
 
-    weight = torch.load("FT_contrastive_model.pth")
+    weight = torch.load("FT_contrastive_reconstruction_model.pth")
     print("Loaded weight keys:", weight.keys())
     #model.load_from(weight)
     model.load_state_dict(weight)
