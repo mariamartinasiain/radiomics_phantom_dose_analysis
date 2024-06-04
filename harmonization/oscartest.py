@@ -11,9 +11,10 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ToTensord
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ToTensord,EnsureTyped
 from swin_contrastive.swinunetr import CropOnROId
-from monai.data import SmartCacheDataset, DataLoader
+from monai.data import SmartCacheDataset, DataLoader,ThreadDataLoader
+import torch
 
 def test():
     data_dir = 'roiBlocks'
@@ -50,7 +51,7 @@ def test():
 
 def run_inference():
     
-    jsonpath = "./dataset_info2.json"
+    jsonpath = "./dataset_info_cropped.json"
     # Define the path to your model files
     model_dir = './'
     model_file = model_dir + 'organs-5c-30fs-acc92-121.meta'
@@ -79,23 +80,24 @@ def run_inference():
         print(f"Le nombre total de poids dans le modèle est : {total_params}")
     except:
         print("Error while calculating the number of parameters in the model")
-
+    device_id = 0
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    torch.cuda.set_device(device_id)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 
     target_size = (64, 64, 32)
     transforms = Compose([
-        LoadImaged(keys=["image", "roi"]),
-        EnsureChannelFirstd(keys=["image", "roi"]),
-        CropOnROId(keys=["image"], roi_key="roi", size=target_size),
-        ToTensord(keys=["image"]),
+        LoadImaged(keys=["image"]),
+        EnsureChannelFirstd(keys=["image"]),
+        EnsureTyped(keys=["image"], device=device, track_meta=False),
     ])
 
     datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.2, progress=True, num_init_workers=8, num_replace_workers=8)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     print("dataset length: ", len(datafiles))
-    dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
+    dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
 
-
-    with open("deepfeaturesoscar.csv", "w", newline="") as csvfile:
+    with open("normalized_deepfeaturesoscar.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -124,10 +126,7 @@ def run_inference():
             }
             writer.writerow(record)
            
-            if i % 23 == 0:
-                dataset.update_cache()
-                iterator = iter(dataload)
-            i += 1
+            
         dataset.shutdown()
 
     print("Done!")
