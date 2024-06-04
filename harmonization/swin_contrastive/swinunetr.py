@@ -183,8 +183,6 @@ def load_data(datalist_json_path):
         return datalist
 
 def get_model(target_size = (64, 64, 32)):
-    
-
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
     torch.cuda.set_device(device_id)
@@ -197,10 +195,10 @@ def get_model(target_size = (64, 64, 32)):
         use_checkpoint=True,
     ).to(device)
 
-    weight = torch.load("model_swinvit.pt")
+    weight = torch.load("FT_contrastive_classification_model.pth")
     print("Loaded weight keys:", weight.keys())
-    model.load_from(weight)
-    #model.load_state_dict(weight)
+    #model.load_from(weight)
+    model.load_state_dict(weight)
     model = model.to('cuda')
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
