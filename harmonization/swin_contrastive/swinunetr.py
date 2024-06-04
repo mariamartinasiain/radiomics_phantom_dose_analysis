@@ -195,7 +195,7 @@ def get_model(target_size = (64, 64, 32)):
         use_checkpoint=True,
     ).to(device)
 
-    weight = torch.load("FT_contrastive_classification_model.pth")
+    weight = torch.load("FT_contrastive_model.pth")
     print("Loaded weight keys:", weight.keys())
     #model.load_from(weight)
     model.load_state_dict(weight)
@@ -232,7 +232,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open("contrastive_classification_swin_features.csv", "w", newline="") as csvfile:
+    with open("contrastive_swin_features.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
