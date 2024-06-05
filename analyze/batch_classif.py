@@ -1,6 +1,6 @@
-from mlp_classif2 import train_mlp_svm
-from mlp_classif2 import train_mlp_with_data
-from mlp_classif2 import load_data
+from classification import train_mlp_svm
+from classification import train_mlp_with_data
+from classification import load_data
 from svm_classif import train_svm
 from svm_classif import train_svm_with_data
 import tensorflow as tf
@@ -21,14 +21,11 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'swinunetr_full_averaged': (768),
-    'swin_finetune': (3072),
-    'swinunetr_full' : (3072),
-    'swin_finetune_averaged': (768),
-    'oscar_full' : (2048),
-    'pyradiomics_full' : (86),
+    'swin_contrastive': (2800),
+    'swin_contrastive_classif': (2800),
+    'swin_contrastive_classif_reconstruction' : (2800),
 }
-classif_types = ['scanner']
+classif_types = ['roi_large']
 for classif_type in classif_types:
     for model, info_list in configurations.items():
         latent_size = info_list
