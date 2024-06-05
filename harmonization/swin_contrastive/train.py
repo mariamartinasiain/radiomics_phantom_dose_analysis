@@ -137,8 +137,8 @@ class Train:
             json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
             
     def plot_losses(self):
-        points = len(self.train_losses['contrast_losses'])
         step_interval = self.step_interval
+        points = len(self.train_losses['contrast_losses'])
         steps = np.arange(0, points * step_interval, step_interval)
         
         fig, ax = plt.subplots(2, 2, figsize=(15, 10))
@@ -149,17 +149,27 @@ class Train:
         ax[0, 0].set_ylabel('Loss')
         ax[0, 0].legend()
 
+
+        points = len(self.train_losses['classification_losses'])
+        steps = np.arange(0, points * step_interval, step_interval)
+
         ax[0, 1].plot(steps, self.train_losses['classification_losses'], label='Classification Loss')
         ax[0, 1].set_title('Classification Loss')
         ax[0, 1].set_xlabel('Steps')
         ax[0, 1].set_ylabel('Loss')
         ax[0, 1].legend()
+        
+        points = len(self.train_losses['reconstruction_losses'])
+        steps = np.arange(0, points * step_interval, step_interval)
 
         ax[1, 0].plot(steps, self.train_losses['reconstruction_losses'], label='Reconstruction Loss')
         ax[1, 0].set_title('Reconstruction Loss')
         ax[1, 0].set_xlabel('Steps')
         ax[1, 0].set_ylabel('Loss')
         ax[1, 0].legend()
+        
+        points = len(self.train_losses['total_losses'])
+        steps = np.arange(0, points * step_interval, step_interval)
 
         ax[1, 1].plot(steps, self.train_losses['total_losses'], label='Total Loss')
         ax[1, 1].set_title('Total Loss')
