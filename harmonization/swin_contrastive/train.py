@@ -459,6 +459,10 @@ def group_data(data_list, mode='scanner'):
     return np.array(group_ids)
 
 def create_datasets(data_list, test_size=0.2, seed=42):
+    
+    if test_size <= 0.00000001:
+        return data_list, []
+    
     groups = group_data(data_list, mode='scanner') 
     
     
