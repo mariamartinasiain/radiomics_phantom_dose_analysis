@@ -1,8 +1,4 @@
 from classification import train_mlp_svm
-from classification import train_mlp_with_data
-from classification import load_data
-from svm_classif import train_svm
-from svm_classif import train_svm_with_data
 import tensorflow as tf
 
 
