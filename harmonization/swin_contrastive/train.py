@@ -43,6 +43,7 @@ class Train:
         
         self.epoch = 0
         self.log_summary_interval = 5
+        self.step_interval = 10
         self.total_progress_bar = tqdm(total=self.num_epoch, desc='Total Progress', dynamic_ncols=True)
         self.acc_dict = {'src_best_train_acc': 0, 'src_best_test_acc': 0, 'tgt_best_test_acc': 0}
         self.losses_dict = {'total_loss': 0, 'src_classification_loss': 0, 'contrast_loss': 0}
@@ -136,31 +137,36 @@ class Train:
             json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
             
     def plot_losses(self):
+        points = len(self.train_losses['contrast_losses'])
+        step_interval = self.step_interval
+        steps = np.arange(0, points * step_interval, step_interval)
+        
         fig, ax = plt.subplots(2, 2, figsize=(15, 10))
-        ax[0, 0].plot(self.train_losses['contrast_losses'], label='Contrastive Loss')
+
+        ax[0, 0].plot(steps, self.train_losses['contrast_losses'], label='Contrastive Loss')
         ax[0, 0].set_title('Contrastive Loss')
-        ax[0, 0].set_xlabel('Epoch')
+        ax[0, 0].set_xlabel('Steps')
         ax[0, 0].set_ylabel('Loss')
         ax[0, 0].legend()
-        
-        ax[0, 1].plot(self.train_losses['classification_losses'], label='Classification Loss')
+
+        ax[0, 1].plot(steps, self.train_losses['classification_losses'], label='Classification Loss')
         ax[0, 1].set_title('Classification Loss')
-        ax[0, 1].set_xlabel('Epoch')
+        ax[0, 1].set_xlabel('Steps')
         ax[0, 1].set_ylabel('Loss')
         ax[0, 1].legend()
-        
-        ax[1, 0].plot(self.train_losses['reconstruction_losses'], label='Reconstruction Loss')
+
+        ax[1, 0].plot(steps, self.train_losses['reconstruction_losses'], label='Reconstruction Loss')
         ax[1, 0].set_title('Reconstruction Loss')
-        ax[1, 0].set_xlabel('Epoch')
+        ax[1, 0].set_xlabel('Steps')
         ax[1, 0].set_ylabel('Loss')
         ax[1, 0].legend()
-        
-        ax[1, 1].plot(self.train_losses['total_losses'], label='Total Loss')
+
+        ax[1, 1].plot(steps, self.train_losses['total_losses'], label='Total Loss')
         ax[1, 1].set_title('Total Loss')
-        ax[1, 1].set_xlabel('Epoch')
+        ax[1, 1].set_xlabel('Steps')
         ax[1, 1].set_ylabel('Loss')
         ax[1, 1].legend()
-        
+
         plt.tight_layout()
         plt.savefig('losses_plot.png')
         plt.show()
@@ -175,9 +181,10 @@ class Train:
             self.test_loader = self.data_loader['test']
             self.train_epoch()
             if self.epoch % self.log_summary_interval == 0:
-                self.test_epoch()
-                self.testdataset.update_cache()
+                #self.test_epoch()
+                #self.testdataset.update_cache()
                 #self.log_summary_writer()
+                pass
             self.lr_scheduler.step()
             self.dataset.update_cache()
             if self.epoch % 5 == 0:
@@ -206,7 +213,7 @@ class Train:
             average_loss = running_loss / (step + 1)
             epoch_iterator.set_description("Training ({}/ {}) (loss={:.4f}), epoch contrastive loss={:.4f}, epoch classification loss={:.4f}, classif_acc={:.4f}".format(step + 1, total_batches, average_loss,loss['contrast_loss'],loss['classification_loss'],classif_acc))
             epoch_iterator.refresh()
-            if step % 10 == 0:
+            if step % self.step_interval == 0:
                 self.save_losses(average_loss)
         self.total_progress_bar.update(1)
         self.epoch += 1
