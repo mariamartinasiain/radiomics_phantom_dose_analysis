@@ -535,7 +535,7 @@ def main():
 
     jsonpath = "./dataset_info_cropped.json"
     data_list = load_data(jsonpath)
-    train_data, test_data = create_datasets(data_list,test_size=0.01)
+    train_data, test_data = create_datasets(data_list,test_size=0.001)
     model = get_model(target_size=(64, 64, 32))
     
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
