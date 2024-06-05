@@ -52,9 +52,7 @@ class Train:
         self.best_log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
         self.tsne_plots = []
         
-        self.train_losses = []
-        self.contrast_losses = []
-        self.val_losses = []
+        self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'total_losses': []}
     
     def get_device(self):
         device_id = 0
@@ -103,10 +101,13 @@ class Train:
         else:
             raise ValueError(f"Invalid reconstruction type: {reconstruction_type}")
         
-    def save_losses(self, train_loss, val_loss, loss_file='losses.json'):
-        self.train_losses.append(train_loss)
-        self.val_losses.append(val_loss)
-        self.contrast_losses.append(self.losses_dict['contrast_loss'])
+    def save_losses(self, train_loss, loss_file='losses.json'):
+        self.train_losses['total_losses'].append(train_loss)
+        self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
+        self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
+        self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
+        #self.val_losses.append(val_loss)
+        
         
         # Convert torch.Tensor to a JSON-serializable format
         def convert_to_serializable(obj):
@@ -117,14 +118,52 @@ class Train:
             else:
                 return obj
         
-        serializable_train_losses = convert_to_serializable(self.train_losses)
-        serializable_val_losses = convert_to_serializable(self.val_losses)
-        serializable_contrast_losses = convert_to_serializable(self.contrast_losses)
+        #serializable_val_losses = convert_to_serializable(self.val_losses)
+        serializable_contrast_losses = convert_to_serializable(self.train_losses['contrast_losses'])
+        serializable_classification_losses = convert_to_serializable(self.train_losses['classification_losses'])
+        serializable_total_losses = convert_to_serializable(self.train_losses['total_losses'])
+        serializable_recosntruction_losses = convert_to_serializable(self.train_losses['reconstruction_losses'])
         
-        with open(loss_file, 'w') as f:
-            json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
+        # with open(loss_file, 'w') as f:
+        #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
         with open('contrast_losses.json', 'w') as f:
             json.dump({'contrast_losses': serializable_contrast_losses}, f)
+        with open('classification_losses.json', 'w') as f:
+            json.dump({'classification_losses': serializable_classification_losses}, f)
+        with open('total_losses.json', 'w') as f:
+            json.dump({'total_losses': serializable_total_losses}, f)
+        with open('reconstruction_losses.json', 'w') as f:
+            json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
+            
+    def plot_losses(self):
+        fig, ax = plt.subplots(2, 2, figsize=(15, 10))
+        ax[0, 0].plot(self.train_losses['contrast_losses'], label='Contrastive Loss')
+        ax[0, 0].set_title('Contrastive Loss')
+        ax[0, 0].set_xlabel('Epoch')
+        ax[0, 0].set_ylabel('Loss')
+        ax[0, 0].legend()
+        
+        ax[0, 1].plot(self.train_losses['classification_losses'], label='Classification Loss')
+        ax[0, 1].set_title('Classification Loss')
+        ax[0, 1].set_xlabel('Epoch')
+        ax[0, 1].set_ylabel('Loss')
+        ax[0, 1].legend()
+        
+        ax[1, 0].plot(self.train_losses['reconstruction_losses'], label='Reconstruction Loss')
+        ax[1, 0].set_title('Reconstruction Loss')
+        ax[1, 0].set_xlabel('Epoch')
+        ax[1, 0].set_ylabel('Loss')
+        ax[1, 0].legend()
+        
+        ax[1, 1].plot(self.train_losses['total_losses'], label='Total Loss')
+        ax[1, 1].set_title('Total Loss')
+        ax[1, 1].set_xlabel('Epoch')
+        ax[1, 1].set_ylabel('Loss')
+        ax[1, 1].legend()
+        
+        plt.tight_layout()
+        plt.savefig('losses_plot.png')
+        plt.show()
     
     def train(self):
         self.total_progress_bar.write('Start training')
@@ -152,6 +191,7 @@ class Train:
         self.total_progress_bar.write('Finish training')
         self.save_model(self.save_name)
         self.create_gif()
+        self.plot_losses()
         return self.acc_dict['best_test_acc']
 
     def train_epoch(self):
@@ -166,9 +206,11 @@ class Train:
             average_loss = running_loss / (step + 1)
             epoch_iterator.set_description("Training ({}/ {}) (loss={:.4f}), epoch contrastive loss={:.4f}, epoch classification loss={:.4f}, classif_acc={:.4f}".format(step + 1, total_batches, average_loss,loss['contrast_loss'],loss['classification_loss'],classif_acc))
             epoch_iterator.refresh()
+            if step % 10 == 0:
+                self.save_losses(average_loss)
         self.total_progress_bar.update(1)
         self.epoch += 1
-        self.save_losses(average_loss, self.val_losses[-1] if self.val_losses else None)
+        
         
     def train_step(self,batch):
         # update the learning rate of the optimizer
@@ -203,9 +245,9 @@ class Train:
         
         
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
-        reconstructed_imgs = self.reconstruct_image(latents[4]) 
-        self.reconstruction_step(reconstructed_imgs, imgs_s) 
-        #self.losses_dict['reconstruction_loss'] = 0.0
+        #reconstructed_imgs = self.reconstruct_image(latents[4]) 
+        #self.reconstruction_step(reconstructed_imgs, imgs_s) 
+        self.losses_dict['reconstruction_loss'] = 0.0
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
@@ -272,11 +314,11 @@ class Train:
         llss = (self.contrast_loss(all_embeddings, all_labels))
         self.losses_dict['contrast_loss'] = llss
         
-    def reconstruction_step(self, reconstructed_imgs, original_imgs): #ici on calcul la loss L1 entre l'image d'origine et la supposée image RECONSTRUIRE (pas segmentee)
+    def reconstruction_step(self, reconstructed_imgs, original_imgs): 
         reconstruction_loss = self.recons_loss(reconstructed_imgs, original_imgs)
         self.losses_dict['reconstruction_loss'] = reconstruction_loss
         
-    def reconstruct_image(self,bottleneck): #pas coherent avec reconstruction step, ici on reconstruit la segmentation (et pas l'image d'origine)
+    def reconstruct_image(self,bottleneck): 
         _, c, h, w, d = bottleneck.shape
         x_rec = bottleneck.flatten(start_dim=2, end_dim=4)
         x_rec = x_rec.view(-1, c, h, w, d)
@@ -301,7 +343,7 @@ class Train:
         avg_test_accuracy = np.mean(total_test_accuracy)
         avg_val_loss = running_val_loss / len(self.test_loader)
         self.acc_dict['best_test_acc'] = avg_test_accuracy
-        self.save_losses(self.train_losses[-1] if self.train_losses else None, avg_val_loss)  # Save the validation loss
+        #self.save_losses(self.train_losses[-1] if self.train_losses else None, avg_val_loss)  # Save the validation loss
         print(f"Test Accuracy: {avg_test_accuracy}%")
         
     def autoclassifier(self, in_features, num_classes):
@@ -319,7 +361,7 @@ class Train:
         print(f'Model weights saved to {path}')
 
     def plot_latent_space(self, epoch):
-        self.model.eval()  # Set the model to evaluation mode
+        self.model.eval() 
         latents = []
         labels = []  
 
@@ -333,11 +375,11 @@ class Train:
                 
                 latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
                 latents.extend(latents_tensor.cpu().numpy())
-                labels.extend(batch['roi_label'].cpu().numpy())  # Adjust as per your dataset structure
+                labels.extend(batch['roi_label'].cpu().numpy()) 
 
         latents_2d = perform_tsne(latents)
 
-        # Plotting and saving to disk
+
         plt.figure(figsize=(10, 10))
         scatter = plt.scatter(latents_2d[:, 0], latents_2d[:, 1], c=labels, cmap='viridis')
         plt.colorbar(scatter, label='Labels')
@@ -348,7 +390,7 @@ class Train:
         plot_path =  f'{self.save_name}_latent_space_tsne_epoch_{epoch}.png'
         print(f'Saving latent space plot to {plot_path}')
         plt.savefig(plot_path)
-        plt.close()  # Close the figure to free memory
+        plt.close()  
 
         self.tsne_plots.append(plot_path)
 
@@ -493,7 +535,7 @@ def main():
 
     jsonpath = "./dataset_info_cropped.json"
     data_list = load_data(jsonpath)
-    train_data, test_data = create_datasets(data_list)
+    train_data, test_data = create_datasets(data_list,test_size=0.01)
     model = get_model(target_size=(64, 64, 32))
     
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
@@ -512,7 +554,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="FT_contrastive_classification_reconstruction_model.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="FT_whole_contrastive_classification_model.pth")
     trainer.train()
 
 if __name__ == '__main__':
