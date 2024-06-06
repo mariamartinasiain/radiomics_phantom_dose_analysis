@@ -215,6 +215,8 @@ class Train:
         self.testdataset.shutdown()
         self.total_progress_bar.write('Finish training')
         self.save_model(self.save_name)
+        reconstruction_model_path = self.save_name.replace('.pth', '_reconstruction.pth')
+        self.save_reconstruction_model(reconstruction_model_path)
         self.create_gif()
         self.plot_losses()
         return self.acc_dict['best_test_acc']
@@ -383,6 +385,10 @@ class Train:
     
     def save_model(self, path):
         torch.save(self.model.state_dict(), path)
+        print(f'Model weights saved to {path}')
+        
+    def save_reconstruction_model(self, path):
+        torch.save(self.reconstruct.state_dict(), path)
         print(f'Model weights saved to {path}')
 
     def plot_latent_space(self, epoch):
