@@ -42,7 +42,7 @@ class Train:
         self.reconstruct = self.get_reconstruction_model()
         
         #quick fix to train decoder only
-        self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-4)
+        self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3)
         
         self.epoch = 0
         self.log_summary_interval = 5
@@ -570,7 +570,7 @@ def main():
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
+    train_loader = ThreadDataLoader(train_dataset, batch_size=64, shuffle=True,collate_fn=custom_collate_fn)
     test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
     
     data_loader = {'train': train_loader, 'test': test_loader}
@@ -581,7 +581,7 @@ def main():
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
-    lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-5)
+    lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
     trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="FT_whole_RECONSTRUCTION_model.pth")
     trainer.train()
