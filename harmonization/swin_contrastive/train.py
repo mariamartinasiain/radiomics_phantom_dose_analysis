@@ -41,6 +41,9 @@ class Train:
         self.device = self.get_device()
         self.reconstruct = self.get_reconstruction_model()
         
+        #quick fix to train decoder only
+        self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-4)
+        
         self.epoch = 0
         self.log_summary_interval = 5
         self.step_interval = 10
@@ -256,20 +259,20 @@ class Train:
         #print("nlatents[4] size",nlatents[4].size())
         
         #print("ids size",ids.size())
-        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+        #self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
         #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
         
-        features = torch.mean(bottleneck, dim=(2, 3, 4))
-        accu = self.classification_step(features, scanner_labels)
+        #features = torch.mean(bottleneck, dim=(2, 3, 4))
+        #accu = self.classification_step(features, scanner_labels)
         #print(f"Train Accuracy: {accu}%")
-        #accu = 0
-        #self.losses_dict['classification_loss'] = 0.0
+        accu = 0
+        self.losses_dict['classification_loss'] = 0.0
         
         
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
-        #reconstructed_imgs = self.reconstruct_image(latents[4]) 
-        #self.reconstruction_step(reconstructed_imgs, imgs_s) 
-        self.losses_dict['reconstruction_loss'] = 0.0
+        reconstructed_imgs = self.reconstruct_image(latents[4]) 
+        self.reconstruction_step(reconstructed_imgs, imgs_s) 
+        #self.losses_dict['reconstruction_loss'] = 0.0
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
@@ -577,10 +580,10 @@ def main():
     
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005)
-    lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
+    lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-5)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="FT_whole_contrastive_classification_model.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="FT_whole_RECONSTRUCTION_model.pth")
     trainer.train()
 
 if __name__ == '__main__':
