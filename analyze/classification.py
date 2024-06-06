@@ -12,6 +12,7 @@ from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import GroupShuffleSplit, LeaveOneGroupOut,LeavePGroupsOut,GroupKFold
 from sklearn import svm
 import numpy as np
+import os
 
 def group_data(data, mode='scanner'):
     gd = {}
@@ -251,6 +252,11 @@ def save_results_to_csv(results,classif_type='roi_small',mg_filter=None,data_pat
     df['classif_type'] = classif_type
     df['mg_filter'] = mg_filter
     csv_filename = f"results_{classif_type}_{plus}_{mg_filter}_{data_path}.csv"
+
+    directory = os.path.dirname(csv_filename)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
+
     df.to_csv(csv_filename, index=False)
     
  
