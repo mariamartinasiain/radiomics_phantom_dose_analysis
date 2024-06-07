@@ -30,7 +30,7 @@ class ReconstructionLoss(nn.Module):
     def forward(self, output, target):
         l1 = self.l1_loss(output, target)
         ssim_loss = 1 - ssim(output, target, data_range=1.0, size_average=True)
-        print(f"l1: {l1}, ssim: {ssim_loss}")
+        #print(f"l1: {l1}, ssim: {ssim_loss}")
         total_loss = l1 + self.ssim_weight * ssim_loss
         return total_loss
 
@@ -47,7 +47,7 @@ class Train:
         self.contrast_loss = contrast_loss
         self.classification_loss = torch.nn.CrossEntropyLoss().cuda()
         self.device = self.get_device()
-        self.recons_loss = ReconstructionLoss(ssim_weight=1).to(self.device)
+        self.recons_loss = ReconstructionLoss(ssim_weight=5).to(self.device)
         self.acc_metric = acc_metric
         self.batch_size = data_loader['train'].batch_size
         self.dataset = dataset['train']
