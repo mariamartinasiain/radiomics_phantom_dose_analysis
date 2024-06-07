@@ -18,6 +18,7 @@ from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
 import torch.nn as nn
 import imageio
+import nibabel as nib
 
 class Train:
     
@@ -40,6 +41,7 @@ class Train:
         self.save_name = savename
         self.device = self.get_device()
         self.reconstruct = self.get_reconstruction_model()
+        self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
         
         #quick fix to train decoder only
         self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3)
@@ -104,6 +106,12 @@ class Train:
             return model
         else:
             raise ValueError(f"Invalid reconstruction type: {reconstruction_type}")
+        
+    def load_reconstruction_model(self, path):
+        weights = torch.load(path)
+        self.reconstruct.load_state_dict(weights)
+        self.reconstruct.eval()
+        print(f'Model weights loaded from {path}')
         
     def save_losses(self, train_loss, loss_file='losses.json'):
         self.train_losses['total_losses'].append(train_loss)
@@ -273,6 +281,20 @@ class Train:
         
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
         reconstructed_imgs = self.reconstruct_image(latents[4]) 
+        
+        #saving nifti image to disk
+        img = reconstructed_imgs[0,:,:,:,:].detach().cpu().numpy()
+        img = np.squeeze(img)
+        img = nib.Nifti1Image(img, np.eye(4))
+        nib.save(img, "reconstructed_image.nii")
+        
+        #saving original image to disk
+        img = imgs_s[0,:,:,:,:].detach().cpu().numpy()
+        img = np.squeeze(img)
+        img = nib.Nifti1Image(img, np.eye(4))
+        nib.save(img, "original_image.nii")
+        
+        
         self.reconstruction_step(reconstructed_imgs, imgs_s) 
         #self.losses_dict['reconstruction_loss'] = 0.0
 
@@ -350,6 +372,7 @@ class Train:
         x_rec = bottleneck.flatten(start_dim=2, end_dim=4)
         x_rec = x_rec.view(-1, c, h, w, d)
         x_rec = self.reconstruct(x_rec)
+        
         return x_rec
         
     def test_epoch(self):
