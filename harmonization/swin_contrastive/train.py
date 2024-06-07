@@ -144,7 +144,7 @@ class Train:
 
         points = len(self.train_losses['contrast_losses'])
         steps = np.arange(0, points * step_interval, step_interval)
-        contrast_losses = self.train_losses['contrast_losses'].detach().numpy()
+        contrast_losses = [loss.detach().numpy() for loss in self.train_losses['contrast_losses']]
         
         fig, ax = plt.subplots(2, 2, figsize=(15, 10))
 
@@ -156,7 +156,7 @@ class Train:
 
         points = len(self.train_losses['classification_losses'])
         steps = np.arange(0, points * step_interval, step_interval)
-        classification_losses = self.train_losses['classification_losses'].detach().numpy()
+        classification_losses = [loss.detach().numpy() for loss in self.train_losses['classification_losses']]
 
         ax[0, 1].plot(steps, classification_losses, label='Classification Loss')
         ax[0, 1].set_title('Classification Loss')
@@ -166,7 +166,7 @@ class Train:
 
         points = len(self.train_losses['reconstruction_losses'])
         steps = np.arange(0, points * step_interval, step_interval)
-        reconstruction_losses = self.train_losses['reconstruction_losses'].detach().numpy()
+        reconstruction_losses = [loss.detach().numpy() for loss in self.train_losses['reconstruction_losses']]
 
         ax[1, 0].plot(steps, reconstruction_losses, label='Reconstruction Loss')
         ax[1, 0].set_title('Reconstruction Loss')
@@ -176,7 +176,7 @@ class Train:
 
         points = len(self.train_losses['total_losses'])
         steps = np.arange(0, points * step_interval, step_interval)
-        total_losses = self.train_losses['total_losses'].detach().numpy()
+        total_losses = [loss.detach().numpy() for loss in self.train_losses['total_losses']]
 
         ax[1, 1].plot(steps, total_losses, label='Total Loss')
         ax[1, 1].set_title('Total Loss')
@@ -586,10 +586,10 @@ def main():
     
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
+    optimizer = optim.AdamW(model.parameters(), lr=5e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="FT_whole_RECONSTRUCTION_model.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 65,dataset,contrastive_latentsize=700,savename="FT_whole_RECONSTRUCTION_model.pth")
     trainer.train()
 
 if __name__ == '__main__':
