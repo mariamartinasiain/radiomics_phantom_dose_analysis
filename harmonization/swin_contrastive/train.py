@@ -10,6 +10,7 @@ from analyze.analyze import perform_tsne
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
+from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped
 from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model, load_data
@@ -19,6 +20,18 @@ from monai.transforms import Transform
 import torch.nn as nn
 import imageio
 import nibabel as nib
+
+class ReconstructionLoss(nn.Module):
+    def __init__(self, ssim_weight=0.5):
+        super(ReconstructionLoss, self).__init__()
+        self.l1_loss = nn.L1Loss()
+        self.ssim_weight = ssim_weight
+
+    def forward(self, output, target):
+        l1 = self.l1_loss(output, target)
+        ssim_loss = 1 - ssim(output, target, data_range=1.0, size_average=True)
+        total_loss = l1 + self.ssim_weight * ssim_loss
+        return total_loss
 
 class Train:
     
@@ -32,15 +45,17 @@ class Train:
         self.num_epoch = num_epoch
         self.contrast_loss = contrast_loss
         self.classification_loss = torch.nn.CrossEntropyLoss().cuda()
-        self.recons_loss = torch.nn.L1Loss().cuda()
+        self.device = self.get_device()
+        self.recons_loss = ReconstructionLoss(ssim_weight=1).to(self.device)
         self.acc_metric = acc_metric
         self.batch_size = data_loader['train'].batch_size
         self.dataset = dataset['train']
         self.testdataset = dataset['test']
         self.contrastive_latentsize = contrastive_latentsize
         self.save_name = savename
-        self.device = self.get_device()
         self.reconstruct = self.get_reconstruction_model()
+        
+        #quick fix to load reconstruction model
         self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
         
         #quick fix to train decoder only
