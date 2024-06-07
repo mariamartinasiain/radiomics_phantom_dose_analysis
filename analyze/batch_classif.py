@@ -17,16 +17,19 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
+    'swin_contrastive_SP': (272),
+    'swin_contrastive_classif_SP': (272),
+    'swin_contrastive_classif_reconstruction_SP': (272),
     'swin_contrastive': (2800),
     'swin_contrastive_classif': (2800),
-    'swin_contrastive_classif_reconstruction' : (2800),
+    'swin_contrastive_classif_reconstruction' : (2800),    
 }
-classif_types = ['roi_large']
+classif_types = ['scanner','roi_large']
 for classif_type in classif_types:
     for model, info_list in configurations.items():
         latent_size = info_list
         data_path = f'../features_{model}.csv'
         #output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
-        mlp_accuracy,mlp_max_accu,mlp_min_accu = train_mlp_svm(latent_size, data_path, "",classif_type,mg_filter=10)
+        mlp_accuracy,mlp_max_accu,mlp_min_accu = train_mlp_svm(latent_size, data_path, "",classif_type,mg_filter=None)
         #_,svm_accuracy,svm_max_accu,svm_min_accu = train_svm(data_path,classif_type,mg_filter=None)
         #update_performance_file(model, n_scanners, mlp_accuracy, svm_accuracy, output_path_mlp,classif_type,mlp_max_accu,mlp_min_accu,svm_max_accu,svm_min_accu)
