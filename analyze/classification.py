@@ -248,14 +248,18 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
 
 def save_results_to_csv(results,classif_type='roi_small',mg_filter=None,data_path="",plus=""):
     df = pd.DataFrame(results)
+    
+    base_name = os.path.basename(data_path)
+    base_name = os.path.splitext(base_name)[0]
+    
     #adding columns
     df['classif_type'] = classif_type
     df['mg_filter'] = mg_filter
-    csv_filename = f"results_{classif_type}_{plus}_{mg_filter}_{data_path}.csv"
+    csv_filename = f"results_{classif_type}_{plus}_{mg_filter}_{base_name}.csv"
 
-    directory = os.path.dirname(csv_filename)
-    if directory and not os.path.exists(directory):
-        os.makedirs(directory)
+    # directory = os.path.dirname(csv_filename)
+    # if directory and not os.path.exists(directory):
+    #     os.makedirs(directory)
 
     df.to_csv(csv_filename, index=False)
     
