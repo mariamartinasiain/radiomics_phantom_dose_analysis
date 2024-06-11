@@ -57,10 +57,10 @@ class Train:
         self.reconstruct = self.get_reconstruction_model()
         
         #quick fix to load reconstruction model
-        self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
+        #self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
         
         #quick fix to train decoder only
-        self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3)
+        #self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3) #ajouter tout
         
         self.epoch = 0
         self.log_summary_interval = 5
@@ -285,7 +285,7 @@ class Train:
         #print("nlatents[4] size",nlatents[4].size())
         
         #print("ids size",ids.size())
-        #self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
         #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
         
         #features = torch.mean(bottleneck, dim=(2, 3, 4))
@@ -296,23 +296,23 @@ class Train:
         
         
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
-        reconstructed_imgs = self.reconstruct_image(latents[4]) 
+        # reconstructed_imgs = self.reconstruct_image(latents[4]) 
         
-        #saving nifti image to disk
-        img = reconstructed_imgs[0,:,:,:,:].detach().cpu().numpy()
-        img = np.squeeze(img)
-        img = nib.Nifti1Image(img, np.eye(4))
-        nib.save(img, "reconstructed_image.nii")
+        # #saving nifti image to disk
+        # img = reconstructed_imgs[0,:,:,:,:].detach().cpu().numpy()
+        # img = np.squeeze(img)
+        # img = nib.Nifti1Image(img, np.eye(4))
+        # nib.save(img, "reconstructed_image.nii")
         
-        #saving original image to disk
-        img = imgs_s[0,:,:,:,:].detach().cpu().numpy()
-        img = np.squeeze(img)
-        img = nib.Nifti1Image(img, np.eye(4))
-        nib.save(img, "original_image.nii")
+        # #saving original image to disk
+        # img = imgs_s[0,:,:,:,:].detach().cpu().numpy()
+        # img = np.squeeze(img)
+        # img = nib.Nifti1Image(img, np.eye(4))
+        # nib.save(img, "original_image.nii")
         
         
-        self.reconstruction_step(reconstructed_imgs, imgs_s) 
-        #self.losses_dict['reconstruction_loss'] = 0.0
+        #self.reconstruction_step(reconstructed_imgs, imgs_s) 
+        self.losses_dict['reconstruction_loss'] = 0.0
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
@@ -615,7 +615,7 @@ def main():
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = ThreadDataLoader(train_dataset, batch_size=64, shuffle=True,collate_fn=custom_collate_fn)
+    train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
     test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
     
     data_loader = {'train': train_loader, 'test': test_loader}
@@ -625,10 +625,10 @@ def main():
     
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     
-    optimizer = optim.AdamW(model.parameters(), lr=5e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 65,dataset,contrastive_latentsize=700,savename="FT_whole_RECONSTRUCTION_model.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 65,dataset,contrastive_latentsize=700,savename="paper_contrastive.pth")
     trainer.train()
 
 if __name__ == '__main__':
