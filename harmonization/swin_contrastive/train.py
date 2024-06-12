@@ -105,7 +105,8 @@ class Train:
         #quick fix to load reconstruction model
         self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
 
-        self.orth_loss = OrthogonalityLoss(batch_size=self.batch_size, num_feature_maps=4, feature_shape=(2, 2, 1), device=self.device, split=self.contrastive_latentsize)
+        # Orthogonality loss
+        self.orth_loss = OrthogonalityLoss(batch_size=self.batch_size, num_feature_maps=768, feature_shape=(2, 2, 1), device=self.device, split=self.contrastive_latentsize)
         
         #quick fix to train decoder only
         self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3)
@@ -118,11 +119,11 @@ class Train:
         self.losses_dict = {'total_loss': 0, 'src_classification_loss': 0, 'contrast_loss': 0}
         self.log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
         self.best_acc_dict = {'src_best_train_acc': 0, 'src_best_test_acc': 0, 'tgt_best_test_acc': 0}
-        self.best_loss_dict = {'total_loss': float('inf'), 'src_classification_loss': float('inf'), 'contrast_loss': float('inf')} # todo ortghonality
+        self.best_loss_dict = {'total_loss': float('inf'), 'src_classification_loss': float('inf'), 'contrast_loss': float('inf')}
         self.best_log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
         self.tsne_plots = []
         
-        self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'total_losses': []} #todo update
+        self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'orthogonality_losses': [], 'total_losses': []}
     
     def get_device(self):
         device_id = 0
@@ -182,7 +183,7 @@ class Train:
         self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
         self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
         self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
-        # todo ortghonality
+        self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
         #self.val_losses.append(val_loss)
         
         
@@ -200,7 +201,7 @@ class Train:
         serializable_classification_losses = convert_to_serializable(self.train_losses['classification_losses'])
         serializable_total_losses = convert_to_serializable(self.train_losses['total_losses'])
         serializable_recosntruction_losses = convert_to_serializable(self.train_losses['reconstruction_losses'])
-        # todo ortghonality
+        serializable_orthogonality_losses = convert_to_serializable(self.train_losses['orthogonality_losses'])
         
         # with open(loss_file, 'w') as f:
         #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
@@ -212,7 +213,8 @@ class Train:
             json.dump({'total_losses': serializable_total_losses}, f)
         with open('reconstruction_losses.json', 'w') as f:
             json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
-        # todo ortghonality
+        with open('orthogonality_losses.json', 'w') as f:
+            json.dump({'orthogonality_losses': serializable_orthogonality_losses}, f)
             
     def plot_losses(self):
         step_interval = self.step_interval
@@ -221,7 +223,7 @@ class Train:
         steps = np.arange(0, points * step_interval, step_interval)
         contrast_losses = [loss.detach().numpy() for loss in self.train_losses['contrast_losses']]
         
-        fig, ax = plt.subplots(2, 2, figsize=(15, 10))
+        fig, ax = plt.subplots(2, 2, figsize=(15, 10)) # todo modify the plot to include ortogonality loss
 
         ax[0, 0].plot(steps, contrast_losses, label='Contrastive Loss')
         ax[0, 0].set_title('Contrastive Loss')
@@ -259,7 +261,7 @@ class Train:
         ax[1, 1].set_ylabel('Loss')
         ax[1, 1].legend()
 
-        # todo ortghonality
+        # todo orthogonality
 
         plt.tight_layout()
         plt.savefig('losses_plot.png')
@@ -309,8 +311,7 @@ class Train:
             running_loss += loss['total_loss'].item()
             average_loss = running_loss / (step + 1)
             epoch_iterator.set_description("Training ({}/ {}) (loss={:.4f}), epoch contrastive loss={:.4f}, epoch classification loss={:.4f}, classif_acc={:.4f}".format(step + 1, total_batches, average_loss,loss['contrast_loss'],loss['classification_loss'],classif_acc))
-
-            # todo ortghonality
+            # todo orthogonality
 
             epoch_iterator.refresh()
             if step % self.step_interval == 0:
@@ -351,7 +352,9 @@ class Train:
         self.losses_dict['classification_loss'] = 0.0
 
         # Orthogonality loss
-        self.orth_loss(latents[4]) #todo
+        self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
+        print(f"Orthogonality Loss: {self.losses_dict['orthogonality_loss']}")
+
 
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
         reconstructed_imgs = self.reconstruct_image(latents[4]) 
@@ -374,7 +377,7 @@ class Train:
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
-            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] # todo ortghonality
+            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.losses_dict['orthogonality_loss']
         else:
             self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
 
