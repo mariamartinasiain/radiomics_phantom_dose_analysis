@@ -34,6 +34,52 @@ class ReconstructionLoss(nn.Module):
         total_loss = l1 + self.ssim_weight * ssim_loss
         return total_loss
 
+class OrthogonalityLoss:
+    def __init__(self, batch_size, num_feature_maps, feature_shape, device, split=None):
+
+        self.batch_size = batch_size
+        self.num_feature_maps = num_feature_maps
+        self.feature_shape = feature_shape
+        self.device = device
+        self.split = split
+
+        self.create_identity_and_mask()
+
+    def create_identity_and_mask(self):
+        # Create the identity matrix
+        identity_matrix = torch.eye(self.num_feature_maps, device=self.device)  # [num_feature_maps x num_feature_maps]
+        identity_matrix = identity_matrix.unsqueeze(0)  # [1 x num_feature_maps x num_feature_maps]
+        identity_matrix = identity_matrix.expand(self.batch_size, -1,  -1)  # [batch_size x num_feature_maps x num_feature_maps]
+
+        # Create a mask to zero out diagonal elements and elements not involved in the calculation
+        mask = torch.ones(self.num_feature_maps, self.num_feature_maps, device=self.device)
+        if self.split is not None:
+            mask[:, :self.split] = 0
+            mask[self.split:, :] = 0
+            mask[:self.split, self.split:] = 1
+            mask[self.split:, :self.split] = 1
+        mask[range(self.num_feature_maps), range(self.num_feature_maps)] = 0
+        mask = mask.unsqueeze(0).expand(self.batch_size, -1, -1)  # [batch_size x num_feature_maps x num_feature_maps]
+
+        self.identity_matrix = identity_matrix
+        self.mask = mask
+
+    def __call__(self, H):
+
+        # Reshape H to a 2D tensor for matrix multiplication
+        H_reshaped = H.view(self.batch_size,  self.num_feature_maps, -1)  # [batch_size x num_feature_maps x product of feature_shape]
+
+        # Compute H H^T
+        H_Ht = torch.matmul(H_reshaped, H_reshaped.transpose(-1, -2))  # [batch_size x num_feature_maps x num_feature_maps]
+
+        # Apply the mask to the difference (H H^T - I)
+        masked_diff = (H_Ht - self.identity_matrix) * self.mask
+
+        # Compute the orthogonality loss: || masked_diff ||
+        L = torch.norm(masked_diff)
+
+        return L
+
 class Train:
     
     def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth'):
@@ -58,6 +104,8 @@ class Train:
         
         #quick fix to load reconstruction model
         self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
+
+        self.orth_loss = OrthogonalityLoss(batch_size=self.batch_size, num_feature_maps=4, feature_shape=(2, 2, 1), device=self.device, split=self.contrastive_latentsize)
         
         #quick fix to train decoder only
         self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3)
@@ -70,11 +118,11 @@ class Train:
         self.losses_dict = {'total_loss': 0, 'src_classification_loss': 0, 'contrast_loss': 0}
         self.log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
         self.best_acc_dict = {'src_best_train_acc': 0, 'src_best_test_acc': 0, 'tgt_best_test_acc': 0}
-        self.best_loss_dict = {'total_loss': float('inf'), 'src_classification_loss': float('inf'), 'contrast_loss': float('inf')}
+        self.best_loss_dict = {'total_loss': float('inf'), 'src_classification_loss': float('inf'), 'contrast_loss': float('inf')} # todo ortghonality
         self.best_log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
         self.tsne_plots = []
         
-        self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'total_losses': []}
+        self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'total_losses': []} #todo update
     
     def get_device(self):
         device_id = 0
@@ -134,6 +182,7 @@ class Train:
         self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
         self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
         self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
+        # todo ortghonality
         #self.val_losses.append(val_loss)
         
         
@@ -151,6 +200,7 @@ class Train:
         serializable_classification_losses = convert_to_serializable(self.train_losses['classification_losses'])
         serializable_total_losses = convert_to_serializable(self.train_losses['total_losses'])
         serializable_recosntruction_losses = convert_to_serializable(self.train_losses['reconstruction_losses'])
+        # todo ortghonality
         
         # with open(loss_file, 'w') as f:
         #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
@@ -162,6 +212,7 @@ class Train:
             json.dump({'total_losses': serializable_total_losses}, f)
         with open('reconstruction_losses.json', 'w') as f:
             json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
+        # todo ortghonality
             
     def plot_losses(self):
         step_interval = self.step_interval
@@ -207,6 +258,8 @@ class Train:
         ax[1, 1].set_xlabel('Steps')
         ax[1, 1].set_ylabel('Loss')
         ax[1, 1].legend()
+
+        # todo ortghonality
 
         plt.tight_layout()
         plt.savefig('losses_plot.png')
@@ -256,6 +309,9 @@ class Train:
             running_loss += loss['total_loss'].item()
             average_loss = running_loss / (step + 1)
             epoch_iterator.set_description("Training ({}/ {}) (loss={:.4f}), epoch contrastive loss={:.4f}, epoch classification loss={:.4f}, classif_acc={:.4f}".format(step + 1, total_batches, average_loss,loss['contrast_loss'],loss['classification_loss'],classif_acc))
+
+            # todo ortghonality
+
             epoch_iterator.refresh()
             if step % self.step_interval == 0:
                 self.save_losses(average_loss)
@@ -293,8 +349,10 @@ class Train:
         #print(f"Train Accuracy: {accu}%")
         accu = 0
         self.losses_dict['classification_loss'] = 0.0
-        
-        
+
+        # Orthogonality loss
+        self.orth_loss(latents[4]) #todo
+
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
         reconstructed_imgs = self.reconstruct_image(latents[4]) 
         
@@ -316,7 +374,7 @@ class Train:
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
-            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss']
+            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] # todo ortghonality
         else:
             self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
 
