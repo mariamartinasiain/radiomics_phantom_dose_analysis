@@ -18,6 +18,7 @@ from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
 import torch.nn as nn
+from scipy.spatial import procrustes
 import imageio
 import nibabel as nib
 
