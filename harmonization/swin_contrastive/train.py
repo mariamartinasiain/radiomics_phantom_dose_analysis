@@ -234,7 +234,7 @@ class Train:
                 pass
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 5 == 0:
+            if self.epoch % 3 == 1:
                 try:
                     self.plot_latent_space(self.epoch)
                 except Exception as e:
@@ -637,7 +637,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 65,dataset,contrastive_latentsize=700,savename="paper_contrastive.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=700,savename="sssssspaper_contrastive.pth")
     trainer.train()
 
 if __name__ == '__main__':
