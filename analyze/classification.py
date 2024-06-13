@@ -169,6 +169,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
         #print("Number of remaining groups:", len(np.unique(groups[train_index])))
         X_train_all, X_test = features[train_index], features[test_index]
         y_train_all, y_test = labels[train_index], labels[test_index]
+        print(f'X test : {X_test.shape}, y test : {y_test.shape}')
         groups_train_all = groups[train_index]
         unique_train_groups = np.unique(groups_train_all)
         if classif_type == 'scanner':
