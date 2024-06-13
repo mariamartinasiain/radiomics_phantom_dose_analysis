@@ -21,6 +21,10 @@ import torch.nn as nn
 import imageio
 import nibabel as nib
 
+def align_embeddings(reference, embeddings):
+    _, aligned_embeddings, _ = procrustes(reference, embeddings)
+    return aligned_embeddings
+
 class ReconstructionLoss(nn.Module):
     def __init__(self, ssim_weight=0.5):
         super(ReconstructionLoss, self).__init__()
@@ -55,6 +59,7 @@ class Train:
         self.contrastive_latentsize = contrastive_latentsize
         self.save_name = savename
         self.reconstruct = self.get_reconstruction_model()
+        self.reference_embeddings_2d = None
         
         #quick fix to load reconstruction model
         #self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
@@ -449,11 +454,15 @@ class Train:
 
         latents_2d = perform_tsne(latents)
 
+        if self.reference_embeddings_2d is None:
+            self.reference_embeddings_2d = latents_2d
+        else:
+            latents_2d = align_embeddings(self.reference_embeddings_2d, latents_2d)
 
         plt.figure(figsize=(10, 10))
         scatter = plt.scatter(latents_2d[:, 0], latents_2d[:, 1], c=labels, cmap='viridis')
         plt.colorbar(scatter, label='Labels')
-        plt.title('Latent Space t-SNE')
+        plt.title(f'Latent Space t-SNE at Epoch {epoch}')
         plt.xlabel('Dimension 1')
         plt.ylabel('Dimension 2')
 
