@@ -673,6 +673,14 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
             splits = GroupShuffleSplit(n_splits=1, test_size=N, random_state=42)
             it3 = splits.split(latents_t, labels_t, groups=groups)
         for train_idx, _ in it3:
+            
+            print("Debugging Info:")
+            print(f"N: {N}")
+            print(f"Type of train_idx: {type(train_idx)}")
+            print(f"Contents of train_idx: {train_idx}")
+            print(f"Shape of train_idx: {np.shape(train_idx)}")
+            print(f"Shape of latents_t: {np.shape(latents_t)}")
+            
             x_train = latents_t[train_idx]
             y_train = labels_t[train_idx]
             classifier = define_classifier(3072, 6)
@@ -755,14 +763,16 @@ def cross_val_training():
         latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
         print(f"Finished training for group {test_data[0]['info']['SeriesDescription']}")
         unique_groups = np.unique(groups)
-        print(f"In the end We took out the group {groups[test_idx[0]]}")
+        #print(f"In the end We took out the group {groups[test_idx[0]]}")
         print(f"In the end Unique groups are : {unique_groups} and their number is {len(unique_groups)}")
         
         #classifiy
         
-        thread = threading.Thread(target=classify_cross_val_wrapper, args=(latents_t, labels_t, latents_v, labels_v, groups))
-        thread.start()
-        threads.append(thread)
+        # thread = threading.Thread(target=classify_cross_val_wrapper, args=(latents_t, labels_t, latents_v, labels_v, groups))
+        # thread.start()
+        # threads.append(thread)
+        print("Shape of latents_t:", np.shape(latents_t))
+        classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
         
         #printing results
         with results_lock:
