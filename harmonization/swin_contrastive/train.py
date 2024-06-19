@@ -717,7 +717,7 @@ def cross_val_training():
     groups = group_data(data_list, mode='scanner') 
     
     logo = LeaveOneGroupOut()
-    it1 = enumerate(logo.split(data_list, groups))
+    it1 = enumerate(logo.split(data_list, groups=groups))
     results = {}
     results_lock = threading.Lock()
     
