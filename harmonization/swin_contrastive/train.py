@@ -237,7 +237,7 @@ class Train:
                 pass
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 3 == 1 or self.epoch == self.num_epoch - 1:
+            if self.epoch % 3 == 1 or self.epoch == self.num_epoch :
                 try:
                     self.latents_t,self.labels_t,self.latents_v,self.labels_v,self.groups = self.plot_latent_space(self.epoch)
                 except Exception as e:
