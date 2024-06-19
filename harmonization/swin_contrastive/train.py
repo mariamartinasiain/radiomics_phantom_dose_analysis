@@ -663,6 +663,11 @@ def main():
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
+    
+    latents_t = np.array(latents_t)
+    labels_t = np.array(labels_t)
+    latents_v = np.array(latents_v)
+    labels_v = np.array(labels_v)
     it2 = range(1, 13)
     for N in it2:
         N = N / 12
