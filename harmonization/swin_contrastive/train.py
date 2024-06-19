@@ -18,6 +18,7 @@ from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
+from keras.utils import to_categorical
 import torch.nn as nn
 import threading
 from scipy.spatial import procrustes
@@ -668,6 +669,9 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
     labels_t = np.array(labels_t)
     latents_v = np.array(latents_v)
     labels_v = np.array(labels_v)
+    num_classes = 6
+    labels_t = to_categorical(labels_t, num_classes=num_classes)
+    labels_v = to_categorical(labels_v, num_classes=num_classes)
     it2 = range(1, 13)
     for N in it2:
         N = N / 12
@@ -692,7 +696,7 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
             
             x_train = latents_t[train_idx,:]
             y_train = labels_t[train_idx]
-            classifier = define_classifier(3072, 6)
+            classifier = define_classifier(3072, num_classes)
                 
             history = classifier.fit(
                 x_train, y_train,
