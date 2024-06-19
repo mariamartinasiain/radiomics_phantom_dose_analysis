@@ -249,8 +249,11 @@ class Train:
         self.save_model(self.save_name)
         reconstruction_model_path = self.save_name.replace('.pth', '_reconstruction.pth')
         self.save_reconstruction_model(reconstruction_model_path)
-        self.create_gif()
-        self.plot_losses()
+        try:
+            self.create_gif()
+            self.plot_losses()
+        except Exception as e:
+            print(f"Error plotting losses or creating gif")
         return self.acc_dict['best_test_acc'],self.latents_t,self.labels_t,self.latents_v,self.labels_v,self.groups
 
     def train_epoch(self):
