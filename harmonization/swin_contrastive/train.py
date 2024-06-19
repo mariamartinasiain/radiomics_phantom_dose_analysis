@@ -681,7 +681,7 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
             print(f"Shape of train_idx: {np.shape(train_idx)}")
             print(f"Shape of latents_t: {np.shape(latents_t)}")
             
-            x_train = latents_t[train_idx]
+            x_train = latents_t[train_idx,:]
             y_train = labels_t[train_idx]
             classifier = define_classifier(3072, 6)
                 
