@@ -703,7 +703,7 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
                 validation_data=(latents_v, labels_v),
                 batch_size=64,
                 epochs=55,
-                verbose=1,
+                verbose=0,
             )
             max_val_accuracy = max(history.history['val_accuracy'])
             with lock:
@@ -756,7 +756,7 @@ def cross_val_training():
         train_data = [data_list[i] for i in train_idx]
         test_data = [data_list[i] for i in test_idx]
         model = get_model(target_size=(64, 64, 32))
-        train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.0001)
+        train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
         test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
         
         train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
@@ -772,7 +772,7 @@ def cross_val_training():
         lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
         
         #with savename being related to the group out
-        trainer = Train(model, data_loader, optimizer, lr_scheduler, 1,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
+        trainer = Train(model, data_loader, optimizer, lr_scheduler, 4,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
         latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
         print(f"Finished training for group {test_data[0]['info']['SeriesDescription']}")
         unique_groups = np.unique(groups)
