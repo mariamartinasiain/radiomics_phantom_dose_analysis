@@ -751,7 +751,7 @@ def cross_val_training():
         lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
         
         #with savename being related to the group out
-        trainer = Train(model, data_loader, optimizer, lr_scheduler, 3,dataset,contrastive_latentsize=700,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
+        trainer = Train(model, data_loader, optimizer, lr_scheduler, 4,dataset,contrastive_latentsize=700,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
         latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
         print(f"Finished training for group {test_data[0]['info']['SeriesDescription']}")
         unique_groups = np.unique(groups)
