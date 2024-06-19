@@ -675,11 +675,15 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
         for train_idx, _ in it3:
             
             print("Debugging Info:")
+            print(f"Content of latents_t: {latents_t}")
+            print(f"Contents of train_idx: {train_idx}")
             print(f"N: {N}")
             print(f"Type of train_idx: {type(train_idx)}")
-            print(f"Contents of train_idx: {train_idx}")
             print(f"Shape of train_idx: {np.shape(train_idx)}")
             print(f"Shape of latents_t: {np.shape(latents_t)}")
+            print(f"Type of latents_t: {type(latents_t)}")
+            print(f"Shape of labels_t: {np.shape(labels_t)}")
+            
             
             x_train = latents_t[train_idx,:]
             y_train = labels_t[train_idx]
