@@ -725,6 +725,10 @@ def cross_val_training():
         classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
     threads = []
     for _, (train_idx, test_idx) in tqdm(it1):
+        
+        print(f"In the beggining We took out the group {groups[test_idx[0]]}")
+        print(f"In the beggining Unique groups are : {np.unique(groups)}")
+        
         train_data = [data_list[i] for i in train_idx]
         test_data = [data_list[i] for i in test_idx]
         model = get_model(target_size=(64, 64, 32))
@@ -748,8 +752,8 @@ def cross_val_training():
         latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
         print(f"Finished training for group {test_data[0]['info']['SeriesDescription']}")
         unique_groups = np.unique(groups)
-        print(f"We took out the group {groups[test_idx[0]]}")
-        print(f"Unique groups are : {unique_groups} and their number is {len(unique_groups)}")
+        print(f"In the end We took out the group {groups[test_idx[0]]}")
+        print(f"In the end Unique groups are : {unique_groups} and their number is {len(unique_groups)}")
         
         #classifiy
         
@@ -770,4 +774,4 @@ def cross_val_training():
 
 
 if __name__ == '__main__':
-    main()
+    cross_val_training()

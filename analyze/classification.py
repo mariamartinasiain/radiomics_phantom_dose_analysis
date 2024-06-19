@@ -1,4 +1,4 @@
-from analyze import extract_mg_value
+from analyze.analyze import extract_mg_value
 import re
 import tensorflow as tf
 from keras import layers
