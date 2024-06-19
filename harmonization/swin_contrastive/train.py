@@ -10,6 +10,7 @@ from analyze.analyze import perform_tsne
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.optim as optim
+from analyze.classification import save_results_to_csv,define_classifier
 from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped
@@ -18,6 +19,7 @@ from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
 import torch.nn as nn
+import threading
 from scipy.spatial import procrustes
 import imageio
 import nibabel as nib
@@ -235,9 +237,9 @@ class Train:
                 pass
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 3 == 1:
+            if self.epoch % 3 == 1 or self.epoch == self.num_epoch - 1:
                 try:
-                    self.plot_latent_space(self.epoch)
+                    self.latents_t,self.labels_t,self.latents_v,self.labels_v,self.groups = self.plot_latent_space(self.epoch)
                 except Exception as e:
                     print(f"Error plotting latent space: {e}")
         
@@ -249,7 +251,7 @@ class Train:
         self.save_reconstruction_model(reconstruction_model_path)
         self.create_gif()
         self.plot_losses()
-        return self.acc_dict['best_test_acc']
+        return self.acc_dict['best_test_acc'],self.latents_t,self.labels_t,self.latents_v,self.labels_v,self.groups
 
     def train_epoch(self):
         epoch_iterator = tqdm(self.train_loader, desc="Training (X / X Steps) (loss=X.X)", dynamic_ncols=True)
@@ -439,7 +441,10 @@ class Train:
     def plot_latent_space(self, epoch):
         self.model.eval() 
         latents = []
-        labels = []  
+        labels = [] 
+        scanner_labels = []
+        latents_v = []
+        labels_v = [] 
 
         with torch.no_grad():
             for batch in self.data_loader['train']:
@@ -452,6 +457,18 @@ class Train:
                 latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
                 latents.extend(latents_tensor.cpu().numpy())
                 labels.extend(batch['roi_label'].cpu().numpy()) 
+                scanner_labels.extend(batch['scanner_label'].cpu().numpy())
+            
+            for batch in self.data_loader['test']:
+                images = batch['image'].cuda()
+                latents_tensor = self.model.swinViT(images)[4]
+                
+                batch_size, channels, *dims = latents_tensor.size()
+                flatten_size = torch.prod(torch.tensor(dims)).item()
+                
+                latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
+                latents_v.extend(latents_tensor.cpu().numpy())
+                labels_v.extend(batch['roi_label'].cpu().numpy())
 
         latents_2d = perform_tsne(latents)
 
@@ -473,6 +490,7 @@ class Train:
         plt.close()  
 
         self.tsne_plots.append(plot_path)
+        return latents,labels,latents_v,labels_v,scanner_labels
 
     def create_gif(self):
         images = []
@@ -640,6 +658,116 @@ def main():
     
     trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=700,savename="sssssspaper_contrastive.pth")
     trainer.train()
+
+def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
+    it2 = range(1, 13)
+    for N in it2:
+        N = N / 12
+        if N == 1:
+            full_indices = np.arange(len(latents_t))
+            it3 = [(full_indices, None)]
+        else:
+            splits = GroupShuffleSplit(n_splits=1, test_size=N, random_state=42)
+            it3 = splits.split(latents_t, labels_t, groups=groups)
+        for train_idx, _ in it3:
+            x_train = latents_t[train_idx]
+            y_train = labels_t[train_idx]
+            classifier = define_classifier(3072, 6)
+                
+            history = classifier.fit(
+                x_train, y_train,
+                validation_data=(latents_v, labels_v),
+                batch_size=64,
+                epochs=35,
+                verbose=1,
+            )
+            max_val_accuracy = max(history.history['val_accuracy'])
+            with lock:
+                if N not in results:
+                    results[N] = []
+                results[N].append(max_val_accuracy)
+
+def cross_val_training():
+    from sklearn.preprocessing import LabelEncoder
+    device = Train.get_device(None)
+    labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
+    scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+    encoder = LabelEncoder()
+    encoder.fit(labels)
+    scanner_encoder = LabelEncoder()
+    scanner_encoder.fit(scanner_labels)
+    transforms = Compose([
+        #PrintDebug(),
+        LoadImaged(keys=["image"]),
+        #DebugTransform2(),
+        EnsureChannelFirstd(keys=["image"]),
+        EnsureTyped(keys=["image"], device=device, track_meta=False),
+        EncodeLabels(encoder=encoder),
+        ExtractScannerLabel(),
+        EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
+        #DebugTransform(),
+        #DebugTransform2(),
+        
+    ])
+
+    jsonpath = "./dataset_info_cropped.json"
+    from sklearn.model_selection import LeaveOneGroupOut
+    
+    data_list = load_data(jsonpath)
+    groups = group_data(data_list, mode='scanner') 
+    
+    logo = LeaveOneGroupOut()
+    it1 = enumerate(logo.split(data_list, groups))
+    results = {}
+    results_lock = threading.Lock()
+    
+    def classify_cross_val_wrapper(latents_t, labels_t, latents_v, labels_v, groups):
+        classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
+    threads = []
+    for _, (train_idx, test_idx) in tqdm(it1):
+        train_data = [data_list[i] for i in train_idx]
+        test_data = [data_list[i] for i in test_idx]
+        model = get_model(target_size=(64, 64, 32))
+        train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+        test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
+        
+        train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
+        test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
+        
+        data_loader = {'train': train_loader, 'test': test_loader}
+        dataset = {'train': train_dataset, 'test': test_dataset}
+        
+        
+        
+        print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
+        optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
+        lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
+        
+        #with savename being related to the group out
+        trainer = Train(model, data_loader, optimizer, lr_scheduler, 3,dataset,contrastive_latentsize=700,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
+        latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
+        print(f"Finished training for group {test_data[0]['info']['SeriesDescription']}")
+        unique_groups = np.unique(groups)
+        print(f"We took out the group {groups[test_idx[0]]}")
+        print(f"Unique groups are : {unique_groups} and their number is {len(unique_groups)}")
+        
+        #classifiy
+        
+        thread = threading.Thread(target=classify_cross_val_wrapper, args=(latents_t, labels_t, latents_v, labels_v, groups))
+        thread.start()
+        threads.append(thread)
+        
+        #printing results
+        with results_lock:
+            print("Results so far:")
+            for key, values in results.items():
+                print(f"Test size: {key}, Accuracies: {values}")
+    
+    for thread in threads:
+        thread.join()
+    
+    save_results_to_csv(results, classif_type="roi_large", mg_filter=None, data_path="./swinunetr_paper.json",plus="crossval_trained")
+
 
 if __name__ == '__main__':
     main()
