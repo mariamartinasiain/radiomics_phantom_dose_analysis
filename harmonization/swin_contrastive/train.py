@@ -827,11 +827,11 @@ def cross_val_training():
         
         #classifiy
         
-        thread = threading.Thread(target=classify_cross_val_wrapper, args=(latents_t, labels_t, latents_v, labels_v, groups))
-        thread.start()
-        threads.append(thread)
+        # thread = threading.Thread(target=classify_cross_val_wrapper, args=(latents_t, labels_t, latents_v, labels_v, groups))
+        # thread.start()
+        # threads.append(thread)
         print("Shape of latents_t:", np.shape(latents_t))
-        # classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
+        classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
         
         #printing results
         with results_lock:
