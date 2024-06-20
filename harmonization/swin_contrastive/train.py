@@ -739,10 +739,10 @@ def cross_val_training():
     from sklearn.model_selection import LeaveOneGroupOut
     
     data_list = load_data(jsonpath)
-    groups = group_data(data_list, mode='scanner') 
+    ogroups = group_data(data_list, mode='scanner') 
     
     logo = LeaveOneGroupOut()
-    it1 = enumerate(logo.split(data_list, groups=groups))
+    it1 = enumerate(logo.split(data_list, groups=ogroups))
     results = {}
     results_lock = threading.Lock()
     
@@ -752,9 +752,9 @@ def cross_val_training():
     for _, (train_idx, test_idx) in tqdm(it1):
         
         print(f"The test index is {test_idx}")
-        removed_groups = [groups[idx] for idx in test_idx]
+        removed_groups = [ogroups[idx] for idx in test_idx]
         print(f"In the beginning We took out the groups {removed_groups}")
-        print(f"In the beggining Unique groups are : {np.unique(groups)}")
+        print(f"In the beggining Unique groups are : {np.unique(ogroups)}")
         
         train_data = [data_list[i] for i in train_idx]
         test_data = [data_list[i] for i in test_idx]
