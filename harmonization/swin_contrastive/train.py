@@ -777,7 +777,7 @@ def cross_val_training():
         
         
         series_description = test_data[0]['info']['SeriesDescription']
-        search_pattern = f"*paper*{series_description}*"
+        search_pattern = f"*paper*{series_description}*pth"
         file_list = glob.glob(search_pattern)
         
         # Filter out files that contain "reconstruction"
