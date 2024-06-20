@@ -793,29 +793,29 @@ def cross_val_training():
             latents_v = []
             labels_v = []
             groups = []
-            
-            for batch in data_loader['train']:
-                images = batch['image'].cuda()
-                latents_tensor = model.swinViT(images)[4]
+            with torch.no_grad():
+                for batch in data_loader['train']:
+                    images = batch['image'].cuda()
+                    latents_tensor = model.swinViT(images)[4]
+                    
+                    batch_size, channels, *dims = latents_tensor.size()
+                    flatten_size = torch.prod(torch.tensor(dims)).item()
+                    
+                    latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
+                    latents_t.extend(latents_tensor.cpu().numpy())
+                    labels_t.extend(batch['roi_label'].cpu().numpy()) 
+                    groups.extend(batch['scanner_label'].cpu().numpy())
                 
-                batch_size, channels, *dims = latents_tensor.size()
-                flatten_size = torch.prod(torch.tensor(dims)).item()
-                
-                latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
-                latents_t.extend(latents_tensor.cpu().numpy())
-                labels_t.extend(batch['roi_label'].cpu().numpy()) 
-                groups.extend(batch['scanner_label'].cpu().numpy())
-            
-            for batch in data_loader['test']:
-                images = batch['image'].cuda()
-                latents_tensor = model.swinViT(images)[4]
-                
-                batch_size, channels, *dims = latents_tensor.size()
-                flatten_size = torch.prod(torch.tensor(dims)).item()
-                
-                latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
-                latents_v.extend(latents_tensor.cpu().numpy())
-                labels_v.extend(batch['roi_label'].cpu().numpy())
+                for batch in data_loader['test']:
+                    images = batch['image'].cuda()
+                    latents_tensor = model.swinViT(images)[4]
+                    
+                    batch_size, channels, *dims = latents_tensor.size()
+                    flatten_size = torch.prod(torch.tensor(dims)).item()
+                    
+                    latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
+                    latents_v.extend(latents_tensor.cpu().numpy())
+                    labels_v.extend(batch['roi_label'].cpu().numpy())
         else:
             trainer = Train(model, data_loader, optimizer, lr_scheduler, 4,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
             latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
