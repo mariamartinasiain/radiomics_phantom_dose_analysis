@@ -751,7 +751,7 @@ def cross_val_training():
     threads = []
     for _, (train_idx, test_idx) in tqdm(it1):
         
-        print(f"In the beggining We took out the group {groups[test_idx[0]]}")
+        print(f"In the beggining We took out the group {groups[test_idx]}")
         print(f"In the beggining Unique groups are : {np.unique(groups)}")
         
         train_data = [data_list[i] for i in train_idx]
