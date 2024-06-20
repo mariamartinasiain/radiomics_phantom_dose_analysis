@@ -673,7 +673,7 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
     num_classes = 6
     labels_t = to_categorical(labels_t, num_classes=num_classes)
     labels_v = to_categorical(labels_v, num_classes=num_classes)
-    it2 = range(1, 13)
+    it2 = range(1, 2)#13)
     for N in it2:
         N = N / 12
         if N == 1:
