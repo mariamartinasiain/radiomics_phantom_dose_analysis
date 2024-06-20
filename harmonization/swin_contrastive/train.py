@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 import queue
@@ -764,16 +765,61 @@ def cross_val_training():
         
         data_loader = {'train': train_loader, 'test': test_loader}
         dataset = {'train': train_dataset, 'test': test_dataset}
-        
-        
-        
+    
         print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
         optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
         lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
         
         #with savename being related to the group out
-        trainer = Train(model, data_loader, optimizer, lr_scheduler, 4,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
-        latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
+        #search for a file with "paper" in the name and test_data[0]['info']['SeriesDescription'] in the name and use it to load a model if found, and train it if not
+        
+        #only search for names that doesnt contain "reconstruction" in them and that contains test_data[0]['info']['SeriesDescription']
+        
+        
+        series_description = test_data[0]['info']['SeriesDescription']
+        search_pattern = f"*paper*{series_description}*"
+        file_list = glob.glob(search_pattern)
+        
+        # Filter out files that contain "reconstruction"
+        filtered_files = [file for file in file_list if "reconstruction" not in file]
+        
+        if filtered_files:
+            print(f"Found a model with the name {filtered_files[0]}")
+            model.load_state_dict(torch.load(filtered_files[0]))
+            print(f"Model loaded from {filtered_files[0]}")
+            
+            latents_t = []
+            labels_t = []
+            latents_v = []
+            labels_v = []
+            groups = []
+            
+            for batch in data_loader['train']:
+                images = batch['image'].cuda()
+                latents_tensor = model.swinViT(images)[4]
+                
+                batch_size, channels, *dims = latents_tensor.size()
+                flatten_size = torch.prod(torch.tensor(dims)).item()
+                
+                latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
+                latents_t.extend(latents_tensor.cpu().numpy())
+                labels_t.extend(batch['roi_label'].cpu().numpy()) 
+                groups.extend(batch['scanner_label'].cpu().numpy())
+            
+            for batch in data_loader['test']:
+                images = batch['image'].cuda()
+                latents_tensor = model.swinViT(images)[4]
+                
+                batch_size, channels, *dims = latents_tensor.size()
+                flatten_size = torch.prod(torch.tensor(dims)).item()
+                
+                latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
+                latents_v.extend(latents_tensor.cpu().numpy())
+                labels_v.extend(batch['roi_label'].cpu().numpy())
+        else:
+            trainer = Train(model, data_loader, optimizer, lr_scheduler, 4,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
+            latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
+        
         print(f"Finished training for group {test_data[0]['info']['SeriesDescription']}")
         unique_groups = np.unique(groups)
         #print(f"In the end We took out the group {groups[test_idx[0]]}")
@@ -792,6 +838,9 @@ def cross_val_training():
             print("Results so far:")
             for key, values in results.items():
                 print(f"Test size: {key}, Accuracies: {values}")
+        
+        save_results_to_csv(results, classif_type="roi_large", mg_filter=None, data_path="./swinunetr_paper.json",plus="crossval_trained")        
+        
     
     for thread in threads:
         thread.join()
