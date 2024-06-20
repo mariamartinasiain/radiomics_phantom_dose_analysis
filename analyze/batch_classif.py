@@ -1,4 +1,4 @@
-from classification import train_mlp_svm
+from analyze.classification import train_mlp_svm
 import tensorflow as tf
 
 
