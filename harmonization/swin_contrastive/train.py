@@ -1,7 +1,6 @@
 import glob
 import json
 import os
-import queue
 import re
 from matplotlib import pyplot as plt
 import numpy as np
@@ -17,6 +16,7 @@ from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped
 from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model, load_data
+from harmonization.swin_contrastive.utils import plot_multiple_losses
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
@@ -147,89 +147,9 @@ class Train:
         self.reconstruct.load_state_dict(weights)
         self.reconstruct.eval()
         print(f'Model weights loaded from {path}')
-        
-    def save_losses(self, train_loss, loss_file='losses.json'):
-        self.train_losses['total_losses'].append(train_loss)
-        self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
-        self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
-        self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
-        #self.val_losses.append(val_loss)
-        
-        
-        # Convert torch.Tensor to a JSON-serializable format
-        def convert_to_serializable(obj):
-            if isinstance(obj, torch.Tensor):
-                return obj.tolist()  # Convert tensor to list
-            elif isinstance(obj, list):
-                return [convert_to_serializable(item) for item in obj]
-            else:
-                return obj
-        
-        #serializable_val_losses = convert_to_serializable(self.val_losses)
-        serializable_contrast_losses = convert_to_serializable(self.train_losses['contrast_losses'])
-        serializable_classification_losses = convert_to_serializable(self.train_losses['classification_losses'])
-        serializable_total_losses = convert_to_serializable(self.train_losses['total_losses'])
-        serializable_recosntruction_losses = convert_to_serializable(self.train_losses['reconstruction_losses'])
-        
-        # with open(loss_file, 'w') as f:
-        #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
-        with open('contrast_losses.json', 'w') as f:
-            json.dump({'contrast_losses': serializable_contrast_losses}, f)
-        with open('classification_losses.json', 'w') as f:
-            json.dump({'classification_losses': serializable_classification_losses}, f)
-        with open('total_losses.json', 'w') as f:
-            json.dump({'total_losses': serializable_total_losses}, f)
-        with open('reconstruction_losses.json', 'w') as f:
-            json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
             
     def plot_losses(self):
-        step_interval = self.step_interval
-
-        points = len(self.train_losses['contrast_losses'])
-        steps = np.arange(0, points * step_interval, step_interval)
-        contrast_losses = [loss.detach().numpy() for loss in self.train_losses['contrast_losses']]
-        
-        fig, ax = plt.subplots(2, 2, figsize=(15, 10))
-
-        ax[0, 0].plot(steps, contrast_losses, label='Contrastive Loss')
-        ax[0, 0].set_title('Contrastive Loss')
-        ax[0, 0].set_xlabel('Steps')
-        ax[0, 0].set_ylabel('Loss')
-        ax[0, 0].legend()
-
-        points = len(self.train_losses['classification_losses'])
-        steps = np.arange(0, points * step_interval, step_interval)
-        classification_losses = [loss.detach().numpy() for loss in self.train_losses['classification_losses']]
-
-        ax[0, 1].plot(steps, classification_losses, label='Classification Loss')
-        ax[0, 1].set_title('Classification Loss')
-        ax[0, 1].set_xlabel('Steps')
-        ax[0, 1].set_ylabel('Loss')
-        ax[0, 1].legend()
-
-        points = len(self.train_losses['reconstruction_losses'])
-        steps = np.arange(0, points * step_interval, step_interval)
-        reconstruction_losses = [loss.detach().numpy() for loss in self.train_losses['reconstruction_losses']]
-
-        ax[1, 0].plot(steps, reconstruction_losses, label='Reconstruction Loss')
-        ax[1, 0].set_title('Reconstruction Loss')
-        ax[1, 0].set_xlabel('Steps')
-        ax[1, 0].set_ylabel('Loss')
-        ax[1, 0].legend()
-
-        points = len(self.train_losses['total_losses'])
-        steps = np.arange(0, points * step_interval, step_interval)
-        total_losses = [loss.detach().numpy() for loss in self.train_losses['total_losses']]
-
-        ax[1, 1].plot(steps, total_losses, label='Total Loss')
-        ax[1, 1].set_title('Total Loss')
-        ax[1, 1].set_xlabel('Steps')
-        ax[1, 1].set_ylabel('Loss')
-        ax[1, 1].legend()
-
-        plt.tight_layout()
-        plt.savefig('losses_plot.png')
-        plt.show()
+        plot_multiple_losses(self.train_losses, self.step_interval)
 
     
     def train(self):
@@ -451,6 +371,40 @@ class Train:
     def save_reconstruction_model(self, path):
         torch.save(self.reconstruct.state_dict(), path)
         print(f'Model weights saved to {path}')
+
+    def save_losses(self, train_loss, loss_file='losses.json'):
+        self.train_losses['total_losses'].append(train_loss)
+        self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
+        self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
+        self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
+        #self.val_losses.append(val_loss)
+        
+        
+        # Convert torch.Tensor to a JSON-serializable format
+        def convert_to_serializable(obj):
+            if isinstance(obj, torch.Tensor):
+                return obj.tolist()  # Convert tensor to list
+            elif isinstance(obj, list):
+                return [convert_to_serializable(item) for item in obj]
+            else:
+                return obj
+        
+        #serializable_val_losses = convert_to_serializable(self.val_losses)
+        serializable_contrast_losses = convert_to_serializable(self.train_losses['contrast_losses'])
+        serializable_classification_losses = convert_to_serializable(self.train_losses['classification_losses'])
+        serializable_total_losses = convert_to_serializable(self.train_losses['total_losses'])
+        serializable_recosntruction_losses = convert_to_serializable(self.train_losses['reconstruction_losses'])
+        
+        # with open(loss_file, 'w') as f:
+        #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
+        with open('contrast_losses.json', 'w') as f:
+            json.dump({'contrast_losses': serializable_contrast_losses}, f)
+        with open('classification_losses.json', 'w') as f:
+            json.dump({'classification_losses': serializable_classification_losses}, f)
+        with open('total_losses.json', 'w') as f:
+            json.dump({'total_losses': serializable_total_losses}, f)
+        with open('reconstruction_losses.json', 'w') as f:
+            json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
 
     def plot_latent_space(self, epoch):
         self.model.eval() 
@@ -712,7 +666,7 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
                 x_train, y_train,
                 validation_data=(latents_v, labels_v),
                 batch_size=64,
-                epochs=55,
+                epochs=75,
                 verbose=0,
             )
             max_val_accuracy = max(history.history['val_accuracy'])
