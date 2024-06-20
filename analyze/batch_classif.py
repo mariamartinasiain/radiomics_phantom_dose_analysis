@@ -25,7 +25,7 @@ for classif_type in classif_types:
     for mg_filter in mg_filters:
         for model, info_list in configurations.items():
             latent_size = info_list
-            data_path = f'../features_{model}.csv'
+            data_path = f'../../features_{model}.csv'
             #output_path_mlp = f'classif_models/classifier_{model}_{n_scanners}_{classif_type}_{qmg}_mlp.h5'
             mlp_accuracy,mlp_max_accu,mlp_min_accu = train_mlp_svm(latent_size, data_path, "",classif_type,mg_filter=mg_filter)
             #_,svm_accuracy,svm_max_accu,svm_min_accu = train_svm(data_path,classif_type,mg_filter=None)
