@@ -10,6 +10,7 @@ from tqdm import tqdm
 from analyze.analyze import perform_tsne
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
+import tensorflow as tf
 import torch.optim as optim
 from analyze.classification import save_results_to_csv,define_classifier
 from pytorch_msssim import ssim
@@ -25,6 +26,14 @@ import threading
 from scipy.spatial import procrustes
 import imageio
 import nibabel as nib
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
 
 def align_embeddings(reference, embeddings):
     _, aligned_embeddings, _ = procrustes(reference, embeddings)
@@ -711,6 +720,9 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
                 if N not in results:
                     results[N] = []
                 results[N].append(max_val_accuracy)
+            
+            tf.keras.backend.clear_session()
+            del x_train, y_train, classifier, history
 
 def cross_val_training():
     from sklearn.preprocessing import LabelEncoder
