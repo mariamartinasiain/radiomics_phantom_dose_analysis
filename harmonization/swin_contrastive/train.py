@@ -752,7 +752,8 @@ def cross_val_training():
     for _, (train_idx, test_idx) in tqdm(it1):
         
         print(f"The test index is {test_idx}")
-        print(f"In the beggining We took out the group {groups[test_idx]}")
+        removed_groups = [groups[idx] for idx in test_idx]
+        print(f"In the beginning We took out the groups {removed_groups}")
         print(f"In the beggining Unique groups are : {np.unique(groups)}")
         
         train_data = [data_list[i] for i in train_idx]
@@ -806,6 +807,8 @@ def cross_val_training():
                     latents_t.extend(latents_tensor.cpu().numpy())
                     labels_t.extend(batch['roi_label'].cpu().numpy()) 
                     groups.extend(batch['scanner_label'].cpu().numpy())
+                    del images
+                    torch.cuda.empty_cache()
                 
                 for batch in data_loader['test']:
                     images = batch['image'].cuda()
@@ -817,6 +820,8 @@ def cross_val_training():
                     latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
                     latents_v.extend(latents_tensor.cpu().numpy())
                     labels_v.extend(batch['roi_label'].cpu().numpy())
+                    del images
+                    torch.cuda.empty_cache()
                     
             dataset['train'].shutdown()
             dataset['test'].shutdown()
