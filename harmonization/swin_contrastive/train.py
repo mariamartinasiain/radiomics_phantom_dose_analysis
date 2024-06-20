@@ -839,6 +839,8 @@ def cross_val_training():
             for key, values in results.items():
                 print(f"Test size: {key}, Accuracies: {values}")
         
+        print("On va saaaveeeeee")
+        
         save_results_to_csv(results, classif_type="roi_large", mg_filter=None, data_path="./swinunetr_paper.json",plus="crossval_trained")        
         
     
