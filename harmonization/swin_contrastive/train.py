@@ -816,6 +816,9 @@ def cross_val_training():
                     latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
                     latents_v.extend(latents_tensor.cpu().numpy())
                     labels_v.extend(batch['roi_label'].cpu().numpy())
+                    
+            dataset['train'].shutdown()
+            dataset['test'].shutdown()
         else:
             trainer = Train(model, data_loader, optimizer, lr_scheduler, 4,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
             latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
