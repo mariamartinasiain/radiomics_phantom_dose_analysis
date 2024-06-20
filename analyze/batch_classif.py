@@ -17,9 +17,9 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'paper_contrastive': (3072),   
+    'paper_contrastive_F1': (3072),   
 }
-classif_types = ['roi_large','scanner']
+classif_types = ['scanner']
 mg_filters = [None, 10]
 for classif_type in classif_types:
     for mg_filter in mg_filters:
