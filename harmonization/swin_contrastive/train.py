@@ -751,7 +751,7 @@ def cross_val_training():
         # Filter out files that contain "reconstruction"
         filtered_files = [file for file in file_list if "reconstruction" not in file]
         
-        if filtered_files:
+        if False#filtered_files:
             print(f"Found a model with the name {filtered_files[0]}")
             model.load_state_dict(torch.load(filtered_files[0]))
             print(f"Model loaded from {filtered_files[0]}")
@@ -792,7 +792,7 @@ def cross_val_training():
             dataset['train'].shutdown()
             dataset['test'].shutdown()
         else:
-            trainer = Train(model, data_loader, optimizer, lr_scheduler, 4,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
+            trainer = Train(model, data_loader, optimizer, lr_scheduler, 9,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
             latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
         
         print(f"Finished training for group {test_data[0]['info']['SeriesDescription']}")
@@ -802,11 +802,11 @@ def cross_val_training():
         
         #classifiy
         
-        # thread = threading.Thread(target=classify_cross_val_wrapper, args=(latents_t, labels_t, latents_v, labels_v, groups))
-        # thread.start()
-        # threads.append(thread)
+        thread = threading.Thread(target=classify_cross_val_wrapper, args=(latents_t, labels_t, latents_v, labels_v, groups))
+        thread.start()
+        threads.append(thread)
         print("Shape of latents_t:", np.shape(latents_t))
-        classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
+        #classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
         
         #printing results
         with results_lock:
