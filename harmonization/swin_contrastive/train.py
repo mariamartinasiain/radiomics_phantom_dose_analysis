@@ -751,7 +751,7 @@ def cross_val_training():
         # Filter out files that contain "reconstruction"
         filtered_files = [file for file in file_list if "reconstruction" not in file]
         
-        if False#filtered_files:
+        if False:#filtered_files:
             print(f"Found a model with the name {filtered_files[0]}")
             model.load_state_dict(torch.load(filtered_files[0]))
             print(f"Model loaded from {filtered_files[0]}")
