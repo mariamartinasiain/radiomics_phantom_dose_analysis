@@ -581,10 +581,7 @@ from monai.transforms import Transform
 from monai.data import ITKReader
 import numpy as np
 import logging
-
-I apologize for the confusion. You're right, and I made a mistake assuming that ITKReader had a get_spatial_shape method. Let's modify our approach to work with the ITKReader correctly. We'll need to get the image shape in a different way.
-Here's an updated version of the LazyPatchLoader that should work with ITKReader:
-pythonCopyimport logging
+import logging
 import numpy as np
 from monai.transforms import Transform
 from monai.data import ITKReader
