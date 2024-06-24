@@ -14,7 +14,7 @@ import torch.optim as optim
 from analyze.classification import save_results_to_csv,define_classifier
 from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped,RandCropd
 from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model, load_data
 from harmonization.swin_contrastive.utils import plot_multiple_losses
 from monai.networks.nets import SwinUNETR
@@ -592,6 +592,8 @@ def main():
     transforms = Compose([
         #PrintDebug(),
         LoadImaged(keys=["image"]),
+        #cropping
+        RandCropd(keys=["image"], roi_size=(64, 64, 32), random_size=False),
         #DebugTransform2(),
         EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
