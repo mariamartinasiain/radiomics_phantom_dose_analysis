@@ -577,10 +577,6 @@ class PrintDebug(Transform):
         return data
 
 
-from monai.transforms import Transform
-from monai.data import ITKReader
-import numpy as np
-import logging
 import logging
 import numpy as np
 from monai.transforms import Transform
@@ -605,7 +601,7 @@ class LazyPatchLoader(Transform):
             # Get image shape from ITK image object
             itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
             shape = itk_image.GetLargestPossibleRegion().GetSize()
-            shape = [shape[2], shape[1], shape[0]]  # ITK uses ZYX order, we want XYZ
+            shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # ITK uses ZYX order, we want XYZ
             self.logger.info(f"Image shape: {shape}")
 
             # Ensure the image is large enough for the ROI
@@ -620,11 +616,14 @@ class LazyPatchLoader(Transform):
             self.logger.info(f"Patch start coordinates: ({start_x}, {start_y}, {start_z})")
 
             # Define the region to extract
-            extract_index = [start_z, start_y, start_x]  # ITK uses ZYX order
-            extract_size = [self.roi_size[2], self.roi_size[1], self.roi_size[0]]  # ITK uses ZYX order
+            extract_index = [int(start_z), int(start_y), int(start_x)]  # ITK uses ZYX order
+            extract_size = [int(self.roi_size[2]), int(self.roi_size[1]), int(self.roi_size[0])]  # ITK uses ZYX order
 
             # Create an extraction filter
-            extract_filter = itk.ExtractImageFilter.New(itk_image)
+            InputImageType = type(itk_image)
+            OutputImageType = type(itk_image)
+            extract_filter = itk.ExtractImageFilter[InputImageType, OutputImageType].New()
+            extract_filter.SetInput(itk_image)
             extract_region = itk.ImageRegion[3]()
             extract_region.SetIndex(extract_index)
             extract_region.SetSize(extract_size)
@@ -632,7 +631,8 @@ class LazyPatchLoader(Transform):
             extract_filter.SetDirectionCollapseToSubmatrix()
 
             # Extract the patch
-            patch_itk = extract_filter.Execute(itk_image)
+            extract_filter.Update()
+            patch_itk = extract_filter.GetOutput()
 
             # Convert ITK image to numpy array
             patch = itk.array_from_image(patch_itk)
@@ -650,6 +650,9 @@ class LazyPatchLoader(Transform):
         except Exception as e:
             self.logger.error(f"Error in LazyPatchLoader: {str(e)}")
             raise
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
