@@ -580,6 +580,7 @@ class PrintDebug(Transform):
 from monai.transforms import Transform
 from monai.data import ITKReader
 import numpy as np
+import logging
 
 class LazyPatchLoader(Transform):
     def __init__(self, roi_size=(64, 64, 32), reader=None):
