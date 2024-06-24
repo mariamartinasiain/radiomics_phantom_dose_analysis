@@ -575,10 +575,44 @@ class PrintDebug(Transform):
     def __call__(self, data):
         print("Debugging")
         return data
-    
+
+
+from monai.transforms import Transform
+from monai.data import ITKReader
+import numpy as np
+
+class LazyPatchLoader(Transform):
+    def __init__(self, roi_size=(64, 64, 32), reader=ITKReader()):
+        self.roi_size = roi_size
+        self.reader = reader
+
+    def __call__(self, data):
+        image_path = data['image']
+        # Load image metadata without loading the full image
+        img_obj = self.reader.read(image_path)
+        
+        # Get image shape
+        shape = self.reader.get_data(img_obj).shape
+        
+        # Randomly select a patch location
+        start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
+        start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
+        start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
+        
+        # Load only the required patch
+        patch = self.reader.get_data(img_obj)[
+            start_x:start_x+self.roi_size[0],
+            start_y:start_y+self.roi_size[1],
+            start_z:start_z+self.roi_size[2]
+        ]
+        
+        data['image'] = patch
+        return data    
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
+
+
 
 def main():
     from sklearn.preprocessing import LabelEncoder
@@ -591,10 +625,7 @@ def main():
     scanner_encoder.fit(scanner_labels)
     transforms = Compose([
         #PrintDebug(),
-        LoadImaged(keys=["image"]),
-        #crandomly cropping
-        RandSpatialCropd(keys=["image"], roi_size=[64, 64, 32], random_size=True),  # Adjust the roi_size as neede
-        #DebugTransform2(),
+        LazyPatchLoader(roi_size=[64, 64, 32]),
         EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         #EncodeLabels(encoder=encoder),
