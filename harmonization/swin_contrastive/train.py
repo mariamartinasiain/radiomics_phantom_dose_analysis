@@ -582,6 +582,12 @@ from monai.data import ITKReader
 import numpy as np
 import logging
 
+I apologize for the confusion. The error suggests that the get_data method of the ITKReader is returning a tuple instead of an array-like object. Let's modify the LazyPatchLoader class to handle this case. Here's an updated version:
+pythonCopyimport logging
+import numpy as np
+from monai.transforms import Transform
+from monai.data import ITKReader
+
 class LazyPatchLoader(Transform):
     def __init__(self, roi_size=(64, 64, 32), reader=None):
         self.roi_size = roi_size
@@ -597,8 +603,18 @@ class LazyPatchLoader(Transform):
             img_obj = self.reader.read(image_path)
             self.logger.info(f"Image object loaded: {type(img_obj)}")
 
+            # Get image data
+            img_data = self.reader.get_data(img_obj)
+            self.logger.info(f"Image data type: {type(img_data)}")
+
+            # Handle the case where img_data is a tuple
+            if isinstance(img_data, tuple):
+                self.logger.info(f"Image data is a tuple with {len(img_data)} elements")
+                # Assume the first element is the actual image data
+                img_data = img_data[0]
+
             # Get image shape
-            shape = self.reader.get_data(img_obj).shape
+            shape = img_data.shape
             self.logger.info(f"Image shape: {shape}")
 
             # Ensure the image is large enough for the ROI
@@ -613,7 +629,7 @@ class LazyPatchLoader(Transform):
             self.logger.info(f"Patch start coordinates: ({start_x}, {start_y}, {start_z})")
 
             # Load only the required patch
-            patch = self.reader.get_data(img_obj)[
+            patch = img_data[
                 start_x:start_x+self.roi_size[0],
                 start_y:start_y+self.roi_size[1],
                 start_z:start_z+self.roi_size[2]
