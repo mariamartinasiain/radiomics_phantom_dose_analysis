@@ -597,18 +597,8 @@ class LazyPatchLoader(Transform):
             img_obj = self.reader.read(image_path)
             self.logger.info(f"Image object loaded: {type(img_obj)}")
 
-            # Get image data
-            img_data = self.reader.get_data(img_obj)
-            self.logger.info(f"Image data type: {type(img_data)}")
-
-            # Handle the case where img_data is a tuple
-            if isinstance(img_data, tuple):
-                self.logger.info(f"Image data is a tuple with {len(img_data)} elements")
-                # Assume the first element is the actual image data
-                img_data = img_data[0]
-
-            # Get image shape
-            shape = img_data.shape
+            # Get image shape from metadata
+            shape = self.reader.get_spatial_shape(img_obj)
             self.logger.info(f"Image shape: {shape}")
 
             # Ensure the image is large enough for the ROI
@@ -623,11 +613,14 @@ class LazyPatchLoader(Transform):
             self.logger.info(f"Patch start coordinates: ({start_x}, {start_y}, {start_z})")
 
             # Load only the required patch
-            patch = img_data[
-                start_x:start_x+self.roi_size[0],
-                start_y:start_y+self.roi_size[1],
-                start_z:start_z+self.roi_size[2]
-            ]
+            patch = self.reader.get_data(
+                img_obj,
+                slices=[
+                    slice(start_x, start_x + self.roi_size[0]),
+                    slice(start_y, start_y + self.roi_size[1]),
+                    slice(start_z, start_z + self.roi_size[2])
+                ]
+            )
             
             self.logger.info(f"Patch shape: {patch.shape}")
 
