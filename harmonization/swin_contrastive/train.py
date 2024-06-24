@@ -582,6 +582,14 @@ from monai.data import ITKReader
 import numpy as np
 import logging
 
+I apologize for the confusion. You're right, and I made a mistake assuming that ITKReader had a get_spatial_shape method. Let's modify our approach to work with the ITKReader correctly. We'll need to get the image shape in a different way.
+Here's an updated version of the LazyPatchLoader that should work with ITKReader:
+pythonCopyimport logging
+import numpy as np
+from monai.transforms import Transform
+from monai.data import ITKReader
+import itk
+
 class LazyPatchLoader(Transform):
     def __init__(self, roi_size=(64, 64, 32), reader=None):
         self.roi_size = roi_size
@@ -597,8 +605,10 @@ class LazyPatchLoader(Transform):
             img_obj = self.reader.read(image_path)
             self.logger.info(f"Image object loaded: {type(img_obj)}")
 
-            # Get image shape from metadata
-            shape = self.reader.get_spatial_shape(img_obj)
+            # Get image shape from ITK image object
+            itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
+            shape = itk_image.GetLargestPossibleRegion().GetSize()
+            shape = [shape[2], shape[1], shape[0]]  # ITK uses ZYX order, we want XYZ
             self.logger.info(f"Image shape: {shape}")
 
             # Ensure the image is large enough for the ROI
@@ -612,16 +622,24 @@ class LazyPatchLoader(Transform):
             
             self.logger.info(f"Patch start coordinates: ({start_x}, {start_y}, {start_z})")
 
-            # Load only the required patch
-            patch = self.reader.get_data(
-                img_obj,
-                slices=[
-                    slice(start_x, start_x + self.roi_size[0]),
-                    slice(start_y, start_y + self.roi_size[1]),
-                    slice(start_z, start_z + self.roi_size[2])
-                ]
-            )
-            
+            # Define the region to extract
+            extract_index = [start_z, start_y, start_x]  # ITK uses ZYX order
+            extract_size = [self.roi_size[2], self.roi_size[1], self.roi_size[0]]  # ITK uses ZYX order
+
+            # Create an extraction filter
+            extract_filter = itk.ExtractImageFilter.New(itk_image)
+            extract_region = itk.ImageRegion[3]()
+            extract_region.SetIndex(extract_index)
+            extract_region.SetSize(extract_size)
+            extract_filter.SetExtractionRegion(extract_region)
+            extract_filter.SetDirectionCollapseToSubmatrix()
+
+            # Extract the patch
+            patch_itk = extract_filter.Execute(itk_image)
+
+            # Convert ITK image to numpy array
+            patch = itk.array_from_image(patch_itk)
+
             self.logger.info(f"Patch shape: {patch.shape}")
 
             # Ensure the patch is 3D (add channel dimension if necessary)
