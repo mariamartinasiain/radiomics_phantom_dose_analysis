@@ -582,11 +582,6 @@ from monai.data import ITKReader
 import numpy as np
 import logging
 
-import logging
-import numpy as np
-from monai.transforms import Transform
-from monai.data import ITKReader
-
 class LazyPatchLoader(Transform):
     def __init__(self, roi_size=(64, 64, 32), reader=None):
         self.roi_size = roi_size
@@ -636,6 +631,12 @@ class LazyPatchLoader(Transform):
             
             self.logger.info(f"Patch shape: {patch.shape}")
 
+            # Ensure the patch is 3D (add channel dimension if necessary)
+            if patch.ndim == 3:
+                patch = patch[np.newaxis, ...]  # Add channel dimension
+
+            self.logger.info(f"Final patch shape: {patch.shape}")
+
             data['image'] = patch
             return data
         except Exception as e:
@@ -659,7 +660,7 @@ def main():
     transforms = Compose([
         #PrintDebug(),
         LazyPatchLoader(roi_size=[64, 64, 32]),
-        EnsureChannelFirstd(keys=["image"]),
+        #EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         #EncodeLabels(encoder=encoder),
         #ExtractScannerLabel(),
