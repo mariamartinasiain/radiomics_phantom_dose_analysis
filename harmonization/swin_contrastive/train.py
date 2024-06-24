@@ -647,7 +647,7 @@ class LazyPatchLoader(Transform):
             raise
 
 # Set up logging
-#logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
