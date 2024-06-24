@@ -582,32 +582,49 @@ from monai.data import ITKReader
 import numpy as np
 
 class LazyPatchLoader(Transform):
-    def __init__(self, roi_size=(64, 64, 32), reader=ITKReader()):
+    def __init__(self, roi_size=(64, 64, 32), reader=None):
         self.roi_size = roi_size
-        self.reader = reader
+        self.reader = reader or ITKReader()
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def __call__(self, data):
-        image_path = data['image']
-        # Load image metadata without loading the full image
-        img_obj = self.reader.read(image_path)
-        
-        # Get image shape
-        shape = self.reader.get_data(img_obj).shape
-        
-        # Randomly select a patch location
-        start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
-        start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
-        start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
-        
-        # Load only the required patch
-        patch = self.reader.get_data(img_obj)[
-            start_x:start_x+self.roi_size[0],
-            start_y:start_y+self.roi_size[1],
-            start_z:start_z+self.roi_size[2]
-        ]
-        
-        data['image'] = patch
-        return data    
+        try:
+            image_path = data['image']
+            self.logger.info(f"Loading image from path: {image_path}")
+
+            # Load image metadata without loading the full image
+            img_obj = self.reader.read(image_path)
+            self.logger.info(f"Image object loaded: {type(img_obj)}")
+
+            # Get image shape
+            shape = self.reader.get_data(img_obj).shape
+            self.logger.info(f"Image shape: {shape}")
+
+            # Ensure the image is large enough for the ROI
+            if any(s < r for s, r in zip(shape, self.roi_size)):
+                raise ValueError(f"Image size {shape} is smaller than ROI size {self.roi_size}")
+
+            # Randomly select a patch location
+            start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
+            start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
+            start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
+            
+            self.logger.info(f"Patch start coordinates: ({start_x}, {start_y}, {start_z})")
+
+            # Load only the required patch
+            patch = self.reader.get_data(img_obj)[
+                start_x:start_x+self.roi_size[0],
+                start_y:start_y+self.roi_size[1],
+                start_z:start_z+self.roi_size[2]
+            ]
+            
+            self.logger.info(f"Patch shape: {patch.shape}")
+
+            data['image'] = patch
+            return data
+        except Exception as e:
+            self.logger.error(f"Error in LazyPatchLoader: {str(e)}")
+            raise
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
