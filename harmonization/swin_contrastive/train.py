@@ -211,6 +211,7 @@ class Train:
 
         # prepare batch
         imgs_s = batch["image"].cuda()
+        print("imgs_s size",imgs_s.size())
         all_labels = batch["roi_label"].cuda()
         scanner_labels = batch["scanner_label"].cuda()
         ids = all_labels
@@ -584,8 +585,9 @@ from monai.data import ITKReader
 import itk
 
 class LazyPatchLoader(Transform):
-    def __init__(self, roi_size=(64, 64, 32), reader=None):
+    def __init__(self, roi_size=(64, 64, 32), num_patches=5, reader=None):
         self.roi_size = roi_size
+        self.num_patches = num_patches  # Nombre de patches à extraire
         self.reader = reader or ITKReader()
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -593,66 +595,59 @@ class LazyPatchLoader(Transform):
         try:
             image_path = data['image']
             self.logger.info(f"Loading image from path: {image_path}")
-
-            # Load image metadata without loading the full image
+            
             img_obj = self.reader.read(image_path)
             self.logger.info(f"Image object loaded: {type(img_obj)}")
-
-            # Get image shape from ITK image object
+            
             itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
             shape = itk_image.GetLargestPossibleRegion().GetSize()
-            shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # ITK uses ZYX order, we want XYZ
-            self.logger.info(f"Image shape: {shape}")
-
-            # Ensure the image is large enough for the ROI
+            shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # XYZ order
+            
             if any(s < r for s, r in zip(shape, self.roi_size)):
                 raise ValueError(f"Image size {shape} is smaller than ROI size {self.roi_size}")
 
-            # Randomly select a patch location
-            start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
-            start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
-            start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
-            
-            self.logger.info(f"Patch start coordinates: ({start_x}, {start_y}, {start_z})")
+            patches = []
+            uids = []
+            for _ in range(self.num_patches):
+                start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
+                start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
+                start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
+                
+                uid = start_y + start_x*shape[1] + start_z*shape[0]*shape[1]
+                uids.append(uid)  
+                
+                extract_index = [int(start_z), int(start_y), int(start_x)]  # ITK ZYX order
+                extract_size = [int(self.roi_size[2]), int(self.roi_size[1]), int(self.roi_size[0])]
+                
+                InputImageType = type(itk_image)
+                OutputImageType = type(itk_image)
+                extract_filter = itk.ExtractImageFilter[InputImageType, OutputImageType].New()
+                extract_filter.SetInput(itk_image)
+                extract_region = itk.ImageRegion[3]()
+                extract_region.SetIndex(extract_index)
+                extract_region.SetSize(extract_size)
+                extract_filter.SetExtractionRegion(extract_region)
+                extract_filter.SetDirectionCollapseToSubmatrix()
+                
+                extract_filter.Update()
+                patch_itk = extract_filter.GetOutput()
+                patch = itk.array_from_image(patch_itk)
+                
+                if patch.ndim == 3:
+                    patch = patch[np.newaxis, ...]
+                
+                patches.append(patch)
+                self.logger.info(f"Patch shape: {patch.shape}")
 
-            # Define the region to extract
-            extract_index = [int(start_z), int(start_y), int(start_x)]  # ITK uses ZYX order
-            extract_size = [int(self.roi_size[2]), int(self.roi_size[1]), int(self.roi_size[0])]  # ITK uses ZYX order
-
-            # Create an extraction filter
-            InputImageType = type(itk_image)
-            OutputImageType = type(itk_image)
-            extract_filter = itk.ExtractImageFilter[InputImageType, OutputImageType].New()
-            extract_filter.SetInput(itk_image)
-            extract_region = itk.ImageRegion[3]()
-            extract_region.SetIndex(extract_index)
-            extract_region.SetSize(extract_size)
-            extract_filter.SetExtractionRegion(extract_region)
-            extract_filter.SetDirectionCollapseToSubmatrix()
-
-            # Extract the patch
-            extract_filter.Update()
-            patch_itk = extract_filter.GetOutput()
-
-            # Convert ITK image to numpy array
-            patch = itk.array_from_image(patch_itk)
-
-            self.logger.info(f"Patch shape: {patch.shape}")
-
-            # Ensure the patch is 3D (add channel dimension if necessary)
-            if patch.ndim == 3:
-                patch = patch[np.newaxis, ...]  # Add channel dimension
-
-            self.logger.info(f"Final patch shape: {patch.shape}")
-
-            data['image'] = patch
+            data['image'] = patches  
+            data['uids'] = uids  
             return data
         except Exception as e:
             self.logger.error(f"Error in LazyPatchLoader: {str(e)}")
             raise
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
@@ -686,8 +681,8 @@ def main():
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.5,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
-    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.01,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
     test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
@@ -702,7 +697,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=700,savename="sssssspaper_contrastive.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=700,savename="random_cropped_contrastive.pth")
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
