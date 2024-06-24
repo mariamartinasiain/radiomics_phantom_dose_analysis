@@ -595,20 +595,20 @@ def main():
         #DebugTransform2(),
         EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
-        EncodeLabels(encoder=encoder),
-        ExtractScannerLabel(),
-        EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
+        #EncodeLabels(encoder=encoder),
+        #ExtractScannerLabel(),
+        #EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
         #DebugTransform2(),
         
     ])
 
-    jsonpath = "./dataset_info_cropped.json"
+    jsonpath = "./dataset_info_full_uncompressed_NAS.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.5,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
@@ -826,4 +826,4 @@ def cross_val_training():
 
 
 if __name__ == '__main__':
-    cross_val_training()
+    main()
