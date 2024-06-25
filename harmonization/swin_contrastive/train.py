@@ -211,10 +211,13 @@ class Train:
 
         # prepare batch
         imgs_s = batch["image"].cuda()
+        ids = batch["uids"].cuda()
         print("imgs_s size",imgs_s.size())
-        all_labels = batch["roi_label"].cuda()
+        print("ids size",ids.size())
+        #all_labels = batch["roi_label"].cuda()
+        #ids = all_labels
         scanner_labels = batch["scanner_label"].cuda()
-        ids = all_labels
+        
 
         # encoder inference
         latents = self.model.swinViT(imgs_s)
@@ -609,6 +612,10 @@ class LazyPatchLoader(Transform):
             patches = []
             uids = []
             for _ in range(self.num_patches):
+                #need to change the random part : make it more predictable/contralable and ignore ROIs (cyst, normal etc..)
+                #need to check if the subvolumes are okay
+                #and change training step and contrastive step to adapt to these new batches
+                #check pour pb de registration aussi
                 start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
                 start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
                 start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
@@ -671,8 +678,8 @@ def main():
         #EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         #EncodeLabels(encoder=encoder),
-        #ExtractScannerLabel(),
-        #EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
+        ExtractScannerLabel(),
+        EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
         #DebugTransform2(),
         
