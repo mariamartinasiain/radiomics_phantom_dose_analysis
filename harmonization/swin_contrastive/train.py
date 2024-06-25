@@ -214,6 +214,11 @@ class Train:
         ids = batch["uids"].cuda()
         print("imgs_s size",imgs_s.size())
         print("ids size",ids.size())
+        imgs_s = imgs_s.view(32 * 5, 64, 64, 32) 
+        ids = ids.unsqueeze(-1)  
+        ids = ids.view(32 * 5, 1)
+        print("imgs_s size",imgs_s.size())
+        print("ids size",ids.size())
         #all_labels = batch["roi_label"].cuda()
         #ids = all_labels
         scanner_labels = batch["scanner_label"].cuda()
