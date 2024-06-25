@@ -647,9 +647,8 @@ class LazyPatchLoader(Transform):
                 self.logger.info(f"Patch shape: {patch.shape}")
 
             patches = np.concatenate(patches, axis=0)
-            uid = np.concatenate(uids)
             #uid to cuda tensor
-            uids = torch.tensor(uid)
+            uids = torch.tensor(uids)
             print("uids",uids)
             print("uids size",uids.size())  
             data['image'] = patches  
