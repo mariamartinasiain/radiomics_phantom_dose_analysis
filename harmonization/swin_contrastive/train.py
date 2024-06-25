@@ -647,7 +647,7 @@ class LazyPatchLoader(Transform):
                 self.logger.info(f"Patch shape: {patch.shape}")
 
             patches = np.concatenate(patches, axis=0)
-            uid = np.array(uids)
+            uid = np.concatenate(uids,axis=0)
             data['image'] = patches  
             data['uids'] = uids  
             return data
