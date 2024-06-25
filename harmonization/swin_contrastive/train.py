@@ -214,9 +214,8 @@ class Train:
         ids = batch["uids"].cuda()
         print("imgs_s size",imgs_s.size())
         print("ids size",ids.size())
-        imgs_s = imgs_s.view(16 * 3,1, 64, 64, 32) 
-        ids = ids.unsqueeze(-1)  
-        ids = ids.view(16 * 3)
+        imgs_s = imgs_s.view(imgs_s.shape[0] * imgs_s.shape[1],1, 64, 64, 32) 
+        ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
         print("imgs_s size",imgs_s.size())
         print("ids size",ids.size())
         #all_labels = batch["roi_label"].cuda()
@@ -300,7 +299,7 @@ class Train:
         for id in torch.unique(ids):
             #print("id",id)
             boolids = (ids == id)
-            print("boolids",boolids)
+            #print("boolids",boolids)
             
             #bottleneck
             #print("latents size",len(latents))
