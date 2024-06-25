@@ -706,7 +706,7 @@ def main():
         
     ])
 
-    jsonpath = "./dataset_info_full_uncompressed_NAS.json"
+    jsonpath = "./light_dataset_info.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
