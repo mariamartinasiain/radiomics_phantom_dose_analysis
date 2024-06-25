@@ -300,7 +300,7 @@ class Train:
         for id in torch.unique(ids):
             #print("id",id)
             boolids = (ids == id)
-            #print("boolids",boolids)
+            print("boolids",boolids)
             
             #bottleneck
             #print("latents size",len(latents))
@@ -712,7 +712,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=700,savename="random_cropped_contrastive.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=768,savename="random_cropped_contrastive.pth")
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
