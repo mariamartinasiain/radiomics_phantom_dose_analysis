@@ -706,6 +706,8 @@ def main():
         
     ])
 
+    #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
+
     jsonpath = "./light_dataset_info_10.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
