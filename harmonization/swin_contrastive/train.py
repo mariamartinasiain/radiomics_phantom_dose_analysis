@@ -590,13 +590,26 @@ import numpy as np
 from monai.transforms import Transform
 from monai.data import ITKReader
 import itk
-
+from random import shuffle
 class LazyPatchLoader(Transform):
-    def __init__(self, roi_size=(64, 64, 32), num_patches=3, reader=None):
+    def __init__(self, roi_size=(64, 64, 32), num_patches=4, variety_size=10,reader=None):
         self.roi_size = roi_size
         self.num_patches = num_patches  # Nombre de patches à extraire
         self.reader = reader or ITKReader()
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.variety_size = variety_size
+        self.precomputed_positions = []
+        self.current_position_index = 0
+
+    def precompute_positions(self, shape):
+        """ Precompute and shuffle random positions for patch extraction """
+        self.precomputed_positions = []
+        for _ in range(self.variety_size):  # Generate 10 random positions
+            start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
+            start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
+            start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
+            self.precomputed_positions.append((start_x, start_y, start_z))
+        shuffle(self.precomputed_positions)
 
     def __call__(self, data):
         try:
@@ -613,19 +626,23 @@ class LazyPatchLoader(Transform):
             if any(s < r for s, r in zip(shape, self.roi_size)):
                 raise ValueError(f"Image size {shape} is smaller than ROI size {self.roi_size}")
 
+            if not self.precomputed_positions:
+                self.precompute_positions(shape)
+            
             patches = []
             uids = []
             for _ in range(self.num_patches):
-                #need to change the random part : make it more predictable/contralable and ignore ROIs (cyst, normal etc..)
-                #need to check if the subvolumes are okay
-                #and change training step and contrastive step to adapt to these new batches
-                #check pour pb de registration aussi
-                start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
-                start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
-                start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
+                if self.current_position_index >= len(self.precomputed_positions):
+                    # Reshuffle and reset index when all positions have been used
+                    shuffle(self.precomputed_positions)
+                    self.current_position_index = 0
+
+                # Use the current position from the shuffled list
+                start_x, start_y, start_z = self.precomputed_positions[self.current_position_index]
+                self.current_position_index += 1
                 
-                uid = start_y + start_x*shape[1] + start_z*shape[0]*shape[1]
-                uids.append(uid)  
+                uid = start_y + start_x * shape[1] + start_z * shape[0] * shape[1]
+                uids.append(uid)
                 
                 extract_index = [int(start_z), int(start_y), int(start_x)]  # ITK ZYX order
                 extract_size = [int(self.roi_size[2]), int(self.roi_size[1]), int(self.roi_size[0])]
@@ -651,7 +668,6 @@ class LazyPatchLoader(Transform):
                 self.logger.info(f"Patch shape: {patch.shape}")
 
             patches = np.concatenate(patches, axis=0)
-            #uid to cuda tensor
             uids = torch.tensor(uids)
             data['image'] = patches  
             data['uids'] = uids  
@@ -695,7 +711,7 @@ def main():
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.01,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = ThreadDataLoader(train_dataset, batch_size=16, shuffle=True,collate_fn=custom_collate_fn)
