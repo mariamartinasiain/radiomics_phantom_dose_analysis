@@ -647,6 +647,9 @@ class LazyPatchLoader(Transform):
                 extract_index = [int(start_z), int(start_y), int(start_x)]  # ITK ZYX order
                 extract_size = [int(self.roi_size[2]), int(self.roi_size[1]), int(self.roi_size[0])]
                 
+                self.logger.info(f"Extracting patch at index {extract_index} with size {extract_size}")
+                self.logger.info(f"Image shape: {shape}")
+                
                 InputImageType = type(itk_image)
                 OutputImageType = type(itk_image)
                 extract_filter = itk.ExtractImageFilter[InputImageType, OutputImageType].New()
@@ -677,7 +680,7 @@ class LazyPatchLoader(Transform):
             raise
 
 # Set up logging
-#logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
