@@ -605,9 +605,9 @@ class LazyPatchLoader(Transform):
         """ Precompute and shuffle random positions for patch extraction """
         self.precomputed_positions = []
         for _ in range(self.variety_size):  # Generate 10 random positions
-            start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
-            start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
-            start_z = np.random.randint(0, 200 + 1)
+            start_x = np.random.randint(100, shape[0] - self.roi_size[0] + 1)
+            start_y = np.random.randint(100, shape[1] - self.roi_size[1] + 1)
+            start_z = np.random.randint(100, 200 + 1)
             self.precomputed_positions.append((start_x, start_y, start_z))
         shuffle(self.precomputed_positions)
 
