@@ -607,7 +607,7 @@ class LazyPatchLoader(Transform):
         for _ in range(self.variety_size):  # Generate 10 random positions
             start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
             start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
-            start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
+            start_z = np.random.randint(0, 200 + 1)
             self.precomputed_positions.append((start_x, start_y, start_z))
         shuffle(self.precomputed_positions)
 
@@ -695,6 +695,7 @@ def main():
     scanner_encoder.fit(scanner_labels)
     transforms = Compose([
         #PrintDebug(),
+        #Resized(keys=["image"],spatial_size = (512,512,343)),
         LazyPatchLoader(roi_size=[64, 64, 32]),
         #EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
