@@ -93,9 +93,15 @@ def setup_environment(device_id=0, output_dir="transformed_images"):
 
 def load_dicom_series(directory):
     dicom_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dcm')]
+    if not dicom_files:
+        raise ValueError(f"No DICOM files found in directory: {directory}")
+    
     dicom_files.sort(key=lambda x: pydicom.dcmread(x).InstanceNumber)
     
     slices = [pydicom.dcmread(f) for f in dicom_files]
+    if not slices:
+        raise ValueError(f"Unable to read any DICOM files in directory: {directory}")
+    
     image = np.stack([s.pixel_array for s in slices])
     return image, slices
 
@@ -145,13 +151,28 @@ def process_images(dataloader, reference_roi, reference_image, device, output_di
 def registration(jsonpath, device_id=0):
     device, output_dir = setup_environment(device_id)
     
-    datafiles = load_data2(jsonpath) 
+    datafiles = load_data(jsonpath) 
+    if not datafiles:
+        raise ValueError(f"No data found in JSON file: {jsonpath}")
+    
     dataset = Dataset(data=datafiles)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=4)
     
     reference_data = dataset[0]
-    reference_roi, _ = load_dicom_series(os.path.dirname(reference_data["roi"]))
-    reference_image, _ = load_dicom_series(reference_data["image"])
+    try:
+        reference_roi, _ = load_dicom_series(os.path.dirname(reference_data["roi"]))
+    except ValueError as e:
+        print(f"Error loading reference ROI: {e}")
+        print(f"ROI path: {reference_data['roi']}")
+        return
+
+    try:
+        reference_image, _ = load_dicom_series(reference_data["image"])
+    except ValueError as e:
+        print(f"Error loading reference image: {e}")
+        print(f"Image path: {reference_data['image']}")
+        return
+
     reference_image = sitk.GetImageFromArray(reference_image)
     
     process_images(dataloader, reference_roi, reference_image, device, output_dir)
