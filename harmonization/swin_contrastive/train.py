@@ -15,8 +15,8 @@ from analyze.classification import save_results_to_csv,define_classifier
 from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped,RandCropd,RandSpatialCropd
-from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model, load_data
-from harmonization.swin_contrastive.utils import plot_multiple_losses
+from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model
+from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform

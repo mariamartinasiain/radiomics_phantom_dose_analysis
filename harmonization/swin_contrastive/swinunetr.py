@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
+from harmonization.swin_contrastive.utils import load_data
 from monai.data import Dataset, DataLoader,SmartCacheDataset
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
@@ -177,10 +178,7 @@ class CopyPathd(MapTransform):
             data[f"{key}_path"] = data[key]  # Copier le chemin du fichier dans une nouvelle clé
         return data
 
-def load_data(datalist_json_path):
-        with open(datalist_json_path, 'r') as f:
-                datalist = json.load(f)
-        return datalist
+
 
 
 def get_model(target_size = (64, 64, 32)):
