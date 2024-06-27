@@ -91,9 +91,13 @@ def setup_environment(device_id=0, output_dir="transformed_images"):
     os.makedirs(output_dir, exist_ok=True)
     return device, output_dir
 
-def load_dicom(file_path):
-    dicom = pydicom.dcmread(file_path)
-    return dicom.pixel_array
+def load_dicom_series(directory):
+    dicom_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dcm')]
+    dicom_files.sort(key=lambda x: pydicom.dcmread(x).InstanceNumber)
+    
+    slices = [pydicom.dcmread(f) for f in dicom_files]
+    image = np.stack([s.pixel_array for s in slices])
+    return image, slices
 
 def calculate_transform(fixed_roi, moving_roi):
     fixed_image = sitk.GetImageFromArray(fixed_roi)
@@ -119,23 +123,24 @@ def apply_transform(image, transform, reference_image):
     )
     return sitk.GetArrayFromImage(transformed_image)
 
-def save_image(transformed_image, original_dicom_path, output_path):
-    original_dicom = pydicom.dcmread(original_dicom_path)
-    original_dicom.PixelData = transformed_image.astype(np.uint16).tobytes()
-    original_dicom.save_as(output_path)
+def save_dicom_series(transformed_image, original_slices, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+    for i, slice in enumerate(original_slices):
+        slice.PixelData = transformed_image[i].astype(np.uint16).tobytes()
+        slice.save_as(os.path.join(output_dir, f"slice_{i:04d}.dcm"))
 
 def process_images(dataloader, reference_roi, reference_image, device, output_dir):
     for idx, batch in enumerate(tqdm(dataloader)):
-        image_path, roi_path = batch["image"][0], batch["roi"][0]
+        image_dir, roi_path = batch["image"][0], batch["roi"][0]
         
-        image = load_dicom(image_path)
-        roi = load_dicom(roi_path)
+        image, original_slices = load_dicom_series(image_dir)
+        roi, _ = load_dicom_series(os.path.dirname(roi_path))
         
         transform = calculate_transform(reference_roi, roi)
         transformed_image = apply_transform(image, transform, reference_image)
         
-        output_path = os.path.join(output_dir, f"transformed_image_{idx:04d}.dcm")
-        save_image(transformed_image, image_path, output_path)
+        output_subdir = os.path.join(output_dir, f"transformed_image_{idx:04d}")
+        save_dicom_series(transformed_image, original_slices, output_subdir)
 
 def registration(jsonpath, device_id=0):
     device, output_dir = setup_environment(device_id)
@@ -145,8 +150,9 @@ def registration(jsonpath, device_id=0):
     dataloader = DataLoader(dataset, batch_size=1, num_workers=4)
     
     reference_data = dataset[0]
-    reference_roi = load_dicom(reference_data["roi"])
-    reference_image = sitk.GetImageFromArray(load_dicom(reference_data["image"]))
+    reference_roi, _ = load_dicom_series(os.path.dirname(reference_data["roi"]))
+    reference_image, _ = load_dicom_series(reference_data["image"])
+    reference_image = sitk.GetImageFromArray(reference_image)
     
     process_images(dataloader, reference_roi, reference_image, device, output_dir)
     
