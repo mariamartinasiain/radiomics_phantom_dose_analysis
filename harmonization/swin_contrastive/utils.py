@@ -92,18 +92,28 @@ def setup_environment(device_id=0, output_dir="transformed_images"):
     return device, output_dir
 
 def is_dicom(file_path):
+    if os.path.isdir(file_path):
+        return False
     try:
         pydicom.dcmread(file_path, stop_before_pixels=True)
         return True
-    except pydicom.errors.InvalidDicomError:
+    except (pydicom.errors.InvalidDicomError, IsADirectoryError, PermissionError):
         return False
 
 def load_dicom_series(directory):
-    dicom_files = [os.path.join(directory, f) for f in os.listdir(directory) if is_dicom(os.path.join(directory, f))]
-    if not dicom_files:
-        raise ValueError(f"No DICOM files found in directory: {directory}")
+    if not os.path.isdir(directory):
+        raise ValueError(f"Not a directory: {directory}")
     
-    # Try to sort by InstanceNumber, fall back to filename if not available
+    dicom_files = []
+    for root, _, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if is_dicom(file_path):
+                dicom_files.append(file_path)
+    
+    if not dicom_files:
+        raise ValueError(f"No DICOM files found in directory or subdirectories: {directory}")
+    
     def sort_key(f):
         try:
             return pydicom.dcmread(f, stop_before_pixels=True).InstanceNumber
@@ -113,11 +123,12 @@ def load_dicom_series(directory):
     dicom_files.sort(key=sort_key)
     
     slices = [pydicom.dcmread(f) for f in dicom_files]
-    if not slices:
-        raise ValueError(f"Unable to read any DICOM files in directory: {directory}")
-    
     image = np.stack([s.pixel_array for s in slices])
     return image, slices
+
+def load_mask(file_path):
+    mask = pydicom.dcmread(file_path).pixel_array
+    return mask
 
 def calculate_transform(fixed_roi, moving_roi):
     fixed_image = sitk.GetImageFromArray(fixed_roi)
@@ -154,7 +165,7 @@ def process_images(dataloader, reference_roi, reference_image, device, output_di
         image_dir, roi_path = batch["image"][0], batch["roi"][0]
         
         image, original_slices = load_dicom_series(image_dir)
-        roi, _ = load_dicom_series(os.path.dirname(roi_path))
+        roi = load_mask(roi_path)
         
         transform = calculate_transform(reference_roi, roi)
         transformed_image = apply_transform(image, transform, reference_image)
@@ -174,22 +185,22 @@ def registration(jsonpath, device_id=0):
     
     reference_data = dataset[0]
     try:
-        reference_roi, _ = load_dicom_series(os.path.dirname(reference_data["roi"]))
-    except ValueError as e:
+        reference_roi = load_mask(reference_data["roi"])
+    except Exception as e:
         print(f"Error loading reference ROI: {e}")
         print(f"ROI path: {reference_data['roi']}")
         return
 
     try:
         reference_image, _ = load_dicom_series(reference_data["image"])
-    except ValueError as e:
+    except Exception as e:
         print(f"Error loading reference image: {e}")
         print(f"Image path: {reference_data['image']}")
         return
 
-    reference_image = sitk.GetImageFromArray(reference_image)
+    reference_image_sitk = sitk.GetImageFromArray(reference_image)
     
-    process_images(dataloader, reference_roi, reference_image, device, output_dir)
+    process_images(dataloader, reference_roi, reference_image_sitk, device, output_dir)
     
     print(f"All transformed images have been saved in the directory: {output_dir}")
 
