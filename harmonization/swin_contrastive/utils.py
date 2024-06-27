@@ -151,7 +151,7 @@ def process_images(dataloader, reference_roi, reference_image, device, output_di
 def registration(jsonpath, device_id=0):
     device, output_dir = setup_environment(device_id)
     
-    datafiles = load_data(jsonpath) 
+    datafiles = load_data2(jsonpath) 
     if not datafiles:
         raise ValueError(f"No data found in JSON file: {jsonpath}")
     
