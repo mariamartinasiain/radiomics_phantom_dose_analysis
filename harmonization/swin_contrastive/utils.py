@@ -91,12 +91,26 @@ def setup_environment(device_id=0, output_dir="transformed_images"):
     os.makedirs(output_dir, exist_ok=True)
     return device, output_dir
 
+def is_dicom(file_path):
+    try:
+        pydicom.dcmread(file_path, stop_before_pixels=True)
+        return True
+    except pydicom.errors.InvalidDicomError:
+        return False
+
 def load_dicom_series(directory):
-    dicom_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dcm')]
+    dicom_files = [os.path.join(directory, f) for f in os.listdir(directory) if is_dicom(os.path.join(directory, f))]
     if not dicom_files:
         raise ValueError(f"No DICOM files found in directory: {directory}")
     
-    dicom_files.sort(key=lambda x: pydicom.dcmread(x).InstanceNumber)
+    # Try to sort by InstanceNumber, fall back to filename if not available
+    def sort_key(f):
+        try:
+            return pydicom.dcmread(f, stop_before_pixels=True).InstanceNumber
+        except AttributeError:
+            return f
+
+    dicom_files.sort(key=sort_key)
     
     slices = [pydicom.dcmread(f) for f in dicom_files]
     if not slices:
