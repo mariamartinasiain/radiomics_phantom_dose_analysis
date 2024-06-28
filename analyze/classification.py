@@ -210,17 +210,17 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                     class_weight=cw
                 )
                 
-                y_train_svm = np.argmax(y_train, axis=1)
-                y_test_svm = np.argmax(y_test, axis=1)
-                clf = svm.LinearSVC()
-                clf.fit(X_train, y_train_svm)
-                svm_accuracy = clf.score(X_test, y_test_svm)
-                if N not in results_svm:
-                    results_svm[N] = []
-                results_svm[N].append(svm_accuracy)
+                # y_train_svm = np.argmax(y_train, axis=1)
+                # y_test_svm = np.argmax(y_test, axis=1)
+                # clf = svm.LinearSVC()
+                # clf.fit(X_train, y_train_svm)
+                # svm_accuracy = clf.score(X_test, y_test_svm)
+                # if N not in results_svm:
+                #     results_svm[N] = []
+                # results_svm[N].append(svm_accuracy)
                 
                 # Save the classifier's performance
-                save_classifier_performance(history)
+                #save_classifier_performance(history)
                 #classifier.save(output_path)
                 
                 # Calculate max validation accuracy for the current split
@@ -243,7 +243,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
     print(f"Final results: Mean accuracy: {mean_val_accuracy}, Min accuracy: {min_accuracy}, Max accuracy: {max_accuracy}")
     
     save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path)
-    save_results_to_csv(results_svm, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="svm")
+    #save_results_to_csv(results_svm, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="svm")
 
     return mean_val_accuracy, max_accuracy, min_accuracy
  
