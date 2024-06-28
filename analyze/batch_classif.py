@@ -17,10 +17,10 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'paper_contrastive_F1': (3072),   
+    'paper_contrastive2_F1': (3072),   
 }
 classif_types = ['scanner']
-mg_filters = [None, 10]
+mg_filters = [None]
 for classif_type in classif_types:
     for mg_filter in mg_filters:
         for model, info_list in configurations.items():
