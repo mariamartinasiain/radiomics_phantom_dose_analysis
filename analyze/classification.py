@@ -174,7 +174,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
         groups_train_all = groups[train_index]
         unique_train_groups = np.unique(groups_train_all)
         if classif_type == 'scanner':
-            it2 = range(1, 10)
+            it2 = range(9, 10)
         else:
             it2 = range(1, len(unique_train_groups)+1)
         for N in it2:
@@ -242,7 +242,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
 
     print(f"Final results: Mean accuracy: {mean_val_accuracy}, Min accuracy: {min_accuracy}, Max accuracy: {max_accuracy}")
     
-    save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path)
+    save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="999")
     #save_results_to_csv(results_svm, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="svm")
 
     return mean_val_accuracy, max_accuracy, min_accuracy

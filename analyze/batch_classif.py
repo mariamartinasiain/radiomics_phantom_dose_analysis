@@ -17,7 +17,9 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'paper_contrastive2_F1': (3072),   
+    'pyradiomics': (86),
+    'features_swinunetr_full_averaged' : (768), 
+    'oscar_full' : (2048),
 }
 classif_types = ['scanner']
 mg_filters = [None]
