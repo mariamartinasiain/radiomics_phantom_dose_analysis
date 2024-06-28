@@ -18,7 +18,7 @@ else:
 
 configurations = {
     'pyradiomics': (86),
-    'features_swinunetr_full_averaged' : (768), 
+    'swinunetr_full_averaged' : (768), 
     'oscar_full' : (2048),
 }
 classif_types = ['scanner']
