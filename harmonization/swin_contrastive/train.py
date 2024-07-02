@@ -98,6 +98,10 @@ class OrthogonalityLoss:
     def __call__(self, H):
 
         print("H size",H.size())
+        if H.shape[0] != self.batch_size:
+            self.batch_size = H.shape[0]
+            self.create_identity_and_mask()
+        
 
         # Reshape H to a 2D tensor for matrix multiplication
         H_reshaped = H.view(self.batch_size,  self.num_feature_maps, -1)  # [batch_size x num_feature_maps x product of feature_shape]
