@@ -731,7 +731,7 @@ def main():
         #Resized(keys=["image"],spatial_size = (512,512,343)),
         #LazyPatchLoader(roi_size=[64, 64, 32]),
         LoadImaged(keys=["image"]),
-        DebugTransform2(),
+        #DebugTransform2(),
         EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         EncodeLabels(encoder=encoder),
