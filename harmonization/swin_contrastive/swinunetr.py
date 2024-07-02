@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 
-import json
+
 import time
 import nibabel as nib
 import matplotlib.pyplot as plt
@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
+from harmonization.swin_contrastive.utils import load_data
 from monai.data import Dataset, DataLoader,SmartCacheDataset
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
@@ -177,10 +178,8 @@ class CopyPathd(MapTransform):
             data[f"{key}_path"] = data[key]  # Copier le chemin du fichier dans une nouvelle clé
         return data
 
-def load_data(datalist_json_path):
-        with open(datalist_json_path, 'r') as f:
-                datalist = json.load(f)
-        return datalist
+
+
 
 def get_model(target_size = (64, 64, 32)):
     device_id = 0
@@ -195,13 +194,16 @@ def get_model(target_size = (64, 64, 32)):
         use_checkpoint=True,
     ).to(device)
 
-    weight = torch.load("model_swinvit.pt")
+    #weight = torch.load("model_swinvit.pt")
+    weight = torch.load("random_cropped_contrastive.pth")
     print("Loaded weight keys:", weight.keys())
-    model.load_from(weight)
-    #model.load_state_dict(weight)
+    #model.load_from(weight)
+    model.load_state_dict(weight)
     model = model.to('cuda')
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
+
+
 
 def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     
@@ -232,7 +234,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open("contrastive_classification_reconstruction_swin_features.csv", "w", newline="") as csvfile:
+    with open("paper_contrastive_randomcropped_features.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()

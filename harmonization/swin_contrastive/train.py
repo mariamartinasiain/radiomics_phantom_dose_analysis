@@ -1,6 +1,6 @@
+import glob
 import json
 import os
-import queue
 import re
 from matplotlib import pyplot as plt
 import numpy as np
@@ -9,17 +9,41 @@ from tqdm import tqdm
 from analyze.analyze import perform_tsne
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
+import tensorflow as tf
 import torch.optim as optim
+from analyze.classification import save_results_to_csv,define_classifier
 from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped
-from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model, load_data
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped,RandCropd,RandSpatialCropd
+from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model
+from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data,save_losses
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
+import logging
+import numpy as np
+from monai.transforms import Transform
+from monai.data import ITKReader
+import itk
+from random import shuffle
+from keras.utils import to_categorical
 import torch.nn as nn
+import threading
+from scipy.spatial import procrustes
 import imageio
 import nibabel as nib
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+
+def align_embeddings(reference, embeddings):
+    _, aligned_embeddings, _ = procrustes(reference, embeddings)
+    return aligned_embeddings
 
 class ReconstructionLoss(nn.Module):
     def __init__(self, ssim_weight=0.5):
@@ -34,6 +58,13 @@ class ReconstructionLoss(nn.Module):
         total_loss = l1 + self.ssim_weight * ssim_loss
         return total_loss
 
+def get_device():
+        device_id = 0
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+        torch.cuda.set_device(device_id)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return device
+    
 class OrthogonalityLoss:
     def __init__(self, batch_size, num_feature_maps, feature_shape, device, split=None):
 
@@ -92,7 +123,7 @@ class Train:
         self.num_epoch = num_epoch
         self.contrast_loss = contrast_loss
         self.classification_loss = torch.nn.CrossEntropyLoss().cuda()
-        self.device = self.get_device()
+        self.device = get_device()
         self.recons_loss = ReconstructionLoss(ssim_weight=5).to(self.device)
         self.acc_metric = acc_metric
         self.batch_size = data_loader['train'].batch_size
@@ -101,15 +132,16 @@ class Train:
         self.contrastive_latentsize = contrastive_latentsize
         self.save_name = savename
         self.reconstruct = self.get_reconstruction_model()
+        self.reference_embeddings_2d = None
         
         #quick fix to load reconstruction model
-        self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
+        #self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
 
         # Orthogonality loss
         self.orth_loss = OrthogonalityLoss(batch_size=self.batch_size, num_feature_maps=768, feature_shape=(2, 2, 1), device=self.device, split=self.contrastive_latentsize)
         
         #quick fix to train decoder only
-        self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3)
+        #self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3) #ajouter tout
         
         self.epoch = 0
         self.log_summary_interval = 5
@@ -125,12 +157,6 @@ class Train:
         
         self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'orthogonality_losses': [], 'total_losses': []}
     
-    def get_device(self):
-        device_id = 0
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
-        torch.cuda.set_device(device_id)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        return device
         
     def get_reconstruction_model(self, reconstruction_type='vae',dim=768):
         if reconstruction_type == 'vae':
@@ -177,95 +203,9 @@ class Train:
         self.reconstruct.load_state_dict(weights)
         self.reconstruct.eval()
         print(f'Model weights loaded from {path}')
-        
-    def save_losses(self, train_loss, loss_file='losses.json'):
-        self.train_losses['total_losses'].append(train_loss)
-        self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
-        self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
-        self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
-        self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
-        #self.val_losses.append(val_loss)
-        
-        
-        # Convert torch.Tensor to a JSON-serializable format
-        def convert_to_serializable(obj):
-            if isinstance(obj, torch.Tensor):
-                return obj.tolist()  # Convert tensor to list
-            elif isinstance(obj, list):
-                return [convert_to_serializable(item) for item in obj]
-            else:
-                return obj
-        
-        #serializable_val_losses = convert_to_serializable(self.val_losses)
-        serializable_contrast_losses = convert_to_serializable(self.train_losses['contrast_losses'])
-        serializable_classification_losses = convert_to_serializable(self.train_losses['classification_losses'])
-        serializable_total_losses = convert_to_serializable(self.train_losses['total_losses'])
-        serializable_recosntruction_losses = convert_to_serializable(self.train_losses['reconstruction_losses'])
-        serializable_orthogonality_losses = convert_to_serializable(self.train_losses['orthogonality_losses'])
-        
-        # with open(loss_file, 'w') as f:
-        #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
-        with open('contrast_losses.json', 'w') as f:
-            json.dump({'contrast_losses': serializable_contrast_losses}, f)
-        with open('classification_losses.json', 'w') as f:
-            json.dump({'classification_losses': serializable_classification_losses}, f)
-        with open('total_losses.json', 'w') as f:
-            json.dump({'total_losses': serializable_total_losses}, f)
-        with open('reconstruction_losses.json', 'w') as f:
-            json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
-        with open('orthogonality_losses.json', 'w') as f:
-            json.dump({'orthogonality_losses': serializable_orthogonality_losses}, f)
             
     def plot_losses(self):
-        step_interval = self.step_interval
-
-        points = len(self.train_losses['contrast_losses'])
-        steps = np.arange(0, points * step_interval, step_interval)
-        contrast_losses = [loss.detach().numpy() for loss in self.train_losses['contrast_losses']]
-        
-        fig, ax = plt.subplots(2, 2, figsize=(15, 10)) # todo modify the plot to include ortogonality loss
-
-        ax[0, 0].plot(steps, contrast_losses, label='Contrastive Loss')
-        ax[0, 0].set_title('Contrastive Loss')
-        ax[0, 0].set_xlabel('Steps')
-        ax[0, 0].set_ylabel('Loss')
-        ax[0, 0].legend()
-
-        points = len(self.train_losses['classification_losses'])
-        steps = np.arange(0, points * step_interval, step_interval)
-        classification_losses = [loss.detach().numpy() for loss in self.train_losses['classification_losses']]
-
-        ax[0, 1].plot(steps, classification_losses, label='Classification Loss')
-        ax[0, 1].set_title('Classification Loss')
-        ax[0, 1].set_xlabel('Steps')
-        ax[0, 1].set_ylabel('Loss')
-        ax[0, 1].legend()
-
-        points = len(self.train_losses['reconstruction_losses'])
-        steps = np.arange(0, points * step_interval, step_interval)
-        reconstruction_losses = [loss.detach().numpy() for loss in self.train_losses['reconstruction_losses']]
-
-        ax[1, 0].plot(steps, reconstruction_losses, label='Reconstruction Loss')
-        ax[1, 0].set_title('Reconstruction Loss')
-        ax[1, 0].set_xlabel('Steps')
-        ax[1, 0].set_ylabel('Loss')
-        ax[1, 0].legend()
-
-        points = len(self.train_losses['total_losses'])
-        steps = np.arange(0, points * step_interval, step_interval)
-        total_losses = [loss.detach().numpy() for loss in self.train_losses['total_losses']]
-
-        ax[1, 1].plot(steps, total_losses, label='Total Loss')
-        ax[1, 1].set_title('Total Loss')
-        ax[1, 1].set_xlabel('Steps')
-        ax[1, 1].set_ylabel('Loss')
-        ax[1, 1].legend()
-
-        # todo orthogonality
-
-        plt.tight_layout()
-        plt.savefig('losses_plot.png')
-        plt.show()
+        plot_multiple_losses(self.train_losses, self.step_interval)
 
     
     def train(self):
@@ -284,9 +224,9 @@ class Train:
                 pass
             self.lr_scheduler.step()
             self.dataset.update_cache()
-            if self.epoch % 5 == 0:
+            if self.epoch % 3 == 1 or self.epoch == self.num_epoch :
                 try:
-                    self.plot_latent_space(self.epoch)
+                    self.latents_t,self.labels_t,self.latents_v,self.labels_v,self.groups = self.plot_latent_space(self.epoch)
                 except Exception as e:
                     print(f"Error plotting latent space: {e}")
         
@@ -296,9 +236,12 @@ class Train:
         self.save_model(self.save_name)
         reconstruction_model_path = self.save_name.replace('.pth', '_reconstruction.pth')
         self.save_reconstruction_model(reconstruction_model_path)
-        self.create_gif()
-        self.plot_losses()
-        return self.acc_dict['best_test_acc']
+        try:
+            self.create_gif()
+            self.plot_losses()
+        except Exception as e:
+            print(f"Error plotting losses or creating gif")
+        return self.latents_t,self.labels_t,self.latents_v,self.labels_v,self.groups
 
     def train_epoch(self):
         epoch_iterator = tqdm(self.train_loader, desc="Training (X / X Steps) (loss=X.X)", dynamic_ncols=True)
@@ -326,9 +269,17 @@ class Train:
 
         # prepare batch
         imgs_s = batch["image"].cuda()
-        all_labels = batch["roi_label"].cuda()
+        ids = batch["uids"].cuda()
+        print("imgs_s size",imgs_s.size())
+        print("ids size",ids.size())
+        imgs_s = imgs_s.view(imgs_s.shape[0] * imgs_s.shape[1],1, 64, 64, 32) 
+        ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
+        print("imgs_s size",imgs_s.size())
+        print("ids size",ids.size())
+        #all_labels = batch["roi_label"].cuda()
+        #ids = all_labels
         scanner_labels = batch["scanner_label"].cuda()
-        ids = all_labels
+        
 
         # encoder inference
         latents = self.model.swinViT(imgs_s)
@@ -342,7 +293,7 @@ class Train:
         #print("nlatents[4] size",nlatents[4].size())
         
         #print("ids size",ids.size())
-        #self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
         #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
         
         #features = torch.mean(bottleneck, dim=(2, 3, 4))
@@ -357,13 +308,13 @@ class Train:
 
 
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
-        reconstructed_imgs = self.reconstruct_image(latents[4]) 
+        # reconstructed_imgs = self.reconstruct_image(latents[4]) 
         
-        #saving nifti image to disk
-        img = reconstructed_imgs[0,:,:,:,:].detach().cpu().numpy()
-        img = np.squeeze(img)
-        img = nib.Nifti1Image(img, np.eye(4))
-        nib.save(img, "reconstructed_image.nii")
+        # #saving nifti image to disk
+        # img = reconstructed_imgs[0,:,:,:,:].detach().cpu().numpy()
+        # img = np.squeeze(img)
+        # img = nib.Nifti1Image(img, np.eye(4))
+        # nib.save(img, "reconstructed_image.nii")
         
         #saving original image to disk
         img = imgs_s[0,:,:,:,:].detach().cpu().numpy()
@@ -372,8 +323,8 @@ class Train:
         nib.save(img, "original_image.nii")
         
         
-        self.reconstruction_step(reconstructed_imgs, imgs_s) 
-        #self.losses_dict['reconstruction_loss'] = 0.0
+        #self.reconstruction_step(reconstructed_imgs, imgs_s) 
+        self.losses_dict['reconstruction_loss'] = 0.0
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
@@ -491,10 +442,21 @@ class Train:
         torch.save(self.reconstruct.state_dict(), path)
         print(f'Model weights saved to {path}')
 
+    def save_losses(self, train_loss, loss_file='losses.json'):
+        self.train_losses['total_losses'].append(train_loss)
+        self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
+        self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
+        self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
+        save_losses(self.train_losses, loss_file)
+        
+
     def plot_latent_space(self, epoch):
         self.model.eval() 
         latents = []
-        labels = []  
+        labels = [] 
+        scanner_labels = []
+        latents_v = []
+        labels_v = [] 
 
         with torch.no_grad():
             for batch in self.data_loader['train']:
@@ -507,14 +469,30 @@ class Train:
                 latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
                 latents.extend(latents_tensor.cpu().numpy())
                 labels.extend(batch['roi_label'].cpu().numpy()) 
+                scanner_labels.extend(batch['scanner_label'].cpu().numpy())
+            
+            for batch in self.data_loader['test']:
+                images = batch['image'].cuda()
+                latents_tensor = self.model.swinViT(images)[4]
+                
+                batch_size, channels, *dims = latents_tensor.size()
+                flatten_size = torch.prod(torch.tensor(dims)).item()
+                
+                latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
+                latents_v.extend(latents_tensor.cpu().numpy())
+                labels_v.extend(batch['roi_label'].cpu().numpy())
 
         latents_2d = perform_tsne(latents)
 
+        if self.reference_embeddings_2d is None:
+            self.reference_embeddings_2d = latents_2d
+        else:
+            latents_2d = align_embeddings(self.reference_embeddings_2d, latents_2d)
 
         plt.figure(figsize=(10, 10))
         scatter = plt.scatter(latents_2d[:, 0], latents_2d[:, 1], c=labels, cmap='viridis')
         plt.colorbar(scatter, label='Labels')
-        plt.title('Latent Space t-SNE')
+        plt.title(f'Latent Space t-SNE at Epoch {epoch}')
         plt.xlabel('Dimension 1')
         plt.ylabel('Dimension 2')
 
@@ -524,6 +502,7 @@ class Train:
         plt.close()  
 
         self.tsne_plots.append(plot_path)
+        return latents,labels,latents_v,labels_v,scanner_labels
 
     def create_gif(self):
         images = []
@@ -640,14 +619,206 @@ class PrintDebug(Transform):
     def __call__(self, data):
         print("Debugging")
         return data
-    
+
+class LazyPatchLoader(Transform):
+    def __init__(self, roi_size=(64, 64, 32), num_patches=4, variety_size=10,reader=None):
+        self.roi_size = roi_size
+        self.num_patches = num_patches  # Nombre de patches à extraire
+        self.reader = reader or ITKReader()
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.variety_size = variety_size
+        self.precomputed_positions = []
+        self.current_position_index = 0
+
+    def precompute_positions(self, shape):
+        """ Precompute and shuffle random positions for patch extraction """
+        self.precomputed_positions = []
+        for _ in range(self.variety_size):  # Generate 10 random positions
+            start_x = np.random.randint(50, 200)
+            start_y = np.random.randint(50, shape[1] - self.roi_size[1] + 1)
+            start_z = np.random.randint(50, shape[2] - self.roi_size[2] + 1)
+            self.precomputed_positions.append((start_x, start_y, start_z))
+        shuffle(self.precomputed_positions)
+
+    def __call__(self, data):
+        try:
+            image_path = data['image']
+            self.logger.info(f"Loading image from path: {image_path}")
+            
+            img_obj = self.reader.read(image_path)
+            self.logger.info(f"Image object loaded: {type(img_obj)}")
+            
+            itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
+            shape = itk_image.GetLargestPossibleRegion().GetSize()
+            shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # XYZ order
+            
+            if any(s < r for s, r in zip(shape, self.roi_size)):
+                raise ValueError(f"Image size {shape} is smaller than ROI size {self.roi_size}")
+
+            if not self.precomputed_positions:
+                self.precompute_positions(shape)
+            
+            patches = []
+            uids = []
+            for _ in range(self.num_patches):
+                if self.current_position_index >= len(self.precomputed_positions):
+                    # Reshuffle and reset index when all positions have been used
+                    shuffle(self.precomputed_positions)
+                    self.current_position_index = 0
+
+                # Use the current position from the shuffled list
+                start_x, start_y, start_z = self.precomputed_positions[self.current_position_index]
+                self.current_position_index += 1
+                
+                uid = start_y + start_x * shape[1] + start_z * shape[0] * shape[1]
+                uids.append(uid)
+                
+                extract_index = [int(start_z), int(start_y), int(start_x)]  # ITK ZYX order
+                extract_size = [int(self.roi_size[2]), int(self.roi_size[1]), int(self.roi_size[0])]
+                
+                self.logger.info(f"Extracting patch at index {extract_index} with size {extract_size}")
+                self.logger.info(f"Image shape: {shape}")
+                
+                InputImageType = type(itk_image)
+                OutputImageType = type(itk_image)
+                extract_filter = itk.ExtractImageFilter[InputImageType, OutputImageType].New()
+                extract_filter.SetInput(itk_image)
+                extract_region = itk.ImageRegion[3]()
+                extract_region.SetIndex(extract_index)
+                extract_region.SetSize(extract_size)
+                extract_filter.SetExtractionRegion(extract_region)
+                extract_filter.SetDirectionCollapseToSubmatrix()
+                
+                extract_filter.Update()
+                patch_itk = extract_filter.GetOutput()
+                patch = itk.array_from_image(patch_itk)
+                
+                if patch.ndim == 3:
+                    patch = patch[np.newaxis, ...]
+                
+                patches.append(patch)
+                self.logger.info(f"Patch shape: {patch.shape}")
+
+            patches = np.concatenate(patches, axis=0)
+            uids = torch.tensor(uids)
+            data['image'] = patches  
+            data['uids'] = uids  
+            return data
+        except Exception as e:
+            self.logger.error(f"Error in LazyPatchLoader: {str(e)}")
+            raise
+
+# Set up logging
+#logging.basicConfig(level=logging.INFO)
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
 
+
+
 def main():
     from sklearn.preprocessing import LabelEncoder
-    device = Train.get_device(None)
+    device = get_device()
+    labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
+    scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+    encoder = LabelEncoder()
+    encoder.fit(labels)
+    scanner_encoder = LabelEncoder()
+    scanner_encoder.fit(scanner_labels)
+    transforms = Compose([
+        #PrintDebug(),
+        #Resized(keys=["image"],spatial_size = (512,512,343)),
+        LazyPatchLoader(roi_size=[64, 64, 32]),
+        #EnsureChannelFirstd(keys=["image"]),
+        EnsureTyped(keys=["image"], device=device, track_meta=False),
+        #EncodeLabels(encoder=encoder),
+        ExtractScannerLabel(),
+        EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
+        #DebugTransform(),
+        #DebugTransform2(),
+        
+    ])
+
+    #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
+
+    jsonpath = "./light_dataset_info_10.json"
+    data_list = load_data(jsonpath)
+    train_data, test_data = create_datasets(data_list,test_size=0.00)
+    model = get_model(target_size=(64, 64, 32))
+    
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
+    
+    train_loader = ThreadDataLoader(train_dataset, batch_size=16, shuffle=True,collate_fn=custom_collate_fn)
+    test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
+    
+    data_loader = {'train': train_loader, 'test': test_loader}
+    dataset = {'train': train_dataset, 'test': test_dataset}
+    
+    
+    
+    print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
+    
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
+    lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
+    
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=768,savename="random_cropped_contrastive.pth")
+    trainer.train()
+
+def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
+    
+    latents_t = np.array(latents_t)
+    labels_t = np.array(labels_t)
+    latents_v = np.array(latents_v)
+    labels_v = np.array(labels_v)
+    num_classes = 6
+    labels_t = to_categorical(labels_t, num_classes=num_classes)
+    labels_v = to_categorical(labels_v, num_classes=num_classes)
+    it2 = range(1, 13)
+    for N in it2:
+        N = N / 12
+        if N == 1:
+            full_indices = np.arange(len(latents_t))
+            it3 = [(full_indices, None)]
+        else:
+            splits = GroupShuffleSplit(n_splits=1, test_size=N, random_state=42)
+            it3 = splits.split(latents_t, labels_t, groups=groups)
+        for train_idx, _ in it3:
+            
+            print("Debugging Info:")
+            print(f"Content of latents_t: {latents_t}")
+            print(f"Contents of train_idx: {train_idx}")
+            print(f"N: {N}")
+            print(f"Type of train_idx: {type(train_idx)}")
+            print(f"Shape of train_idx: {np.shape(train_idx)}")
+            print(f"Shape of latents_t: {np.shape(latents_t)}")
+            print(f"Type of latents_t: {type(latents_t)}")
+            print(f"Shape of labels_t: {np.shape(labels_t)}")
+            
+            
+            x_train = latents_t[train_idx,:]
+            y_train = labels_t[train_idx]
+            classifier = define_classifier(3072, num_classes)
+                
+            history = classifier.fit(
+                x_train, y_train,
+                validation_data=(latents_v, labels_v),
+                batch_size=64,
+                epochs=75,
+                verbose=0,
+            )
+            max_val_accuracy = max(history.history['val_accuracy'])
+            with lock:
+                if N not in results:
+                    results[N] = []
+                results[N].append(max_val_accuracy)
+            
+            tf.keras.backend.clear_session()
+            del x_train, y_train, classifier, history
+
+def cross_val_training():
+    from sklearn.preprocessing import LabelEncoder
+    device = get_device()
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
     scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
     encoder = LabelEncoder()
@@ -669,28 +840,128 @@ def main():
     ])
 
     jsonpath = "./dataset_info_cropped.json"
+    from sklearn.model_selection import LeaveOneGroupOut
+    
     data_list = load_data(jsonpath)
-    train_data, test_data = create_datasets(data_list,test_size=0.00)
-    model = get_model(target_size=(64, 64, 32))
+    ogroups = group_data(data_list, mode='scanner') 
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
-    test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
+    logo = LeaveOneGroupOut()
+    it1 = enumerate(logo.split(data_list, groups=ogroups))
+    results = {}
+    results_lock = threading.Lock()
     
-    train_loader = ThreadDataLoader(train_dataset, batch_size=64, shuffle=True,collate_fn=custom_collate_fn)
-    test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
+    def classify_cross_val_wrapper(latents_t, labels_t, latents_v, labels_v, groups):
+        classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
+    threads = []
+    for _, (train_idx, test_idx) in tqdm(it1):
+        
+        print(f"The test index is {test_idx}")
+        removed_groups = [ogroups[idx] for idx in test_idx]
+        print(f"In the beginning We took out the groups {removed_groups}")
+        print(f"In the beggining Unique groups are : {np.unique(ogroups)}")
+        
+        train_data = [data_list[i] for i in train_idx]
+        test_data = [data_list[i] for i in test_idx]
+        model = get_model(target_size=(64, 64, 32))
+        train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+        test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.15,progress=True,num_init_workers=8, num_replace_workers=8)
+        
+        train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
+        test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
+        
+        data_loader = {'train': train_loader, 'test': test_loader}
+        dataset = {'train': train_dataset, 'test': test_dataset}
     
-    data_loader = {'train': train_loader, 'test': test_loader}
-    dataset = {'train': train_dataset, 'test': test_dataset}
+        print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
+        optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
+        lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
+        
+        #with savename being related to the group out
+        #search for a file with "paper" in the name and test_data[0]['info']['SeriesDescription'] in the name and use it to load a model if found, and train it if not
+        
+        #only search for names that doesnt contain "reconstruction" in them and that contains test_data[0]['info']['SeriesDescription']
+        
+        
+        series_description = test_data[0]['info']['SeriesDescription']
+        search_pattern = f"*paper*{series_description}*pth"
+        file_list = glob.glob(search_pattern)
+        
+        # Filter out files that contain "reconstruction"
+        filtered_files = [file for file in file_list if "reconstruction" not in file]
+        
+        if False:#filtered_files:
+            print(f"Found a model with the name {filtered_files[0]}")
+            model.load_state_dict(torch.load(filtered_files[0]))
+            print(f"Model loaded from {filtered_files[0]}")
+            
+            latents_t = []
+            labels_t = []
+            latents_v = []
+            labels_v = []
+            groups = []
+            with torch.no_grad():
+                for batch in data_loader['train']:
+                    images = batch['image'].cuda()
+                    latents_tensor = model.swinViT(images)[4]
+                    
+                    batch_size, channels, *dims = latents_tensor.size()
+                    flatten_size = torch.prod(torch.tensor(dims)).item()
+                    
+                    latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
+                    latents_t.extend(latents_tensor.cpu().numpy())
+                    labels_t.extend(batch['roi_label'].cpu().numpy()) 
+                    groups.extend(batch['scanner_label'].cpu().numpy())
+                    del images
+                    torch.cuda.empty_cache()
+                
+                for batch in data_loader['test']:
+                    images = batch['image'].cuda()
+                    latents_tensor = model.swinViT(images)[4]
+                    
+                    batch_size, channels, *dims = latents_tensor.size()
+                    flatten_size = torch.prod(torch.tensor(dims)).item()
+                    
+                    latents_tensor = latents_tensor.reshape(batch_size, channels * flatten_size)
+                    latents_v.extend(latents_tensor.cpu().numpy())
+                    labels_v.extend(batch['roi_label'].cpu().numpy())
+                    del images
+                    torch.cuda.empty_cache()
+                    
+            dataset['train'].shutdown()
+            dataset['test'].shutdown()
+        else:
+            trainer = Train(model, data_loader, optimizer, lr_scheduler, 9,dataset,contrastive_latentsize=768,savename=f"paper_contrastive_{test_data[0]['info']['SeriesDescription']}.pth")
+            latents_t,labels_t,latents_v,labels_v,groups = trainer.train()
+        
+        print(f"Finished training for group {test_data[0]['info']['SeriesDescription']}")
+        unique_groups = np.unique(groups)
+        #print(f"In the end We took out the group {groups[test_idx[0]]}")
+        print(f"In the end Unique groups are : {unique_groups} and their number is {len(unique_groups)}")
+        
+        #classifiy
+        
+        thread = threading.Thread(target=classify_cross_val_wrapper, args=(latents_t, labels_t, latents_v, labels_v, groups))
+        thread.start()
+        threads.append(thread)
+        print("Shape of latents_t:", np.shape(latents_t))
+        #classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, results_lock)
+        
+        #printing results
+        with results_lock:
+            print("Results so far:")
+            for key, values in results.items():
+                print(f"Test size: {key}, Accuracies: {values}")
+        
+        print("On va saaaveeeeee")
+        
+        save_results_to_csv(results, classif_type="roi_large", mg_filter=None, data_path="./swinunetr_paper.json",plus="crossval_trained")        
+        
     
+    for thread in threads:
+        thread.join()
     
-    
-    print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
-    
-    optimizer = optim.AdamW(model.parameters(), lr=5e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
-    lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
-    
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 65,dataset,contrastive_latentsize=700,savename="FT_whole_RECONSTRUCTION_model.pth")
-    trainer.train()
+    save_results_to_csv(results, classif_type="roi_large", mg_filter=None, data_path="./swinunetr_paper.json",plus="crossval_trained")
+
 
 if __name__ == '__main__':
     main()

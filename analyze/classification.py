@@ -1,4 +1,4 @@
-from analyze import extract_mg_value
+from analyze.analyze import extract_mg_value
 import re
 import tensorflow as tf
 from keras import layers
@@ -169,10 +169,12 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
         #print("Number of remaining groups:", len(np.unique(groups[train_index])))
         X_train_all, X_test = features[train_index], features[test_index]
         y_train_all, y_test = labels[train_index], labels[test_index]
+        print(f'X test : {X_test}, y test : {y_test}')
+        print(f'X test shape: {X_test.shape}, y test shape: {y_test.shape}')
         groups_train_all = groups[train_index]
         unique_train_groups = np.unique(groups_train_all)
         if classif_type == 'scanner':
-            it2 = range(1, 10)
+            it2 = range(9, 10)
         else:
             it2 = range(1, len(unique_train_groups)+1)
         for N in it2:
@@ -208,17 +210,17 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
                     class_weight=cw
                 )
                 
-                y_train_svm = np.argmax(y_train, axis=1)
-                y_test_svm = np.argmax(y_test, axis=1)
-                clf = svm.LinearSVC()
-                clf.fit(X_train, y_train_svm)
-                svm_accuracy = clf.score(X_test, y_test_svm)
-                if N not in results_svm:
-                    results_svm[N] = []
-                results_svm[N].append(svm_accuracy)
+                # y_train_svm = np.argmax(y_train, axis=1)
+                # y_test_svm = np.argmax(y_test, axis=1)
+                # clf = svm.LinearSVC()
+                # clf.fit(X_train, y_train_svm)
+                # svm_accuracy = clf.score(X_test, y_test_svm)
+                # if N not in results_svm:
+                #     results_svm[N] = []
+                # results_svm[N].append(svm_accuracy)
                 
                 # Save the classifier's performance
-                save_classifier_performance(history)
+                #save_classifier_performance(history)
                 #classifier.save(output_path)
                 
                 # Calculate max validation accuracy for the current split
@@ -240,8 +242,8 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
 
     print(f"Final results: Mean accuracy: {mean_val_accuracy}, Min accuracy: {min_accuracy}, Max accuracy: {max_accuracy}")
     
-    save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path)
-    save_results_to_csv(results_svm, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="svm")
+    save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="999")
+    #save_results_to_csv(results_svm, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="svm")
 
     return mean_val_accuracy, max_accuracy, min_accuracy
  
