@@ -14,6 +14,8 @@ def plot_loaded_losses():
     classification_losses = np.array(load_losses('classification_losses.json')['classification_losses'])
     total_losses = np.array(load_losses('total_losses.json')['total_losses'])
     reconstruction_losses = np.array(load_losses('reconstruction_losses.json')['reconstruction_losses'])
+    #self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
+    orthogonality_losses = np.array(load_losses('orthogonality_losses.json')['orthogonality_losses'])
 
     fig, ax = plt.subplots(2, 2, figsize=(15, 10))
 
@@ -33,13 +35,14 @@ def plot_loaded_losses():
     ax[0, 1].set_ylabel('Loss')
     ax[0, 1].legend()
 
-    points = len(reconstruction_losses)
+    points = len(orthogonality_losses)
     steps = np.arange(0, points * step_interval, step_interval)
-    ax[1, 0].plot(steps, reconstruction_losses, label='Reconstruction Loss')
-    ax[1, 0].set_title('Reconstruction Loss')
+    ax[1, 0].plot(steps, orthogonality_losses, label='Orthogonality Loss')
+    ax[1, 0].set_title('Orthogonality Loss')
     ax[1, 0].set_xlabel('Steps')
     ax[1, 0].set_ylabel('Loss')
     ax[1, 0].legend()
+    
 
     points = len(total_losses)
     steps = np.arange(0, points * step_interval, step_interval)
@@ -48,6 +51,8 @@ def plot_loaded_losses():
     ax[1, 1].set_xlabel('Steps')
     ax[1, 1].set_ylabel('Loss')
     ax[1, 1].legend()
+    
+    
 
     plt.tight_layout()
     plt.savefig('loaded_losses_plot.png')

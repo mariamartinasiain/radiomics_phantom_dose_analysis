@@ -113,6 +113,8 @@ def save_losses(train_losses, output_dir):
     serializable_classification_losses = convert_to_serializable(train_losses['classification_losses'])
     serializable_total_losses = convert_to_serializable(train_losses['total_losses'])
     serializable_recosntruction_losses = convert_to_serializable(train_losses['reconstruction_losses'])
+    #self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
+    serializable_orthogonality_losses = convert_to_serializable(train_losses['orthogonality_losses'])
     
     # with open(loss_file, 'w') as f:
     #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
@@ -124,6 +126,9 @@ def save_losses(train_losses, output_dir):
         json.dump({'total_losses': serializable_total_losses}, f)
     with open('reconstruction_losses.json', 'w') as f:
         json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
+    with open('orthogonality_losses.json', 'w') as f:
+        json.dump({'orthogonality_losses': serializable_orthogonality_losses}, f)
+    
   
 def load_data(datalist_json_path):
         with open(datalist_json_path, 'r') as f:
