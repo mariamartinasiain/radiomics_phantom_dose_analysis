@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 
-import json
+
 import time
 import nibabel as nib
 import matplotlib.pyplot as plt

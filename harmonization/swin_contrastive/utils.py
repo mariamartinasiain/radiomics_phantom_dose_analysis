@@ -72,7 +72,33 @@ def plot_multiple_losses(train_losses, step_interval):
     plt.tight_layout()
     plt.savefig('losses_plot.png')
     plt.show()
+
+def convert_to_serializable(obj):
+        if isinstance(obj, torch.Tensor):
+            return obj.tolist()  # Convert tensor to list
+        elif isinstance(obj, list):
+            return [convert_to_serializable(item) for item in obj]
+        else:
+            return obj
+
+def save_losses(train_losses, output_dir):
+    #serializable_val_losses = convert_to_serializable(self.val_losses)
+    serializable_contrast_losses = convert_to_serializable(train_losses['contrast_losses'])
+    serializable_classification_losses = convert_to_serializable(train_losses['classification_losses'])
+    serializable_total_losses = convert_to_serializable(train_losses['total_losses'])
+    serializable_recosntruction_losses = convert_to_serializable(train_losses['reconstruction_losses'])
     
+    # with open(loss_file, 'w') as f:
+    #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
+    with open('contrast_losses.json', 'w') as f:
+        json.dump({'contrast_losses': serializable_contrast_losses}, f)
+    with open('classification_losses.json', 'w') as f:
+        json.dump({'classification_losses': serializable_classification_losses}, f)
+    with open('total_losses.json', 'w') as f:
+        json.dump({'total_losses': serializable_total_losses}, f)
+    with open('reconstruction_losses.json', 'w') as f:
+        json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
+  
 def load_data(datalist_json_path):
         with open(datalist_json_path, 'r') as f:
                 datalist = json.load(f)

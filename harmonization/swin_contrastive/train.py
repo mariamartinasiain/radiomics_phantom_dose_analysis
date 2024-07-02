@@ -16,10 +16,16 @@ from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped,RandCropd,RandSpatialCropd
 from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model
-from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data
+from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data,save_losses
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
+import logging
+import numpy as np
+from monai.transforms import Transform
+from monai.data import ITKReader
+import itk
+from random import shuffle
 from keras.utils import to_categorical
 import torch.nn as nn
 import threading
@@ -52,6 +58,13 @@ class ReconstructionLoss(nn.Module):
         total_loss = l1 + self.ssim_weight * ssim_loss
         return total_loss
 
+def get_device():
+        device_id = 0
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+        torch.cuda.set_device(device_id)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return device
+    
 class Train:
     
     def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth'):
@@ -64,7 +77,7 @@ class Train:
         self.num_epoch = num_epoch
         self.contrast_loss = contrast_loss
         self.classification_loss = torch.nn.CrossEntropyLoss().cuda()
-        self.device = self.get_device()
+        self.device = get_device()
         self.recons_loss = ReconstructionLoss(ssim_weight=5).to(self.device)
         self.acc_metric = acc_metric
         self.batch_size = data_loader['train'].batch_size
@@ -95,12 +108,7 @@ class Train:
         
         self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'total_losses': []}
     
-    def get_device(self):
-        device_id = 0
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
-        torch.cuda.set_device(device_id)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        return device
+    
         
     def get_reconstruction_model(self, reconstruction_type='vae',dim=768):
         if reconstruction_type == 'vae':
@@ -385,34 +393,8 @@ class Train:
         self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
         self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
         self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
-        #self.val_losses.append(val_loss)
+        save_losses(self.train_losses, loss_file)
         
-        
-        # Convert torch.Tensor to a JSON-serializable format
-        def convert_to_serializable(obj):
-            if isinstance(obj, torch.Tensor):
-                return obj.tolist()  # Convert tensor to list
-            elif isinstance(obj, list):
-                return [convert_to_serializable(item) for item in obj]
-            else:
-                return obj
-        
-        #serializable_val_losses = convert_to_serializable(self.val_losses)
-        serializable_contrast_losses = convert_to_serializable(self.train_losses['contrast_losses'])
-        serializable_classification_losses = convert_to_serializable(self.train_losses['classification_losses'])
-        serializable_total_losses = convert_to_serializable(self.train_losses['total_losses'])
-        serializable_recosntruction_losses = convert_to_serializable(self.train_losses['reconstruction_losses'])
-        
-        # with open(loss_file, 'w') as f:
-        #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
-        with open('contrast_losses.json', 'w') as f:
-            json.dump({'contrast_losses': serializable_contrast_losses}, f)
-        with open('classification_losses.json', 'w') as f:
-            json.dump({'classification_losses': serializable_classification_losses}, f)
-        with open('total_losses.json', 'w') as f:
-            json.dump({'total_losses': serializable_total_losses}, f)
-        with open('reconstruction_losses.json', 'w') as f:
-            json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
 
     def plot_latent_space(self, epoch):
         self.model.eval() 
@@ -584,13 +566,6 @@ class PrintDebug(Transform):
         print("Debugging")
         return data
 
-
-import logging
-import numpy as np
-from monai.transforms import Transform
-from monai.data import ITKReader
-import itk
-from random import shuffle
 class LazyPatchLoader(Transform):
     def __init__(self, roi_size=(64, 64, 32), num_patches=4, variety_size=10,reader=None):
         self.roi_size = roi_size
@@ -689,7 +664,7 @@ def count_parameters(model):
 
 def main():
     from sklearn.preprocessing import LabelEncoder
-    device = Train.get_device(None)
+    device = get_device()
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
     scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
     encoder = LabelEncoder()
@@ -789,7 +764,7 @@ def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups
 
 def cross_val_training():
     from sklearn.preprocessing import LabelEncoder
-    device = Train.get_device(None)
+    device = get_device()
     labels = ['normal1', 'normal2', 'cyst1', 'cyst2', 'hemangioma', 'metastatsis']
     scanner_labels = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
     encoder = LabelEncoder()
