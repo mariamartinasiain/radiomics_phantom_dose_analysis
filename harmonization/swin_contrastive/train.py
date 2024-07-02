@@ -15,8 +15,8 @@ from analyze.classification import save_results_to_csv,define_classifier
 from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped,RandCropd,RandSpatialCropd
-from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform, get_model
-from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data,save_losses
+from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform
+from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data,save_losses,get_model
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
@@ -148,7 +148,7 @@ class Train:
         self.step_interval = 10
         self.total_progress_bar = tqdm(total=self.num_epoch, desc='Total Progress', dynamic_ncols=True)
         self.acc_dict = {'src_best_train_acc': 0, 'src_best_test_acc': 0, 'tgt_best_test_acc': 0}
-        self.losses_dict = {'total_loss': 0, 'src_classification_loss': 0, 'contrast_loss': 0}
+        self.losses_dict = {'total_loss': 0, 'src_classification_loss': 0, 'contrast_loss': 0, 'reconstruction_loss': 0, 'orthogonality_loss': 0}
         self.log_dict = {'src_train_acc': 0, 'src_test_acc': 0, 'tgt_test_acc': 0}
         self.best_acc_dict = {'src_best_train_acc': 0, 'src_best_test_acc': 0, 'tgt_best_test_acc': 0}
         self.best_loss_dict = {'total_loss': float('inf'), 'src_classification_loss': float('inf'), 'contrast_loss': float('inf')}
@@ -296,11 +296,11 @@ class Train:
         self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
         #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
         
-        #features = torch.mean(bottleneck, dim=(2, 3, 4))
-        #accu = self.classification_step(features, scanner_labels)
+        features = torch.mean(bottleneck, dim=(2, 3, 4))
+        accu = self.classification_step(features, scanner_labels)
         #print(f"Train Accuracy: {accu}%")
-        accu = 0
-        self.losses_dict['classification_loss'] = 0.0
+        #accu = 0
+        #self.losses_dict['classification_loss'] = 0.0
 
         # Orthogonality loss
         self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
@@ -447,6 +447,7 @@ class Train:
         self.train_losses['contrast_losses'].append(self.losses_dict['contrast_loss'])
         self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
         self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
+        self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
         save_losses(self.train_losses, loss_file)
         
 
@@ -728,10 +729,12 @@ def main():
     transforms = Compose([
         #PrintDebug(),
         #Resized(keys=["image"],spatial_size = (512,512,343)),
-        LazyPatchLoader(roi_size=[64, 64, 32]),
-        #EnsureChannelFirstd(keys=["image"]),
+        #LazyPatchLoader(roi_size=[64, 64, 32]),
+        LoadImaged(keys=["image"]),
+        DebugTransform2(),
+        EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
-        #EncodeLabels(encoder=encoder),
+        EncodeLabels(encoder=encoder),
         ExtractScannerLabel(),
         EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
@@ -741,7 +744,7 @@ def main():
 
     #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
 
-    jsonpath = "./light_dataset_info_10.json"
+    jsonpath = "./dataset_info_cropped.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
@@ -762,7 +765,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=768,savename="random_cropped_contrastive.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 22,dataset,contrastive_latentsize=700,savename="rois_contrastive_classif_ortho.pth")
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):

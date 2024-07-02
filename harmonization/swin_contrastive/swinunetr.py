@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
-from harmonization.swin_contrastive.utils import load_data
+from harmonization.swin_contrastive.utils import load_data,get_model
 from monai.data import Dataset, DataLoader,SmartCacheDataset
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
@@ -177,33 +177,6 @@ class CopyPathd(MapTransform):
         for key in self.keys:
             data[f"{key}_path"] = data[key]  # Copier le chemin du fichier dans une nouvelle clé
         return data
-
-
-
-
-def get_model(target_size = (64, 64, 32)):
-    device_id = 0
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
-    torch.cuda.set_device(device_id)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-    model = SwinUNETR(
-        img_size=target_size,
-        in_channels=1,
-        out_channels=1,
-        feature_size=48,
-        use_checkpoint=True,
-    ).to(device)
-
-    #weight = torch.load("model_swinvit.pt")
-    weight = torch.load("random_cropped_contrastive.pth")
-    print("Loaded weight keys:", weight.keys())
-    #model.load_from(weight)
-    model.load_state_dict(weight)
-    model = model.to('cuda')
-    print("Using pretrained self-supervied Swin UNETR backbone weights !")
-    return model
-
-
 
 def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     

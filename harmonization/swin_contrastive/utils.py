@@ -16,9 +16,35 @@ import pydicom
 import numpy as np
 from monai.transforms import Compose, EnsureTyped
 from monai.data import Dataset, DataLoader
+from monai.networks.nets import SwinUNETR
 from tqdm import tqdm
 import json
 
+
+def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt"):
+    device_id = 0
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    torch.cuda.set_device(device_id)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+    model = SwinUNETR(
+        img_size=target_size,
+        in_channels=1,
+        out_channels=1,
+        feature_size=48,
+        use_checkpoint=True,
+    ).to(device)
+
+    if model_path == "model_swinvit.pt":
+        weight = torch.load("model_swinvit.pt")
+        model.load_from(weight)
+    else:
+        weight = torch.load(model_path)
+        model.load_state_dict(weight)
+    
+    print("Loaded weight keys:", weight.keys())
+    model = model.to('cuda')
+    print("Using pretrained self-supervied Swin UNETR backbone weights !")
+    return model
 
 def plot_multiple_losses(train_losses, step_interval):
     """
