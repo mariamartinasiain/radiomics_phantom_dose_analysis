@@ -119,7 +119,7 @@ class OrthogonalityLoss:
 
 class Train:
     
-    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth'):
+    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth',ortho_reg=0.1):
         self.model = model
         self.in_channels = 1
         self.classifier = classifier
@@ -132,6 +132,7 @@ class Train:
         self.device = get_device()
         self.recons_loss = ReconstructionLoss(ssim_weight=5).to(self.device)
         self.acc_metric = acc_metric
+        self.ortho_reg = ortho_reg
         self.batch_size = data_loader['train'].batch_size
         self.dataset = dataset['train']
         self.testdataset = dataset['test']
@@ -334,7 +335,7 @@ class Train:
 
         if self.epoch >= 0:
             self.losses_dict['total_loss'] = \
-            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.losses_dict['orthogonality_loss']
+            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.ortho_reg*self.losses_dict['orthogonality_loss']
         else:
             self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
 
@@ -755,7 +756,7 @@ def main():
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = ThreadDataLoader(train_dataset, batch_size=16, shuffle=True,collate_fn=custom_collate_fn)
