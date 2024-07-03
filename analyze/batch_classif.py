@@ -17,11 +17,10 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'pyradiomics': (86),
-    'swinunetr_full_averaged' : (768), 
-    'oscar_full' : (2048),
+    'small_paper_contrastive_ortho_features': (272),
+    'large_paper_contrastive_ortho_features' : (2800), 
 }
-classif_types = ['scanner']
+classif_types = ['scanner','roi_large']
 mg_filters = [None]
 for classif_type in classif_types:
     for mg_filter in mg_filters:
