@@ -253,7 +253,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
 
 
 def main():
-    model = get_model()
+    model = get_model(model_path="rois_contrastive_classif_ortho.pth")
     run_inference(model)
 
 if __name__ == "__main__":
