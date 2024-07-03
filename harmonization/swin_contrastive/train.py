@@ -118,8 +118,7 @@ class OrthogonalityLoss:
         return L
 
 class Train:
-    
-    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth',ortho_reg=0.1):
+    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth',ortho_reg=0.05):
         self.model = model
         self.in_channels = 1
         self.classifier = classifier
@@ -333,9 +332,12 @@ class Train:
         #self.reconstruction_step(reconstructed_imgs, imgs_s) 
         self.losses_dict['reconstruction_loss'] = 0.0
 
-        if self.epoch >= 0:
+        if self.epoch >= 5:
             self.losses_dict['total_loss'] = \
             self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.ortho_reg*self.losses_dict['orthogonality_loss']
+        elif self.epoch >= 2:
+            self.losses_dict['total_loss'] = \
+            self.losses_dict['classification_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss']
         else:
             self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
 
@@ -772,7 +774,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="rois_contrastive_classif_ortho.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="rois_contrastive_classif_ortho_001_regularized.pth")
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
