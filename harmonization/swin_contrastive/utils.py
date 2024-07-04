@@ -21,9 +21,16 @@ import uuid
 import datetime
 from tqdm import tqdm
 import json
-
-
 import random
+
+
+def load_forbidden_boxes(filename):
+    forbidden_boxes = []
+    with open(filename, 'r') as f:
+        for line in f:
+            pos = [int(x) for x in line.strip().split(',')]
+            forbidden_boxes.append((pos, [64, 64, 32]))  # Ajout de la taille fixe
+    return forbidden_boxes
 
 def sample_subboxes(box_list, big_box_size, subbox_size, num_samples):
     def overlaps(pos, size):
@@ -57,6 +64,17 @@ def sample_and_save_subboxes(box_list, big_box_size, subbox_size, num_samples, o
         json.dump(valid_positions, f)
     
     return json_filename
+
+def process_forbidden_boxes_and_sample(forbidden_boxes_file, big_box_size, subbox_size, num_samples, output_dir, filename_prefix):
+    # Charger les boîtes interdites
+    forbidden_boxes = load_forbidden_boxes(forbidden_boxes_file)
+    
+    # Échantillonner et sauvegarder les sous-boîtes valides
+    json_filename = sample_and_save_subboxes(forbidden_boxes, big_box_size, subbox_size, num_samples, output_dir, filename_prefix)
+    
+    return json_filename
+
+
 
 def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt"):
     device_id = 0
@@ -279,6 +297,19 @@ def registration(jsonpath, device_id=0):
     
     print(f"All transformed images have been saved in the directory: {output_dir}")
 
+# if __name__ == "__main__":
+#     jsonpath = "merged_studies_map.json"  
+#     registration(jsonpath)
+    
 if __name__ == "__main__":
-    jsonpath = "merged_studies_map.json"  
-    registration(jsonpath)
+    forbidden_boxes_file = "boxpos.txt"
+    big_box_size = [512, 512, 343]  
+    subbox_size = [64, 64, 32]  
+    num_samples = 10
+    output_dir = "output"
+    filename_prefix = "valid_positions"
+
+    result_file = process_forbidden_boxes_and_sample(
+        forbidden_boxes_file, big_box_size, subbox_size, num_samples, output_dir, filename_prefix
+    )
+    print(f"Les positions valides ont été sauvegardées dans : {result_file}")
