@@ -305,7 +305,7 @@ if __name__ == "__main__":
     forbidden_boxes_file = "boxpos.txt"
     big_box_size = [512, 512, 343]  
     subbox_size = [64, 64, 32]  
-    num_samples = 10
+    num_samples = 1000
     output_dir = "output"
     filename_prefix = "valid_positions"
 
