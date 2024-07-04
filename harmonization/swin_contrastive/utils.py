@@ -48,64 +48,42 @@ def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt"):
 
 def plot_multiple_losses(train_losses, step_interval):
     """
-    Plots the contrastive, classification, reconstruction, and total losses over the training steps.
+    Plots the contrastive, classification, reconstruction, orthogonality, and total losses over the training steps.
     """
+    fig, axs = plt.subplots(3, 2, figsize=(15, 15))
+    loss_types = ['contrast_losses', 'classification_losses', 'reconstruction_losses', 'orthogonality_losses', 'total_losses']
     
-    step_interval = step_interval
-
-    points = len(train_losses['contrast_losses'])
-    steps = np.arange(0, points * step_interval, step_interval)
-    contrast_losses = [loss.detach().numpy() for loss in train_losses['contrast_losses']]
+    for i, loss_type in enumerate(loss_types):
+        losses = train_losses[loss_type]
+        if losses:  # Check if the list is not empty
+            points = len(losses)
+            steps = np.arange(0, points * step_interval, step_interval)
+            
+            # Convert losses to numpy array, handling both tensor and float cases
+            losses_np = np.array([loss.detach().cpu().numpy() if hasattr(loss, 'detach') else loss for loss in losses])
+            
+            row = i // 2
+            col = i % 2
+            axs[row, col].plot(steps, losses_np, label=f'{loss_type.capitalize()}')
+            axs[row, col].set_title(f'{loss_type.capitalize()}')
+            axs[row, col].set_xlabel('Steps')
+            axs[row, col].set_ylabel('Loss')
+            axs[row, col].legend()
     
-    fig, ax = plt.subplots(2, 2, figsize=(15, 10))
-
-    ax[0, 0].plot(steps, contrast_losses, label='Contrastive Loss')
-    ax[0, 0].set_title('Contrastive Loss')
-    ax[0, 0].set_xlabel('Steps')
-    ax[0, 0].set_ylabel('Loss')
-    ax[0, 0].legend()
-
-    points = len(train_losses['classification_losses'])
-    steps = np.arange(0, points * step_interval, step_interval)
-    classification_losses = [loss.detach().numpy() for loss in train_losses['classification_losses']]
-
-    ax[0, 1].plot(steps, classification_losses, label='Classification Loss')
-    ax[0, 1].set_title('Classification Loss')
-    ax[0, 1].set_xlabel('Steps')
-    ax[0, 1].set_ylabel('Loss')
-    ax[0, 1].legend()
-
-    points = len(train_losses['reconstruction_losses'])
-    steps = np.arange(0, points * step_interval, step_interval)
-    reconstruction_losses = [loss.detach().numpy() for loss in train_losses['reconstruction_losses']]
-
-    ax[1, 0].plot(steps, reconstruction_losses, label='Reconstruction Loss')
-    ax[1, 0].set_title('Reconstruction Loss')
-    ax[1, 0].set_xlabel('Steps')
-    ax[1, 0].set_ylabel('Loss')
-    ax[1, 0].legend()
-
-    points = len(train_losses['total_losses'])
-    steps = np.arange(0, points * step_interval, step_interval)
-    total_losses = [loss.detach().numpy() for loss in train_losses['total_losses']]
-
-    ax[1, 1].plot(steps, total_losses, label='Total Loss')
-    ax[1, 1].set_title('Total Loss')
-    ax[1, 1].set_xlabel('Steps')
-    ax[1, 1].set_ylabel('Loss')
-    ax[1, 1].legend()
-
+    # Remove the unused subplot
+    fig.delaxes(axs[2, 1])
+    
     plt.tight_layout()
     plt.savefig('losses_plot.png')
-    plt.show()
+    plt.close(fig)  # Close the figure to free up memory
 
 def convert_to_serializable(obj):
-        if isinstance(obj, torch.Tensor):
-            return obj.tolist()  # Convert tensor to list
-        elif isinstance(obj, list):
-            return [convert_to_serializable(item) for item in obj]
-        else:
-            return obj
+    if isinstance(obj, torch.Tensor):
+        return obj.detach().cpu().tolist()  # Convert tensor to list
+    elif isinstance(obj, list):
+        return [convert_to_serializable(item) for item in obj]
+    else:
+        return obj
 
 def save_losses(train_losses, output_dir):
     #serializable_val_losses = convert_to_serializable(self.val_losses)
