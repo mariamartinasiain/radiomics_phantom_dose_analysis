@@ -144,8 +144,9 @@ class CropOnROI(Crop):
     def __init__(self, roi,size, lazy=False):
         super().__init__(lazy)
         self.output_file = "boxpos.txt"
-        center = self.compute_center(roi)
         self.lock = threading.Lock()
+        center = self.compute_center(roi)
+        
         self.slices = self.compute_slices(
             roi_center=center, roi_size=size, roi_start=None, roi_end=None, roi_slices=None
         )
