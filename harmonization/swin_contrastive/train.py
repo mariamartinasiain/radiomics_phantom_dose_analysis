@@ -338,11 +338,11 @@ class Train:
             #self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + 
             #self.losses_dict['classification_loss'] + 
         elif self.epoch >= 2:
-            self.losses_dict['total_loss'] = 0 #\
+            self.losses_dict['total_loss'] = torch.tensor(0.0, requires_grad=True) #\
             #self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss']
             #self.losses_dict['classification_loss'] +
         else:
-            self.losses_dict['total_loss'] = 0 #self.losses_dict['contrast_loss']
+            self.losses_dict['total_loss'] = torch.tensor(0.0, requires_grad=True) #self.losses_dict['contrast_loss']
 
         self.losses_dict['total_loss'].backward()
         self.optimizer.step()
