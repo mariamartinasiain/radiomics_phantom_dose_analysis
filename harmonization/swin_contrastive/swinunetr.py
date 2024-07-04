@@ -18,6 +18,7 @@ from monai.inferers import sliding_window_inference
 from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type
 from monai.transforms.transform import LazyTransform, MapTransform
 from monai.utils import ensure_tuple,convert_to_tensor
+import threading
 from monai.transforms.croppad.array import Crop
 from torch.utils.data._utils.collate import default_collate
 from monai.transforms import (
@@ -144,6 +145,7 @@ class CropOnROI(Crop):
         super().__init__(lazy)
         self.output_file = "boxpos.txt"
         center = self.compute_center(roi)
+        self.lock = threading.Lock()
         self.slices = self.compute_slices(
             roi_center=center, roi_size=size, roi_start=None, roi_end=None, roi_slices=None
         )
