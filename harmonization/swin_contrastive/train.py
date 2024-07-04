@@ -771,10 +771,10 @@ def main():
     
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) #i didnt add the decoder params so they didnt get updated
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 50,dataset,contrastive_latentsize=700,savename="rois_contrastive_classif_ortho_001_regularized.pth")
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="rois_contrastive_classif_ortho_0001_regularized.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
