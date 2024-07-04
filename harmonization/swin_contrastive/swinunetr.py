@@ -187,7 +187,7 @@ class CopyPathd(MapTransform):
             data[f"{key}_path"] = data[key]  # Copier le chemin du fichier dans une nouvelle clé
         return data
 
-def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
+def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json"):
     
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
@@ -218,7 +218,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open("paper_contrastive_ortho_features.csv", "w", newline="") as csvfile:
+    with open("paper_contrastzerzerzerive_ortho_features.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
