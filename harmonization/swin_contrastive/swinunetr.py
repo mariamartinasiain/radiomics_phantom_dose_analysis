@@ -125,8 +125,8 @@ class CropOnROI(Crop):
         # update box_start and box_end
         box_start_ = box_start_ - np.floor_divide(np.asarray(spatial_size) - orig_spatial_size, 2)
         box_end_ = box_start_ + spatial_size
-        #print("BOX START",box_start_)
-        #print("BOX END",box_end_)
+        print("BOX START",box_start_)
+        print("BOX END",box_end_)
         #print("bouding box size",spatial_size)
         self.write_box_start(box_start_)
         
