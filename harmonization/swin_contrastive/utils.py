@@ -17,9 +17,46 @@ import numpy as np
 from monai.transforms import Compose, EnsureTyped
 from monai.data import Dataset, DataLoader
 from monai.networks.nets import SwinUNETR
+import uuid
+import datetime
 from tqdm import tqdm
 import json
 
+
+import random
+
+def sample_subboxes(box_list, big_box_size, subbox_size, num_samples):
+    def overlaps(pos, size):
+        for box in box_list:
+            b_pos, b_size = box
+            if all(p < b_p + b_s and b_p < p + s for p, b_p, s, b_s in zip(pos, b_pos, size, b_size)):
+                return True
+        return False
+
+    valid_positions = []
+    attempts = 0
+    max_attempts = num_samples * 100
+
+    while len(valid_positions) < num_samples and attempts < max_attempts:
+        pos = [random.randint(0, big - sub) for big, sub in zip(big_box_size, subbox_size)]
+        
+        if not overlaps(pos, subbox_size):
+            valid_positions.append(pos)
+        
+        attempts += 1
+
+    return valid_positions
+
+def sample_and_save_subboxes(box_list, big_box_size, subbox_size, num_samples, output_dir, filename_prefix):
+    valid_positions = sample_subboxes(box_list, big_box_size, subbox_size, num_samples)
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    json_filename = os.path.join(output_dir, f"{filename_prefix}_positions.json")
+    with open(json_filename, 'w') as f:
+        json.dump(valid_positions, f)
+    
+    return json_filename
 
 def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt"):
     device_id = 0
@@ -74,7 +111,10 @@ def plot_multiple_losses(train_losses, step_interval):
     fig.delaxes(axs[2, 1])
     
     plt.tight_layout()
-    plt.savefig('losses_plot.png')
+    unique_id = uuid.uuid4().hex[:8]  
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f'losses_plot_{timestamp}_{unique_id}.png'
+    plt.savefig(filename)
     plt.close(fig)  # Close the figure to free up memory
 
 def convert_to_serializable(obj):

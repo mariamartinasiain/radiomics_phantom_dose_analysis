@@ -128,12 +128,21 @@ class CropOnROI(Crop):
         #print("BOX START",box_start_)
         #print("BOX END",box_end_)
         #print("bouding box size",spatial_size)
+        self.write_box_start(box_start_)
+        
         mid_point = np.floor((box_start_ + box_end_) / 2)
         #print("MID POINT",mid_point)
         return mid_point
     
+    def write_box_start(self, box_start):
+        with self.lock:
+            with open(self.output_file, 'a') as f:
+                f.write(f"{box_start[0]},{box_start[1]},{box_start[2]}\n")
+
+    
     def __init__(self, roi,size, lazy=False):
         super().__init__(lazy)
+        self.output_file = "boxpos.txt"
         center = self.compute_center(roi)
         self.slices = self.compute_slices(
             roi_center=center, roi_size=size, roi_start=None, roi_end=None, roi_slices=None
@@ -188,7 +197,9 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
-        LoadImaged(keys=["image"], ensure_channel_first=True),
+        LoadImaged(keys=["image","roi"], ensure_channel_first=True),
+        DebugTransform(),
+        CropOnROId(keys=["image"],roi_key="roi",size=target_size),
         # ScaleIntensityd(keys=["image"],minv=0.0, maxv=1.0),
         # Spacingd(
         #     keys=["image"],
@@ -202,7 +213,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json"):
 
     datafiles = load_data(jsonpath)
     #dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=0.009, progress=True, num_init_workers=8, num_replace_workers=8)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    dataset = SmartCacheDataset(data=datafiles, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     print("dataset length: ", len(datafiles))
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
