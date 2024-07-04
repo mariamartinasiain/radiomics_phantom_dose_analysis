@@ -23,6 +23,21 @@ from tqdm import tqdm
 import json
 import random
 
+def load_subbox_positions(filename, order='XYZ'):
+    if filename.endswith('.npy'):
+        positions = np.load(filename)
+    elif filename.endswith('.json'):
+        with open(filename, 'r') as f:
+            positions = json.load(f)
+    else:
+        raise ValueError("Format de fichier non supporté. Utilisez .npy ou .json")
+    
+    if order.upper() == 'XYZ':
+        return positions
+    elif order.upper() == 'ZYX':
+        return [(p[2], p[1], p[0]) for p in positions]
+    else:
+        raise ValueError("Ordre non supporté. Utilisez 'XYZ' ou 'ZYX'")
 
 def load_forbidden_boxes(filename):
     forbidden_boxes = []
