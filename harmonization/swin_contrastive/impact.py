@@ -5,11 +5,52 @@ import csv
 from tqdm import tqdm
 from scipy.stats import ttest_rel
 
+import os
+import shutil
+import tempfile
+
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
+from monai.losses import DiceCELoss
+from monai.inferers import sliding_window_inference
+from monai.transforms import (
+    AsDiscrete,
+    Compose,
+    CropForegroundd,
+    LoadImaged,
+    Orientationd,
+    RandFlipd,
+    RandCropByPosNegLabeld,
+    RandShiftIntensityd,
+    ScaleIntensityRanged,
+    Spacingd,
+    RandRotate90d,
+    EnsureTyped,
+)
+
+from monai.config import print_config
+from monai.metrics import DiceMetric
+from monai.networks.nets import SwinUNETR
+
+from monai.data import (
+    ThreadDataLoader,
+    CacheDataset,
+    load_decathlon_datalist,
+    decollate_batch,
+    set_track_meta,
+)
+
+
+import torch
+
+print_config()
+
 from monai.transforms import Compose, LoadImaged, ScaleIntensityRanged, EnsureTyped
 from monai.data import SmartCacheDataset, DataLoader
 from monai.losses import DiceCELoss
 from swin_contrastive.swinunetr import  custom_collate_fn, get_model,load_data
-from swin_contrastive.train import Train
+from swin_contrastive.train import Train, get_device
 from monai.config import print_config
 import torch
 
@@ -25,11 +66,13 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
     losses = [[] for _ in models]
     dataset = val_ds
     dataload = val_loader
-    #qq chose comme testload = DataLoader(da.....
-
     dataset.start()
-    i=0
-    iterator = iter(dataload)
+
+    post_label = AsDiscrete(to_onehot=14)
+    post_pred = AsDiscrete(argmax=True, to_onehot=14)
+    dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
+    epoch_iterator_val = tqdm(dataload, desc="Validate (X / X Steps) (dice=X.X)", dynamic_ncols=True)
+    
     for i,model in enumerate(models):
         with torch.no_grad():
             for batch in epoch_iterator_val:
@@ -41,10 +84,12 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 val_outputs_list = decollate_batch(val_outputs)
                 val_output_convert = [post_pred(val_pred_tensor) for val_pred_tensor in val_outputs_list]
                 dice_metric(y_pred=val_output_convert, y=val_labels_convert)
-                epoch_iterator_val.set_description("Validate (%d / %d Steps)" % (global_step, 10.0))  # noqa: B038
             mean_dice_val = dice_metric.aggregate().item()
             dice_metric.reset()
         losses[i].append(mean_dice_val)   
+        
+    dataset.shutdown()
+    
     print("Done !")
     return losses
 
@@ -101,8 +146,10 @@ def compare_losses(losses,output_file="comparison_results.txt"):
 
 def compare(jsonpath="./dataset_forgetting_test.json"):
     print_config()
-    model1 = get_model(model_path = path1)
-    model2 = get_model(model_path = path2)
+    model1 = get_model(model_path = "model_swinvit.pt") 
+    model2 = get_model(model_path = "rois_contrastive_classif_ortho.pth")
+    device = get_device()
+    num_samples = 2
     # trainer= Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="rois_ortho_0001_regularized.pth",ortho_reg=0.001)
     #trainer.train()
     train_transforms = Compose(
@@ -190,7 +237,7 @@ def compare(jsonpath="./dataset_forgetting_test.json"):
         num_workers=8,
     )
     train_loader = ThreadDataLoader(train_ds, num_workers=0, batch_size=1, shuffle=True)
-    val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_num=6, cache_rate=1.0, num_workers=4)
+    val_ds = SmartCacheDataset(data=val_files, transform=val_transforms, cache_num=6, cache_rate=1.0, num_workers=4)
     val_loader = ThreadDataLoader(val_ds, num_workers=0, batch_size=1)
 
     set_track_meta(False)
