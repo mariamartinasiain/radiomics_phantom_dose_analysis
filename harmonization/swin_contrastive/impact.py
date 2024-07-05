@@ -30,16 +30,21 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
     dataset.start()
     i=0
     iterator = iter(dataload)
-    for _ in tqdm(range(len(datafiles))):
-        batch = next(iterator)               
-        image,y = (batch["image"],batch["label"].cuda())
-        val_inputs = image.cuda()
-        print(val_inputs.shape)
-        for i,model in enumerate(models):
-            logit_map = model(val_inputs)
-            loss = loss_function(logit_map, y)
-            losses[i].append(loss.item())
-            
+    for i,model in enumerate(models):
+        with torch.no_grad():
+            for batch in epoch_iterator_val:
+                val_inputs, val_labels = (batch["image"].cuda(), batch["label"].cuda())
+                with torch.cuda.amp.autocast():
+                    val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
+                val_labels_list = decollate_batch(val_labels)
+                val_labels_convert = [post_label(val_label_tensor) for val_label_tensor in val_labels_list]
+                val_outputs_list = decollate_batch(val_outputs)
+                val_output_convert = [post_pred(val_pred_tensor) for val_pred_tensor in val_outputs_list]
+                dice_metric(y_pred=val_output_convert, y=val_labels_convert)
+                epoch_iterator_val.set_description("Validate (%d / %d Steps)" % (global_step, 10.0))  # noqa: B038
+            mean_dice_val = dice_metric.aggregate().item()
+            dice_metric.reset()
+        losses[i].append(mean_dice_val)   
     print("Done !")
     return losses
 
