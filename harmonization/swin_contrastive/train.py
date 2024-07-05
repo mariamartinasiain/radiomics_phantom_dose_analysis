@@ -118,7 +118,7 @@ class OrthogonalityLoss:
         return L
 
 class Train:
-    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth',ortho_reg=0.05):
+    def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth',ortho_reg=0.05,to_compare=False):
         self.model = model
         self.in_channels = 1
         self.classifier = classifier
@@ -139,15 +139,22 @@ class Train:
         self.save_name = savename
         self.reconstruct = self.get_reconstruction_model()
         self.reference_embeddings_2d = None
-        
+        self.to_compare = to_compare
         #quick fix to load reconstruction model
         #self.load_reconstruction_model('FT_whole_RECONSTRUCTION_model_reconstruction.pth')
+        
 
         # Orthogonality loss
         self.orth_loss = OrthogonalityLoss(batch_size=self.batch_size, num_feature_maps=768, feature_shape=(2, 2, 1), device=self.device, split=self.contrastive_latentsize)
         
         #quick fix to train decoder only
         #self.optimizer = optim.Adam(self.reconstruct.parameters(), lr=1e-3) #ajouter tout
+        
+        if self.to_compare:
+            from monai.losses import DiceCELoss
+            non_swinvit_params = [p for name, p in model.named_parameters() if not name.startswith('swinViT')]
+            optimizer = torch.optim.AdamW(non_swinvit_params, lr=1e-4, weight_decay=1e-5)
+            self.diceloss = DiceCELoss(to_onehot_y=True, softmax=True)
         
         self.epoch = 0
         self.log_summary_interval = 5
@@ -285,6 +292,8 @@ class Train:
         all_labels = batch["roi_label"].cuda()
         ids = all_labels
         scanner_labels = batch["scanner_label"].cuda()
+        if self.to_compare:
+            seglab = batch["label"].cuda()
         
 
         # encoder inference
@@ -332,17 +341,22 @@ class Train:
         #self.reconstruction_step(reconstructed_imgs, imgs_s) 
         self.losses_dict['reconstruction_loss'] = 0.0
 
-        if self.epoch >= 5:
-            self.losses_dict['total_loss'] = \
-            self.ortho_reg*self.losses_dict['orthogonality_loss']
-            #self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + 
-            #self.losses_dict['classification_loss'] + 
-        elif self.epoch >= 2:
-            self.losses_dict['total_loss'] = self.ortho_reg*self.losses_dict['orthogonality_loss'] + torch.tensor(0.0, requires_grad=True) #\
-            #self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss']
-            #self.losses_dict['classification_loss'] +
+        if not self.to_compare:
+            if self.epoch >= 5:
+                self.losses_dict['total_loss'] = \
+                self.ortho_reg*self.losses_dict['orthogonality_loss']
+                #self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + 
+                #self.losses_dict['classification_loss'] + 
+            elif self.epoch >= 2:
+                self.losses_dict['total_loss'] = self.ortho_reg*self.losses_dict['orthogonality_loss'] + torch.tensor(0.0, requires_grad=True) #\
+                #self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss']
+                #self.losses_dict['classification_loss'] +
+            else:
+                self.losses_dict['total_loss'] = self.ortho_reg*self.losses_dict['orthogonality_loss'] + torch.tensor(0.0, requires_grad=True) #self.losses_dict['contrast_loss']
         else:
-            self.losses_dict['total_loss'] = self.ortho_reg*self.losses_dict['orthogonality_loss'] + torch.tensor(0.0, requires_grad=True) #self.losses_dict['contrast_loss']
+            logit_map = self.model(imgs_s)
+            lossdice = self.diceloss(logit_map, seglab)
+            self.losses_dict['total_loss'] = lossdice
 
         self.losses_dict['total_loss'].backward()
         self.optimizer.step()

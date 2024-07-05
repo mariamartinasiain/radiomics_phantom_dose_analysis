@@ -9,38 +9,22 @@ from monai.transforms import Compose, LoadImaged, ScaleIntensityRanged, EnsureTy
 from monai.data import SmartCacheDataset, DataLoader
 from monai.losses import DiceCELoss
 from swin_contrastive.swinunetr import  custom_collate_fn, get_model,load_data
+from swin_contrastive.train import Train
 from monai.config import print_config
 import torch
 
 
 
-def run_testing(models,jsonpath = "./dataset_forgetting_test.json"):
+def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,val_loader=None):
     print_config()
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
     torch.cuda.set_device(device_id)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    transforms = Compose([
-        LoadImaged(keys=["image", "label"], ensure_channel_first=True),
-        ScaleIntensityRanged(
-            keys=["image"],
-            a_min=-175,
-            a_max=250,
-            b_min=0.0,
-            b_max=1.0,
-            clip=True,
-        ),
-        EnsureTyped(keys=["image", "label"], device=device, track_meta=False),
-    ])
-
     loss_function = DiceCELoss(to_onehot_y=True, softmax=True)
     losses = [[] for _ in models]
-    
-    datafiles = load_data(jsonpath)
-    dataset = SmartCacheDataset(data=datafiles, transform=transforms, cache_rate=1, progress=True, num_init_workers=8, num_replace_workers=8)
-    print("dataset length: ", len(datafiles))
-    dataload = DataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn, num_workers=4)
+    dataset = val_ds
+    dataload = val_loader
     #qq chose comme testload = DataLoader(da.....
 
     dataset.start()
@@ -112,9 +96,119 @@ def compare_losses(losses,output_file="comparison_results.txt"):
 
 def compare(jsonpath="./dataset_forgetting_test.json"):
     print_config()
-    model1 = get_model(path1)
-    model2 = get_model(path2)
+    model1 = get_model(model_path = path1)
+    model2 = get_model(model_path = path2)
+    # trainer= Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="rois_ortho_0001_regularized.pth",ortho_reg=0.001)
+    #trainer.train()
+    train_transforms = Compose(
+        [
+            LoadImaged(keys=["image", "label"], ensure_channel_first=True),
+            ScaleIntensityRanged(
+                keys=["image"],
+                a_min=-175,
+                a_max=250,
+                b_min=0.0,
+                b_max=1.0,
+                clip=True,
+            ),
+            CropForegroundd(keys=["image", "label"], source_key="image"),
+            Orientationd(keys=["image", "label"], axcodes="RAS"),
+            Spacingd(
+                keys=["image", "label"],
+                pixdim=(1.5, 1.5, 2.0),
+                mode=("bilinear", "nearest"),
+            ),
+            EnsureTyped(keys=["image", "label"], device=device, track_meta=False),
+            RandCropByPosNegLabeld(
+                keys=["image", "label"],
+                label_key="label",
+                spatial_size=(96, 96, 96),
+                pos=1,
+                neg=1,
+                num_samples=num_samples,
+                image_key="image",
+                image_threshold=0,
+            ),
+            RandFlipd(
+                keys=["image", "label"],
+                spatial_axis=[0],
+                prob=0.10,
+            ),
+            RandFlipd(
+                keys=["image", "label"],
+                spatial_axis=[1],
+                prob=0.10,
+            ),
+            RandFlipd(
+                keys=["image", "label"],
+                spatial_axis=[2],
+                prob=0.10,
+            ),
+            RandRotate90d(
+                keys=["image", "label"],
+                prob=0.10,
+                max_k=3,
+            ),
+            RandShiftIntensityd(
+                keys=["image"],
+                offsets=0.10,
+                prob=0.50,
+            ),
+        ]
+    )
+    val_transforms = Compose(
+        [
+            LoadImaged(keys=["image", "label"], ensure_channel_first=True),
+            ScaleIntensityRanged(keys=["image"], a_min=-175, a_max=250, b_min=0.0, b_max=1.0, clip=True),
+            CropForegroundd(keys=["image", "label"], source_key="image"),
+            Orientationd(keys=["image", "label"], axcodes="RAS"),
+            Spacingd(
+                keys=["image", "label"],
+                pixdim=(1.5, 1.5, 2.0),
+                mode=("bilinear", "nearest"),
+            ),
+            EnsureTyped(keys=["image", "label"], device=device, track_meta=True),
+        ]
+    )
+    
+    data_dir = "data/"
+    split_json = "dataset_0.json"
+
+    datasets = data_dir + split_json
+    datalist = load_decathlon_datalist(datasets, True, "training")
+    val_files = load_decathlon_datalist(datasets, True, "validation")
+    train_ds = SmartCacheDataset(
+        data=datalist,
+        transform=train_transforms,
+        cache_num=24,
+        cache_rate=1.0,
+        num_workers=8,
+    )
+    train_loader = ThreadDataLoader(train_ds, num_workers=0, batch_size=1, shuffle=True)
+    val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_num=6, cache_rate=1.0, num_workers=4)
+    val_loader = ThreadDataLoader(val_ds, num_workers=0, batch_size=1)
+
+    set_track_meta(False)
+    
+    data_loader = {"train": train_loader, "val": val_loader}
+    dataset = {"train": train_ds, "val": val_ds}
+    optimizer = torch.optim.Adam(model1.parameters(), 1e-4)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
+    
+    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation.pth")
+    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation.pth")
+    
+    print("Training Baseline Model")
+    t1.train()
+    
+    print("Training Finetuned Model")
+    t2.train()
+    
+    model1 = get_model(model_path = "baseline_segmentation.pth")
+    model2 = get_model(model_path = "finetuned_segmentation.pth")
+    
     #model1 is the base model and model2 is the finetuned model to be compared
     models = [model1,model2]
-    losses = run_testing(models,jsonpath)
+    
+    losses = run_testing(models,jsonpath,val_ds,val_loader)
     compare_losses(losses)
