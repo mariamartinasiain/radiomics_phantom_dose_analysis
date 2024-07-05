@@ -299,14 +299,14 @@ class Train:
         #print("nlatents[4] size",nlatents[4].size())
         
         #print("ids size",ids.size())
-        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+        #self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
         #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
         
-        features = torch.mean(bottleneck, dim=(2, 3, 4))
-        accu = self.classification_step(features, scanner_labels)
+        #features = torch.mean(bottleneck, dim=(2, 3, 4))
+        #accu = self.classification_step(features, scanner_labels)
         #print(f"Train Accuracy: {accu}%")
-        #accu = 0
-        #self.losses_dict['classification_loss'] = 0.0
+        accu = 0
+        self.losses_dict['classification_loss'] = 0.0
 
         # Orthogonality loss
         self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
