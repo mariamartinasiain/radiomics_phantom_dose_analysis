@@ -202,9 +202,9 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
     print_config()
     target_size = (64, 64, 32)
     transforms = Compose([
-        LoadImaged(keys=["image","roi"], ensure_channel_first=True),
-        DebugTransform(),
-        CropOnROId(keys=["image"],roi_key="roi",size=target_size),
+        LoadImaged(keys=["image"], ensure_channel_first=True),
+        #DebugTransform(),
+        ##ropOnROId(keys=["image"],roi_key="roi",size=target_size),
         # ScaleIntensityd(keys=["image"],minv=0.0, maxv=1.0),
         # Spacingd(
         #     keys=["image"],
