@@ -342,14 +342,18 @@ class Train:
         self.losses_dict['reconstruction_loss'] = 0.0
 
         if not self.to_compare:
-            if self.epoch >= 5:
-                self.losses_dict['total_loss'] = \
-                self.ortho_reg*self.losses_dict['orthogonality_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] +  self.losses_dict['classification_loss'] 
-            elif self.epoch >= 2:
-                self.losses_dict['total_loss'] = \
-                self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.losses_dict['classification_loss'] 
-            else:
-                self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
+            # if self.epoch >= 5:
+            #     self.losses_dict['total_loss'] = \
+            #     self.ortho_reg*self.losses_dict['orthogonality_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] +  self.losses_dict['classification_loss'] 
+            # 
+            # elif self.epoch >= 2:
+            #     self.losses_dict['total_loss'] = \
+            #     self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.losses_dict['classification_loss'] 
+            # else:
+            #     self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
+            self.losses_dict['total_loss'] = \
+            self.ortho_reg*self.losses_dict['orthogonality_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] +  self.losses_dict['classification_loss'] 
+            
         else:
             logit_map = self.model(imgs_s)
             lossdice = self.diceloss(logit_map, seglab)
@@ -789,7 +793,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="rois_contrastive_classif_ortho_0001_regularized.pth",ortho_reg=0.001)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="rois_contrastive_classif_ortho_0001.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
