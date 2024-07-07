@@ -267,7 +267,7 @@ def run_inference(model,jsonpath = "./dataset_info_full_uncompressed_NAS.json",f
 
 
 def main():
-    fname = "rois_contrastive_classif_ortho_0001_features"
+    fname = "rois_contrastive_classif_ortho_0001"
     model = get_model(model_path=f"{fname}.pth")
     run_inference(model,fname = fname)
 
