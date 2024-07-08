@@ -285,7 +285,7 @@ class Train:
         #ids = batch["uids"].cuda()
         print("imgs_s size",imgs_s.size())
         #print("ids size",ids.size())
-        imgs_s = imgs_s.view(imgs_s.shape[0] * imgs_s.shape[1],1, 64, 64, 32) 
+        imgs_s = imgs_s.view(imgs_s.shape[0] * imgs_s.shape[1],1, imgs_s.shape[2], imgs_s.shape[3], imgs_s.shape[4]) 
         #ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
         print("imgs_s size",imgs_s.size())
         #print("ids size",ids.size())
