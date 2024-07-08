@@ -49,8 +49,8 @@ print_config()
 from monai.transforms import Compose, LoadImaged, ScaleIntensityRanged, EnsureTyped
 from monai.data import SmartCacheDataset, DataLoader
 from monai.losses import DiceCELoss
-from swin_contrastive.swinunetr import  custom_collate_fn, get_model,load_data
-from swin_contrastive.train import Train, get_device
+from harmonization.swin_contrastive.swinunetr import  custom_collate_fn, get_model,load_data
+from harmonization.swin_contrastive.train import Train, get_device
 from monai.config import print_config
 import torch
 
