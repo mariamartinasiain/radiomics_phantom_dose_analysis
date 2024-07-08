@@ -360,6 +360,7 @@ class Train:
             logit_map = self.model(imgs_s)
             lossdice = self.diceloss(logit_map, seglab)
             self.losses_dict['total_loss'] = lossdice
+            accu = 0
 
         self.losses_dict['total_loss'].backward()
         self.optimizer.step()
