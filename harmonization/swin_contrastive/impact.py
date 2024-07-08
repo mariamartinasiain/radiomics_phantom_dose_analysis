@@ -152,6 +152,7 @@ def compare(jsonpath="./dataset_forgetting.json"):
     num_samples = 2
     # trainer= Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="rois_ortho_0001_regularized.pth",ortho_reg=0.001)
     #trainer.train()
+    print("Loading Data")
     train_transforms = Compose(
         [
             LoadImaged(keys=["image", "label"], ensure_channel_first=True),
@@ -234,12 +235,15 @@ def compare(jsonpath="./dataset_forgetting.json"):
         cache_rate=1.0,
         num_workers=8,
     )
+    print("Data Loaded")
     train_loader = ThreadDataLoader(train_ds, num_workers=0, batch_size=1, shuffle=True)
     val_ds = SmartCacheDataset(data=val_files, transform=val_transforms, cache_num=6, cache_rate=1.0, num_workers=4)
     val_loader = ThreadDataLoader(val_ds, num_workers=0, batch_size=1)
-
+    print("Data Loaded")
     set_track_meta(False)
     
+    
+    print("Data Loade and Transformed")
     data_loader = {"train": train_loader, "val": val_loader}
     dataset = {"train": train_ds, "val": val_ds}
     optimizer = torch.optim.Adam(model1.parameters(), 1e-4)
