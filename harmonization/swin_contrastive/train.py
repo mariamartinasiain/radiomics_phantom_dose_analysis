@@ -254,7 +254,11 @@ class Train:
             self.plot_losses()
         except Exception as e:
             print(f"Error plotting losses or creating gif")
-        return self.latents_t,self.labels_t,self.latents_v,self.labels_v,self.groups
+        try :
+            return self.latents_t,self.labels_t,self.latents_v,self.labels_v,self.groups
+        except Exception as e:
+            print(f"Error returning latents and labels: {e}")
+            return None,None,None,None,None
 
     def train_epoch(self):
         epoch_iterator = tqdm(self.train_loader, desc="Training (X / X Steps) (loss=X.X)", dynamic_ncols=True)
