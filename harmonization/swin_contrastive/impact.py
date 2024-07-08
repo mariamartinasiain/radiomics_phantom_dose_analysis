@@ -233,7 +233,6 @@ def compare(jsonpath="./dataset_forgetting.json"):
         transform=train_transforms,
         cache_num=24,
         cache_rate=1.0,
-        num_workers=8,
     )
     print("Data Loaded")
     train_loader = ThreadDataLoader(train_ds, num_workers=0, batch_size=1, shuffle=True)
