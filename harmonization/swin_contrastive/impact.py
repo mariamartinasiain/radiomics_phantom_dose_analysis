@@ -266,3 +266,6 @@ def compare(jsonpath="./dataset_forgetting.json"):
     
     losses = run_testing(models,jsonpath,val_ds,val_loader)
     compare_losses(losses)
+    
+if __name__ == "__main__":
+    compare()
