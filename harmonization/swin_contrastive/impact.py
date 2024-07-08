@@ -243,8 +243,8 @@ def compare(jsonpath="./dataset_forgetting.json"):
     
     
     print("Data Loade and Transformed")
-    data_loader = {"train": train_loader, "val": val_loader}
-    dataset = {"train": train_ds, "val": val_ds}
+    data_loader = {"train": train_loader, "test": val_loader}
+    dataset = {"train": train_ds, "test": val_ds}
     optimizer = torch.optim.Adam(model1.parameters(), 1e-4)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
     
