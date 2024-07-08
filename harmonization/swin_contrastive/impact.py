@@ -236,7 +236,7 @@ def compare(jsonpath="./dataset_forgetting.json"):
     )
     print("Data Loaded")
     train_loader = ThreadDataLoader(train_ds, num_workers=0, batch_size=1, shuffle=True)
-    val_ds = SmartCacheDataset(data=val_files, transform=val_transforms, cache_num=6, cache_rate=1.0, num_workers=4)
+    val_ds = SmartCacheDataset(data=val_files, transform=val_transforms, cache_num=6, cache_rate=1.0)
     val_loader = ThreadDataLoader(val_ds, num_workers=0, batch_size=1)
     print("Data Loaded")
     set_track_meta(False)
