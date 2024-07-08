@@ -144,7 +144,7 @@ def compare_losses(losses,output_file="comparison_results.txt"):
 
 
 
-def compare(jsonpath="./dataset_forgetting_test.json"):
+def compare(jsonpath="./dataset_forgetting.json"):
     print_config()
     model1 = get_model(model_path = "model_swinvit.pt") 
     model2 = get_model(model_path = "rois_contrastive_classif_ortho.pth")
@@ -223,10 +223,8 @@ def compare(jsonpath="./dataset_forgetting_test.json"):
         ]
     )
     
-    data_dir = "data/"
-    split_json = "dataset_0.json"
 
-    datasets = data_dir + split_json
+    datasets = jsonpath
     datalist = load_decathlon_datalist(datasets, True, "training")
     val_files = load_decathlon_datalist(datasets, True, "validation")
     train_ds = SmartCacheDataset(
@@ -247,8 +245,8 @@ def compare(jsonpath="./dataset_forgetting_test.json"):
     optimizer = torch.optim.Adam(model1.parameters(), 1e-4)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
     
-    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation.pth")
-    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation.pth")
+    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation.pth",to_compare=True)
+    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation.pth",to_compare=True)
     
     print("Training Baseline Model")
     t1.train()
