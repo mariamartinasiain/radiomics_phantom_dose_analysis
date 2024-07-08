@@ -768,7 +768,7 @@ def main():
     transforms = Compose([
         #PrintDebug(),
         #Resized(keys=["image"],spatial_size = (512,512,343)),
-        LoadImaged(keys=["image"]),
+        #LoadImaged(keys=["image"]),
         LazyPatchLoader(roi_size=[64, 64, 32]),
         #DebugTransform2(),
         EnsureChannelFirstd(keys=["image"]),
