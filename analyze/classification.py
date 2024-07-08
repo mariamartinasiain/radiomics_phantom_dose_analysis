@@ -174,7 +174,7 @@ def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_ty
         groups_train_all = groups[train_index]
         unique_train_groups = np.unique(groups_train_all)
         if classif_type == 'scanner':
-            it2 = range(9, 10)
+            it2 = range(1, 10)
         else:
             it2 = range(1, len(unique_train_groups)+1)
         for N in it2:
