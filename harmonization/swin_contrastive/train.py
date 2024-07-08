@@ -289,37 +289,39 @@ class Train:
         #ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
         print("imgs_s size",imgs_s.size())
         #print("ids size",ids.size())
-        all_labels = batch["roi_label"].cuda()
-        ids = all_labels
-        scanner_labels = batch["scanner_label"].cuda()
         if self.to_compare:
             seglab = batch["label"].cuda()
         
 
         # encoder inference
-        latents = self.model.swinViT(imgs_s)
-        
-        
-        #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
-        nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
-        nlatents = [latents[0], latents[1], latents[2], latents[3],0]
-        nlatents[4] = nlatents4
-        #print("bottleneck size",bottleneck.size())
-        #print("nlatents[4] size",nlatents[4].size())
-        
-        #print("ids size",ids.size())
-        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
-        #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
-        
-        features = torch.mean(bottleneck, dim=(2, 3, 4))
-        accu = self.classification_step(features, scanner_labels)
-        #print(f"Train Accuracy: {accu}%")
-        #accu = 0
-        #self.losses_dict['classification_loss'] = 0.0
+        if not self.to_compare:
+            all_labels = batch["roi_label"].cuda()
+            ids = all_labels
+            scanner_labels = batch["scanner_label"].cuda()
+            
+            latents = self.model.swinViT(imgs_s)
+            
+            
+            #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
+            nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
+            nlatents = [latents[0], latents[1], latents[2], latents[3],0]
+            nlatents[4] = nlatents4
+            #print("bottleneck size",bottleneck.size())
+            #print("nlatents[4] size",nlatents[4].size())
+            
+            #print("ids size",ids.size())
+            self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+            #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
+            
+            features = torch.mean(bottleneck, dim=(2, 3, 4))
+            accu = self.classification_step(features, scanner_labels)
+            #print(f"Train Accuracy: {accu}%")
+            #accu = 0
+            #self.losses_dict['classification_loss'] = 0.0
 
-        # Orthogonality loss
-        self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
-        print(f"Orthogonality Loss: {self.losses_dict['orthogonality_loss']}")
+            # Orthogonality loss
+            self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
+            print(f"Orthogonality Loss: {self.losses_dict['orthogonality_loss']}")
 
 
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
