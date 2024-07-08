@@ -358,7 +358,7 @@ class Train:
             # else:
             #     self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
             self.losses_dict['total_loss'] = \
-            self.ortho_reg*self.losses_dict['orthogonality_loss'] + self.losses_dict['reconstruction_loss']  
+            self.losses_dict['contrast_loss']  
             
         else:
             logit_map = self.model(imgs_s)
@@ -768,8 +768,8 @@ def main():
     transforms = Compose([
         #PrintDebug(),
         #Resized(keys=["image"],spatial_size = (512,512,343)),
-        #LazyPatchLoader(roi_size=[64, 64, 32]),
         LoadImaged(keys=["image"]),
+        LazyPatchLoader(roi_size=[64, 64, 32]),
         #DebugTransform2(),
         EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
@@ -783,7 +783,7 @@ def main():
 
     #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
 
-    jsonpath = "./dataset_info_cropped.json"
+    jsonpath = "./dataset_info_full_uncompressed_NAS.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
