@@ -7,7 +7,19 @@ import SimpleITK as sitk
 from monai.transforms import Compose, LoadImaged, EnsureTyped
 from monai.data import SmartCacheDataset, ThreadDataLoader
 from tqdm import tqdm
-
+import os
+import json
+from monai.transforms import (
+    Compose,
+    LoadImaged,
+    Resized,
+    EnsureTyped,
+    SaveImaged
+)
+from monai.data import Dataset, DataLoader, SmartCacheDataset
+from monai.utils import set_determinism
+import torch
+from tqdm import tqdm
 import os
 import json
 import torch
@@ -316,7 +328,7 @@ def registration(jsonpath, device_id=0):
 #     jsonpath = "merged_studies_map.json"  
 #     registration(jsonpath)
     
-if __name__ == "__main__":
+def main_box():
     forbidden_boxes_file = "boxpos.txt"
     big_box_size = [512, 512, 343]  
     subbox_size = [64, 64, 32]  
@@ -328,3 +340,41 @@ if __name__ == "__main__":
         forbidden_boxes_file, big_box_size, subbox_size, num_samples, output_dir, filename_prefix
     )
     print(f"Les positions valides ont été sauvegardées dans : {result_file}")
+  
+def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363)):
+    set_determinism(seed=0)
+
+    # Charger les données du JSON
+    with open(json_path, 'r') as f:
+        json_data = json.load(f)
+
+    # Préparer les fichiers de données
+    data = []
+    for item in json_data:
+        input_path = item['image']
+        output_filename = os.path.basename(input_path).split('.')[0] + '_resized.nii.gz'
+        output_path = os.path.join(output_dir, output_filename)
+        data.append({"image": input_path, "output": output_path})
+
+    # Définir les transformations
+    transforms = Compose([
+        LoadImaged(keys=["image"]),
+        Resized(keys=["image"], spatial_size=target_size),
+        EnsureTyped(keys=["image"]),
+        SaveImaged(keys=["image"], meta_keys=["image_meta_dict"], output_dir=output_dir, output_postfix="resized", separate_folder=False)
+    ])
+
+    # Créer le dataset et le dataloader
+    dataset = SmartCacheDataset(data=data, transform=transforms, cache_rate=1.0, num_workers=4)
+    dataloader = DataLoader(dataset, batch_size=1, num_workers=4)
+
+    # Traiter les images
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    with torch.no_grad():
+        for _ in tqdm(dataloader):
+            pass  # Les opérations sont effectuées dans les transformations
+
+    print("Toutes les images ont été redimensionnées et sauvegardées.")
+    
+if __name__ == "__main__":
+    resize_and_save_images("light_dataset_info_10.json", "output")
