@@ -344,14 +344,49 @@ def main_box():
     )
     print(f"Les positions valides ont été sauvegardées dans : {result_file}")
   
-def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363), batch_size=4):
-    set_determinism(seed=0)
-    os.makedirs(output_dir, exist_ok=True)
+def resize_image(input_output):
+    input_path, output_path, target_size = input_output
+    
+    try:
+        # Lire l'image
+        image = sitk.ReadImage(input_path)
+        
+        # Obtenir les dimensions originales
+        original_size = image.GetSize()
+        original_spacing = image.GetSpacing()
+        
+        # Calculer le nouveau spacing
+        new_spacing = [
+            (orig_sz * orig_spc) / targ_sz
+            for orig_sz, orig_spc, targ_sz in zip(original_size, original_spacing, target_size)
+        ]
+        
+        # Redimensionner l'image
+        resample = sitk.ResampleImageFilter()
+        resample.SetSize(target_size)
+        resample.SetOutputSpacing(new_spacing)
+        resample.SetOutputDirection(image.GetDirection())
+        resample.SetOutputOrigin(image.GetOrigin())
+        resample.SetTransform(sitk.Transform())
+        resample.SetDefaultPixelValue(image.GetPixelIDValue())
+        resample.SetInterpolator(sitk.sitkLinear)
+        
+        resized_image = resample.Execute(image)
+        
+        # Sauvegarder l'image redimensionnée
+        sitk.WriteImage(resized_image, output_path)
+        return True
+    except Exception as e:
+        print(f"Erreur lors du traitement de {input_path}: {str(e)}")
+        return False
 
+def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363)):
+    os.makedirs(output_dir, exist_ok=True)
+    
     # Charger les données du JSON
     with open(json_path, 'r') as f:
         json_data = json.load(f)
-
+    
     # Préparer les fichiers de données
     data = []
     for item in json_data:
@@ -361,27 +396,14 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363), b
             continue
         output_filename = os.path.basename(input_path).split('.')[0] + '_resized.nii.gz'
         output_path = os.path.join(output_dir, output_filename)
-        data.append({"image": input_path, "output": output_path})
-
-    # Définir les transformations
-    transforms = Compose([
-        LoadImaged(keys=["image"]),
-        Resized(keys=["image"], spatial_size=target_size),
-        EnsureTyped(keys=["image"]),
-        ConcatItemsd(keys=["image"], name="batch_image", dim=0),
-        SaveImaged(keys=["batch_image"], meta_keys=["image_meta_dict"], output_dir=output_dir, output_postfix="resized", separate_folder=False)
-    ])
-
-    # Créer le dataset et le dataloader
-    dataset = Dataset(data=data, transform=transforms)
-    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4, collate_fn=lambda x: x[0])
-
-    # Traiter les images
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    for _ in tqdm(dataloader):
-        pass  # Les opérations sont effectuées dans les transformations
-
-    print("Toutes les images ont été redimensionnées et sauvegardées.")
+        data.append((input_path, output_path, target_size))
+    
+    # Traiter les images en parallèle
+    with Pool() as pool:
+        results = list(tqdm(pool.imap(resize_image, data), total=len(data)))
+    
+    successful = sum(results)
+    print(f"Traitement terminé. {successful}/{len(data)} images ont été redimensionnées avec succès.")
 
 if __name__ == "__main__":
-    resize_and_save_images("light_dataset_info_10.json", "output", batch_size=4)
+    resize_and_save_images("light_dataset_info_10.json", "output")
