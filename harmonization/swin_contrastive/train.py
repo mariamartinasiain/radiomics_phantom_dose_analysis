@@ -718,15 +718,15 @@ class LazyPatchLoader(Transform):
                 
                 self.current_position_index += 1
                 
-                uid = start_y + start_z * shape[1] + start_x* shape[0] * shape[1]
+                uid = start_y + start_x * shape[1] + start_z* shape[0] * shape[1]
                 uids.append(uid)
                 
-                extract_index = [int(start_z), int(start_y), int(start_x)]  # ITK ZYX order
+                extract_index = [int(start_x), int(start_y), int(start_z)]  # ITK ZYX order
                 
                 print("extract_index",extract_index)
                 print("shape",shape)
                 
-                extract_size = [int(self.roi_size[2]), int(self.roi_size[1]), int(self.roi_size[0])]
+                extract_size = [int(self.roi_size[0]), int(self.roi_size[1]), int(self.roi_size[2])]
                 
                 self.logger.info(f"Extracting patch at index {extract_index} with size {extract_size}")
                 self.logger.info(f"Image shape: {shape}")
