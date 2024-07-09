@@ -711,6 +711,11 @@ class LazyPatchLoader(Transform):
 
                 # Use the current position from the shuffled list
                 start_x, start_y, start_z = self.precomputed_positions[self.current_position_index]
+                
+                print("start_x",start_x)
+                print("start_y",start_y)
+                print("start_z",start_z)
+                
                 self.current_position_index += 1
                 
                 uid = start_y + start_x * shape[1] + start_z * shape[0] * shape[1]
