@@ -385,7 +385,7 @@ def resize_image(input_output):
         print(f"Erreur lors du traitement de {input_path}: {str(e)}")
         return False
 
-def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363)):
+def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 343)):
     os.makedirs(output_dir, exist_ok=True)
     
     # Charger les données du JSON
