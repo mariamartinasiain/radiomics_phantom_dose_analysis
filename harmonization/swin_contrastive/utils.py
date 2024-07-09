@@ -373,7 +373,7 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363)):
     with torch.no_grad():
         for _ in tqdm(dataloader):
             pass  # Les opérations sont effectuées dans les transformations
-    dataset.shutdown()
+    #dataset.shutdown()
 
     print("Toutes les images ont été redimensionnées et sauvegardées.")
     
