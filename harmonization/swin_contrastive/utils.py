@@ -341,8 +341,9 @@ def main_box():
     )
     print(f"Les positions valides ont été sauvegardées dans : {result_file}")
   
-def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363)):
+def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363), batch_size=4):
     set_determinism(seed=0)
+    os.makedirs(output_dir, exist_ok=True)
 
     # Charger les données du JSON
     with open(json_path, 'r') as f:
@@ -352,6 +353,9 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363)):
     data = []
     for item in json_data:
         input_path = item['image']
+        if not os.path.exists(input_path):
+            print(f"Le fichier {input_path} n'existe pas. Il sera ignoré.")
+            continue
         output_filename = os.path.basename(input_path).split('.')[0] + '_resized.nii.gz'
         output_path = os.path.join(output_dir, output_filename)
         data.append({"image": input_path, "output": output_path})
@@ -361,21 +365,20 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363)):
         LoadImaged(keys=["image"]),
         Resized(keys=["image"], spatial_size=target_size),
         EnsureTyped(keys=["image"]),
-        SaveImaged(keys=["image"], meta_keys=["image_meta_dict"], output_dir=output_dir, output_postfix="resized", separate_folder=False)
+        ConcatItemsd(keys=["image"], name="batch_image", dim=0),
+        SaveImaged(keys=["batch_image"], meta_keys=["image_meta_dict"], output_dir=output_dir, output_postfix="resized", separate_folder=False)
     ])
 
     # Créer le dataset et le dataloader
-    dataset = SmartCacheDataset(data=data, transform=transforms, cache_rate=1.0, num_replace_workers=4)
-    dataloader = DataLoader(dataset, batch_size=1, num_workers=4)
-    dataset.start()
+    dataset = Dataset(data=data, transform=transforms)
+    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4, collate_fn=lambda x: x[0])
+
     # Traiter les images
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    with torch.no_grad():
-        for _ in tqdm(dataloader):
-            pass  # Les opérations sont effectuées dans les transformations
-    #dataset.shutdown()
+    for _ in tqdm(dataloader):
+        pass  # Les opérations sont effectuées dans les transformations
 
     print("Toutes les images ont été redimensionnées et sauvegardées.")
-    
+
 if __name__ == "__main__":
-    resize_and_save_images("light_dataset_info_10.json", "output")
+    resize_and_save_images("light_dataset_info_10.json", "output", batch_size=4)
