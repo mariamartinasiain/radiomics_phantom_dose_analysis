@@ -667,7 +667,7 @@ class LazyPatchLoader(Transform):
         self.reader = reader or ITKReader()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.variety_size = variety_size
-        self.precomputed_positions = load_subbox_positions(positions_file,order='ZYX')
+        self.precomputed_positions = load_subbox_positions(positions_file,order='XYZ')
         self.current_position_index = 0
 
     def precompute_positions(self, shape):
@@ -693,7 +693,7 @@ class LazyPatchLoader(Transform):
             
             print("shape",shape)
             
-            shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # XYZ order
+            #shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # XYZ order
             
             if any(s < r for s, r in zip(shape, self.roi_size)):
                 raise ValueError(f"Image size {shape} is smaller than ROI size {self.roi_size}")
@@ -718,10 +718,14 @@ class LazyPatchLoader(Transform):
                 
                 self.current_position_index += 1
                 
-                uid = start_y + start_x * shape[1] + start_z * shape[0] * shape[1]
+                uid = start_y + start_z * shape[1] + start_x* shape[0] * shape[1]
                 uids.append(uid)
                 
-                extract_index = [int(start_x), int(start_y), int(start_z)]  # ITK ZYX order
+                extract_index = [int(start_z), int(start_y), int(start_x)]  # ITK ZYX order
+                
+                print("extract_index",extract_index)
+                print("shape",shape)
+                
                 extract_size = [int(self.roi_size[2]), int(self.roi_size[1]), int(self.roi_size[0])]
                 
                 self.logger.info(f"Extracting patch at index {extract_index} with size {extract_size}")
