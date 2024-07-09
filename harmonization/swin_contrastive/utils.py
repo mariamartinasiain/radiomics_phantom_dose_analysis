@@ -367,12 +367,13 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 363)):
     # Créer le dataset et le dataloader
     dataset = SmartCacheDataset(data=data, transform=transforms, cache_rate=1.0, num_replace_workers=4)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=4)
-
+    dataset.start()
     # Traiter les images
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     with torch.no_grad():
         for _ in tqdm(dataloader):
             pass  # Les opérations sont effectuées dans les transformations
+    dataset.shutdown()
 
     print("Toutes les images ont été redimensionnées et sauvegardées.")
     
