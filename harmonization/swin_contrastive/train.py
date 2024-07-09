@@ -659,14 +659,17 @@ class PrintDebug(Transform):
         print("Debugging")
         return data
 
-import contextlib
+import itk
+import numpy as np
+import torch
+from monai.transforms import Transform
 
 class LazyPatchLoader(Transform):
     def __init__(self, roi_size=(64, 64, 32), num_patches=4, variety_size=10, reader=None, positions_file="output/valid_positions_positions.json"):
         self.position_file = positions_file
         self.roi_size = roi_size
         self.num_patches = num_patches
-        self.reader = reader or ITKReader()
+        self.reader = reader or itk.ImageFileReader[itk.Image[itk.F, 3]].New()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.variety_size = variety_size
         self.precomputed_positions = self.load_subbox_positions()
@@ -681,33 +684,35 @@ class LazyPatchLoader(Transform):
             image_path = data['image']
             self.logger.info(f"Loading image from path: {image_path}")
             
-            with contextlib.closing(self.reader.read(image_path)) as img_obj:
-                itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
-                shape = itk_image.GetLargestPossibleRegion().GetSize()
-                
-                patches = []
-                uids = []
-                for _ in range(self.num_patches):
-                    if self.current_position_index >= len(self.precomputed_positions):
-                        shuffle(self.precomputed_positions)
-                        self.current_position_index = 0
+            self.reader.SetFileName(image_path)
+            self.reader.Update()
+            itk_image = self.reader.GetOutput()
+            
+            shape = itk_image.GetLargestPossibleRegion().GetSize()
+            
+            patches = []
+            uids = []
+            for _ in range(self.num_patches):
+                if self.current_position_index >= len(self.precomputed_positions):
+                    shuffle(self.precomputed_positions)
+                    self.current_position_index = 0
 
-                    start_x, start_y, start_z = self.precomputed_positions[self.current_position_index]
-                    self.current_position_index += 1
-                    
-                    uid = start_y + start_x * shape[1] + start_z * shape[0] * shape[1]
-                    uids.append(uid)
-                    
-                    extract_index = [int(start_x), int(start_y), int(start_z)]
-                    extract_size = [int(self.roi_size[0]), int(self.roi_size[1]), int(self.roi_size[2])]
-                    
-                    with contextlib.closing(self.extract_patch(itk_image, extract_index, extract_size)) as patch_itk:
-                        patch = itk.array_from_image(patch_itk)
-                        
-                    if patch.ndim == 3:
-                        patch = patch[np.newaxis, ...]
-                    
-                    patches.append(patch)
+                start_x, start_y, start_z = self.precomputed_positions[self.current_position_index]
+                self.current_position_index += 1
+                
+                uid = start_y + start_x * shape[1] + start_z * shape[0] * shape[1]
+                uids.append(uid)
+                
+                extract_index = [int(start_x), int(start_y), int(start_z)]
+                extract_size = [int(self.roi_size[0]), int(self.roi_size[1]), int(self.roi_size[2])]
+                
+                patch_itk = self.extract_patch(itk_image, extract_index, extract_size)
+                patch = itk.array_from_image(patch_itk)
+                
+                if patch.ndim == 3:
+                    patch = patch[np.newaxis, ...]
+                
+                patches.append(patch)
 
             patches = np.concatenate(patches, axis=0)
             uids = torch.tensor(uids)
