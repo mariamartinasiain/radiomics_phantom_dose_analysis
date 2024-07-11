@@ -173,7 +173,7 @@ class Train:
             self.diceloss = DiceCELoss(to_onehot_y=True, softmax=True)
             self.losses_dict['dice_loss'] = 0.0
         
-        self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'orthogonality_losses': [], 'total_losses': []}
+        self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'orthogonality_losses': [], 'total_losses': [], 'dice_losses': []}
     
         
     def get_reconstruction_model(self, reconstruction_type='vae',dim=768):
@@ -494,7 +494,7 @@ class Train:
         self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
         
         if self.to_compare:
-            self.train_losses['dice_losses'].append(self.losses_dict['total_loss'])
+            self.train_losses['dice_losses'].append(self.losses_dict['dice_loss'])
         
         save_losses(self.train_losses, loss_file,to_compare=self.to_compare)
         
