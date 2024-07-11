@@ -75,6 +75,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
     
     for i,model in enumerate(models):
         print(f"Testing Model {i+1}")
+        j=0
         #print(f"Model: {model}")
         dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
         with torch.no_grad():
@@ -82,8 +83,9 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 val_inputs, val_labels = (batch["image"].cuda(), batch["label"].cuda())
                 with torch.cuda.amp.autocast():
                     val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
-                if i == 0:
+                if j == 0:
                     print(val_outputs)
+                j+=1
                 val_labels_list = decollate_batch(val_labels)
                 val_labels_convert = [post_label(val_label_tensor) for val_label_tensor in val_labels_list]
                 val_outputs_list = decollate_batch(val_outputs)
