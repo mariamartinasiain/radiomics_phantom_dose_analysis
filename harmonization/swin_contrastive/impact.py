@@ -87,9 +87,9 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 print("j" , j)
                 if j == 0:
                     import nibabel as nib
-                    image = val_inputs[0].cpu().numpy()
-                    label = val_labels[0].cpu().numpy()
-                    pred = val_outputs[0].cpu().numpy()
+                    image = val_inputs.cpu().numpy()
+                    label = val_labels.cpu().numpy()
+                    pred = val_outputs.cpu().numpy()
                     nib.save(nib.Nifti1Image(image, np.eye(4)), str(i) + "image.nii.gz")
                     nib.save(nib.Nifti1Image(label, np.eye(4)), str(i) +"label.nii.gz")
                     nib.save(nib.Nifti1Image(pred, np.eye(4)), str(i) +"pred.nii.gz")
