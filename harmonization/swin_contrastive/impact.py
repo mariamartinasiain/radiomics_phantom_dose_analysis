@@ -291,15 +291,15 @@ def compare(jsonpath="./dataset_forgetting.json"):
     optimizer = torch.optim.Adam(model1.parameters(), 1e-4)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
     
-    # t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation2.pth",to_compare=True)
-    # t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation2.pth",to_compare=True)
+    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation2.pth",to_compare=True)
+    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation2.pth",to_compare=True)
     
-    # print("Training Baseline Model")
-    # t1.train()
+    print("Training Baseline Model")
+    t1.train()
     
-    # print("Training Finetuned Model")
-    # t2.train()
-    
+    print("Training Finetuned Model")
+    t2.train()
+    s
     model1 = get_model(model_path = "baseline_segmentation.pth")
     model2 = get_model(model_path = "finetuned_segmentation.pth")
     
