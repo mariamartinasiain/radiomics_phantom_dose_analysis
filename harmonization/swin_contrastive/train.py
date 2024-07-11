@@ -155,7 +155,7 @@ class Train:
             non_swinvit_params = [p for name, p in model.named_parameters() if not name.startswith('swinViT')]
             print(f"Number of parameters in the model: {sum(p.numel() for p in model.parameters())}")
             print(f"Number of parameters in the non-SwinViT part of the model: {sum(p.numel() for p in non_swinvit_params)}")
-            optimizer = torch.optim.AdamW(non_swinvit_params, lr=1e-4, weight_decay=1e-5)
+            self.optimizer = torch.optim.AdamW(non_swinvit_params, lr=1e-4, weight_decay=1e-5)
             self.diceloss = DiceCELoss(to_onehot_y=True, softmax=True)
         
         self.epoch = 0
@@ -365,6 +365,7 @@ class Train:
         else:
             logit_map = self.model(imgs_s)
             lossdice = self.diceloss(logit_map, seglab)
+            self.losses_dict['dice_loss'] = lossdice
             self.losses_dict['total_loss'] = lossdice
             accu = 0
             self.losses_dict['classification_loss'] = 0.0
@@ -488,7 +489,11 @@ class Train:
         self.train_losses['classification_losses'].append(self.losses_dict['classification_loss'])
         self.train_losses['reconstruction_losses'].append(self.losses_dict['reconstruction_loss'])
         self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
-        save_losses(self.train_losses, loss_file)
+        
+        if self.to_compare:
+            self.train_losses['dice_losses'].append(self.losses_dict['total_loss'])
+        
+        save_losses(self.train_losses, loss_file,to_compare=self.to_compare)
         
 
     def plot_latent_space(self, epoch):
