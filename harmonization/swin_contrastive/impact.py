@@ -69,20 +69,22 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
     dataload = val_loader
     dataset.start()
 
-    post_label = AsDiscrete(to_onehot=14)
-    post_pred = AsDiscrete(argmax=True, to_onehot=14)
+    
     epoch_iterator_val = tqdm(dataload, desc="Validate (X / X Steps) (dice=X.X)", dynamic_ncols=True)
     
     for i,model in enumerate(models):
         print(f"Testing Model {i+1}")
         j=0
         #print(f"Model: {model}")
+        post_label = AsDiscrete(to_onehot=14)
+        post_pred = AsDiscrete(argmax=True, to_onehot=14)
         dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
         with torch.no_grad():
             for batch in epoch_iterator_val:
                 val_inputs, val_labels = (batch["image"].cuda(), batch["label"].cuda())
                 with torch.cuda.amp.autocast():
                     val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
+                print("j" , j)
                 if j == 0:
                     print(val_outputs)
                 j+=1
