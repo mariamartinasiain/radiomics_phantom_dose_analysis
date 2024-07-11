@@ -299,7 +299,7 @@ def compare(jsonpath="./dataset_forgetting.json"):
     
     print("Training Finetuned Model")
     t2.train()
-    s
+    
     model1 = get_model(model_path = "baseline_segmentation.pth")
     model2 = get_model(model_path = "finetuned_segmentation.pth")
     
