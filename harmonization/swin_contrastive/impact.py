@@ -70,10 +70,10 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
 
     post_label = AsDiscrete(to_onehot=14)
     post_pred = AsDiscrete(argmax=True, to_onehot=14)
-    dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
     epoch_iterator_val = tqdm(dataload, desc="Validate (X / X Steps) (dice=X.X)", dynamic_ncols=True)
     
     for i,model in enumerate(models):
+        dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
         with torch.no_grad():
             for batch in epoch_iterator_val:
                 val_inputs, val_labels = (batch["image"].cuda(), batch["label"].cuda())
@@ -84,6 +84,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 val_outputs_list = decollate_batch(val_outputs)
                 val_output_convert = [post_pred(val_pred_tensor) for val_pred_tensor in val_outputs_list]
                 dice_metric(y_pred=val_output_convert, y=val_labels_convert)
+                print(f"Dice: {dice_metric})")
             mean_dice_val = dice_metric.aggregate().item()
             dice_metric.reset()
         losses[i].append(mean_dice_val)   
@@ -248,14 +249,14 @@ def compare(jsonpath="./dataset_forgetting.json"):
     optimizer = torch.optim.Adam(model1.parameters(), 1e-4)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
     
-    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation2.pth",to_compare=True)
-    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation2.pth",to_compare=True)
+    # t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation2.pth",to_compare=True)
+    # t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation2.pth",to_compare=True)
     
-    print("Training Baseline Model")
-    t1.train()
+    # print("Training Baseline Model")
+    # t1.train()
     
-    print("Training Finetuned Model")
-    t2.train()
+    # print("Training Finetuned Model")
+    # t2.train()
     
     model1 = get_model(model_path = "baseline_segmentation.pth")
     model2 = get_model(model_path = "finetuned_segmentation.pth")
