@@ -57,6 +57,7 @@ import torch
 
 
 def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,val_loader=None):
+    torch.backends.cudnn.benchmark = True
     print_config()
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
@@ -73,6 +74,8 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
     epoch_iterator_val = tqdm(dataload, desc="Validate (X / X Steps) (dice=X.X)", dynamic_ncols=True)
     
     for i,model in enumerate(models):
+        print(f"Testing Model {i+1}")
+        print(f"Model: {model}")
         dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
         with torch.no_grad():
             for batch in epoch_iterator_val:
@@ -84,7 +87,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 val_outputs_list = decollate_batch(val_outputs)
                 val_output_convert = [post_pred(val_pred_tensor) for val_pred_tensor in val_outputs_list]
                 dice_metric(y_pred=val_output_convert, y=val_labels_convert)
-                print(f"Dice: {dice_metric})")
+                print(f"Dice: {dice_metric.aggregate().item()}")
             mean_dice_val = dice_metric.aggregate().item()
             dice_metric.reset()
         losses[i].append(mean_dice_val)   
