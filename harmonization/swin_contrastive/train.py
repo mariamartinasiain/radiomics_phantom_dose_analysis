@@ -157,6 +157,7 @@ class Train:
             print(f"Number of parameters in the non-SwinViT part of the model: {sum(p.numel() for p in non_swinvit_params)}")
             self.optimizer = torch.optim.AdamW(non_swinvit_params, lr=1e-4, weight_decay=1e-5)
             self.diceloss = DiceCELoss(to_onehot_y=True, softmax=True)
+            self.losses_dict['dice_loss'] = 0.0
         
         self.epoch = 0
         self.log_summary_interval = 5
