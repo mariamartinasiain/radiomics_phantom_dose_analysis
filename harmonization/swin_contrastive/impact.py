@@ -54,7 +54,31 @@ from harmonization.swin_contrastive.train import Train, get_device
 from monai.config import print_config
 import torch
 
+def quick_weight_check(model1, model2, n_samples=100, seed=42):
+    import random
+    random.seed(seed)
+    params1 = list(model1.parameters())
+    params2 = list(model2.parameters())
+    
+    if len(params1) != len(params2):
+        return False  # Les modèles ont un nombre différent de couches
 
+    sample_sum1 = 0
+    sample_sum2 = 0
+    
+    for _ in range(n_samples):
+        layer_idx = random.randint(0, len(params1) - 1)
+        param1 = params1[layer_idx]
+        param2 = params2[layer_idx]
+        
+        if param1.shape != param2.shape:
+            return False  # Les couches ont des formes différentes
+        
+        idx = random.randint(0, param1.numel() - 1)
+        sample_sum1 += param1.view(-1)[idx].item()
+        sample_sum2 += param2.view(-1)[idx].item()
+    
+    return sample_sum1,sample_sum2
 
 def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,val_loader=None):
     torch.backends.cudnn.benchmark = True
@@ -69,6 +93,8 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
     dataload = val_loader
     dataset.start()
 
+    s1,s2 = quick_weight_check(models[0], models[1])
+    print(f"Weight Check: {s1} vs {s2}")
     
     epoch_iterator_val = tqdm(dataload, desc="Validate (X / X Steps) (dice=X.X)", dynamic_ncols=True)
     
