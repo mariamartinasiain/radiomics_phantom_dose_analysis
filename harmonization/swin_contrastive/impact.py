@@ -86,7 +86,14 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                     val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
                 print("j" , j)
                 if j == 0:
-                    print(val_outputs)
+                    import nibabel as nib
+                    image = val_inputs[0].cpu().numpy()
+                    label = val_labels[0].cpu().numpy()
+                    pred = val_outputs[0].cpu().numpy()
+                    nib.save(nib.Nifti1Image(image, np.eye(4)), str(i) + "image.nii.gz")
+                    nib.save(nib.Nifti1Image(label, np.eye(4)), str(i) +"label.nii.gz")
+                    nib.save(nib.Nifti1Image(pred, np.eye(4)), str(i) +"pred.nii.gz")
+
                 j+=1
                 val_labels_list = decollate_batch(val_labels)
                 val_labels_convert = [post_label(val_label_tensor) for val_label_tensor in val_labels_list]
