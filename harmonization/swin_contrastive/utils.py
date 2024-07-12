@@ -174,8 +174,11 @@ def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt",to_comp
         weight = {k.replace("swinViT.","module."): v for k, v in weight.items()}
         weight = {k.replace("linear1.","fc1."): v for k, v in weight.items()}
         weight = {k.replace("linear2.","fc2."): v for k, v in weight.items()}
+        for key in weight.keys():
+            print("new : " + str(key))
         weight = {"state_dict" : weight}
         model.load_from(weight)
+        
         
     
     print("Loaded weight keys:", weight.keys())
