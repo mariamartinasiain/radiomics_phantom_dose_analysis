@@ -189,8 +189,8 @@ def compare_losses(losses,output_file="comparison_results.txt"):
 
 def compare(jsonpath="./dataset_forgetting.json"):
     print_config()
-    model1 = get_model(model_path = "model_swinvit.pt") 
-    model2 = get_model(model_path = "rois_contrastive_classif_ortho.pth")
+    model1 = get_model(model_path = "model_swinvit.pt",to_compare=True) 
+    model2 = get_model(model_path = "rois_contrastive_classif_ortho.pth",to_compare=True)
     device = get_device()
     num_samples = 2
     # trainer= Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="rois_ortho_0001_regularized.pth",ortho_reg=0.001)
@@ -300,8 +300,8 @@ def compare(jsonpath="./dataset_forgetting.json"):
     print("Training Finetuned Model")
     t2.train()
     
-    model1 = get_model(model_path = "baseline_segmentation2.pth")
-    model2 = get_model(model_path = "finetuned_segmentation2.pth")
+    model1 = get_model(model_path = "baseline_segmentation2.pth",to_compare=True)
+    model2 = get_model(model_path = "finetuned_segmentation2.pth",to_compare=True)
     
     #model1 is the base model and model2 is the finetuned model to be compared
     models = [model1,model2]

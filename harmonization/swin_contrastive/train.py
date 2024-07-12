@@ -173,6 +173,7 @@ class Train:
             self.diceloss = DiceCELoss(to_onehot_y=True, softmax=True)
             self.losses_dict['dice_loss'] = 0.0
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=40, gamma=0.1)
+            self.scaler = torch.cuda.amp.GradScaler()
         
         self.train_losses = {'contrast_losses': [], 'classification_losses': [], 'reconstruction_losses': [], 'orthogonality_losses': [], 'total_losses': [], 'dice_losses': []}
     
@@ -365,23 +366,25 @@ class Train:
             # else:
             #     self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
             self.losses_dict['total_loss'] = \
-            self.losses_dict['contrast_loss']  
+            self.losses_dict['contrast_loss']
+            self.losses_dict['total_loss'].backward()
+            self.optimizer.step()
             
         else:
-            logit_map = self.model(imgs_s)
-            lossdice = self.diceloss(logit_map, seglab)
-            self.losses_dict['dice_loss'] = lossdice
-            self.losses_dict['total_loss'] = lossdice
+            with torch.cuda.amp.autocast():
+                logit_map = self.model(imgs_s)
+                lossdice = self.diceloss(logit_map, seglab)
+            self.scaler.scale(lossdice).backward()
+            self.scaler.unscale_(self.optimizer)
+            self.scaler.step(self.optimizer)
+            self.losses_dict['dice_loss'] = lossdice.item()
+            self.losses_dict['total_loss'] = lossdice.item()
             accu = 0
             self.losses_dict['classification_loss'] = 0.0
             self.losses_dict['contrast_loss'] = 0.0
             self.losses_dict['orthogonality_loss'] = 0.0
             self.losses_dict['reconstruction_loss'] = 0.0
 
-        self.losses_dict['total_loss'].backward()
-        self.optimizer.step()
-
-        
         return self.losses_dict, accu
 
     def classification_step(self, features, labels):

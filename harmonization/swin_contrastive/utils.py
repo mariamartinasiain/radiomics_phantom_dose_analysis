@@ -111,18 +111,27 @@ def process_forbidden_boxes_and_sample(forbidden_boxes_file, big_box_size, subbo
 
 
 
-def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt"):
+def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt",to_compare=False):
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
     torch.cuda.set_device(device_id)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-    model = SwinUNETR(
-        img_size=target_size,
-        in_channels=1,
-        out_channels=1,
-        feature_size=48,
-        use_checkpoint=True,
-    ).to(device)
+    if not to_compare:
+        model = SwinUNETR(
+            img_size=target_size,
+            in_channels=1,
+            out_channels=1,
+            feature_size=48,
+            use_checkpoint=True,
+        ).to(device)
+    else:
+        model = SwinUNETR(
+            img_size=(96, 96, 96),
+            in_channels=1,
+            out_channels=14,
+            feature_size=48,
+            use_checkpoint=True,
+        ).to(device)
 
     if model_path == "model_swinvit.pt":
         weight = torch.load("model_swinvit.pt")
