@@ -166,10 +166,10 @@ class Train:
         
         if self.to_compare:
             from monai.losses import DiceCELoss
-            non_swinvit_params = [p for name, p in model.named_parameters() if not name.startswith('swinViT')]
-            print(f"Number of parameters in the model: {sum(p.numel() for p in model.parameters())}")
-            print(f"Number of parameters in the non-SwinViT part of the model: {sum(p.numel() for p in non_swinvit_params)}")
-            self.optimizer = torch.optim.AdamW(non_swinvit_params, lr=1e-4, weight_decay=1e-5)
+            # non_swinvit_params = [p for name, p in model.named_parameters() if not name.startswith('swinViT')]
+            # print(f"Number of parameters in the model: {sum(p.numel() for p in model.parameters())}")
+            # print(f"Number of parameters in the non-SwinViT part of the model: {sum(p.numel() for p in non_swinvit_params)}")
+            self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=1e-4, weight_decay=1e-5)
             self.diceloss = DiceCELoss(to_onehot_y=True, softmax=True)
             self.losses_dict['dice_loss'] = 0.0
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=40, gamma=0.1)
