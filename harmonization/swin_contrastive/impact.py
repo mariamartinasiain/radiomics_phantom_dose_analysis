@@ -15,6 +15,7 @@ from tqdm import tqdm
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
 from monai.transforms import (
+    Transform,
     AsDiscrete,
     Compose,
     CropForegroundd,
