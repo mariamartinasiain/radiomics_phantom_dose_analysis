@@ -378,7 +378,7 @@ class Train:
             self.scaler.unscale_(self.optimizer)
             self.scaler.step(self.optimizer)
             self.losses_dict['dice_loss'] = lossdice.item()
-            self.losses_dict['total_loss'] = lossdice.item()
+            self.losses_dict['total_loss'] = lossdice
             accu = 0
             self.losses_dict['classification_loss'] = 0.0
             self.losses_dict['contrast_loss'] = 0.0
