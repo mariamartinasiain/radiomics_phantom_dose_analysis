@@ -301,6 +301,7 @@ class Train:
         #print("ids size",ids.size())
         if self.to_compare:
             seglab = batch["label"].cuda()
+            print("seglab size",seglab.size())
         
 
         # encoder inference
