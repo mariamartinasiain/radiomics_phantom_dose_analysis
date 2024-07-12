@@ -110,25 +110,35 @@ def process_forbidden_boxes_and_sample(forbidden_boxes_file, big_box_size, subbo
     return json_filename
 
 def nload_from(model, weights):
+    updated_count = 0
+    total_count = 0
+
+    def update_and_count(param, weight_name):
+        nonlocal updated_count, total_count
+        if weight_name in weights:
+            total_count += param.numel()
+            if not torch.equal(param.data, weights[weight_name]):
+                param.data.copy_(weights[weight_name])
+                updated_count += param.numel()
+        else:
+            print(f"Warning: {weight_name} not found in weights")
+
     with torch.no_grad():
-        # Assuming weights is already the state_dict, not nested under "state_dict" key
-        model.swinViT.patch_embed.proj.weight.copy_(weights["module.patch_embed.proj.weight"])
-        model.swinViT.patch_embed.proj.bias.copy_(weights["module.patch_embed.proj.bias"])
+        update_and_count(model.swinViT.patch_embed.proj.weight, "swinViT.patch_embed.proj.weight")
+        update_and_count(model.swinViT.patch_embed.proj.bias, "swinViT.patch_embed.proj.bias")
         
         for layer_name in ['layers1', 'layers2', 'layers3', 'layers4']:
             layer = getattr(model.swinViT, layer_name)
             for bname, block in layer[0].blocks.named_children():
-                block.load_from(weights, n_block=bname, layer=layer_name)
+                for name, param in block.named_parameters():
+                    update_and_count(param, f"swinViT.{layer_name}.0.blocks.{bname}.{name}")
             
-            layer[0].downsample.reduction.weight.copy_(
-                weights[f"module.{layer_name}.0.downsample.reduction.weight"]
-            )
-            layer[0].downsample.norm.weight.copy_(
-                weights[f"module.{layer_name}.0.downsample.norm.weight"]
-            )
-            layer[0].downsample.norm.bias.copy_(
-                weights[f"module.{layer_name}.0.downsample.norm.bias"]
-            )
+            update_and_count(layer[0].downsample.reduction.weight, f"swinViT.{layer_name}.0.downsample.reduction.weight")
+            update_and_count(layer[0].downsample.norm.weight, f"swinViT.{layer_name}.0.downsample.norm.weight")
+            update_and_count(layer[0].downsample.norm.bias, f"swinViT.{layer_name}.0.downsample.norm.bias")
+
+    print(f"Updated {updated_count} out of {total_count} weights")
+    return updated_count, total_count
 
 
 
@@ -161,8 +171,8 @@ def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt",to_comp
         weight = torch.load(model_path)
         for key in weight.keys():
             print(key)
-        weight = {"state_dict": weight}
-        model.load_from(weight)
+        n,m = nload_from(model, weight)
+        
     
     print("Loaded weight keys:", weight.keys())
     model = model.to('cuda')
