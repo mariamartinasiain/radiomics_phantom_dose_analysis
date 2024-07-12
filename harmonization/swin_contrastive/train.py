@@ -369,9 +369,12 @@ class Train:
             
             
         else:
-            with torch.cuda.amp.autocast():
-                logit_map = self.model(imgs_s)
-                lossdice = self.diceloss(logit_map, seglab)
+            logit_map = self.model(imgs_s)
+            
+            print(f"logit map shape {logit_map.size()}")
+            print(f"seglab shape {seglab.size()}")
+            
+            lossdice = self.diceloss(logit_map, seglab)
             self.losses_dict['dice_loss'] = lossdice.item()
             self.losses_dict['total_loss'] = lossdice
             accu = 0

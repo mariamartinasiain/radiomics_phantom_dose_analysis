@@ -216,7 +216,7 @@ def compare(jsonpath="./dataset_forgetting.json"):
     model1 = get_model(model_path = "model_swinvit.pt",to_compare=True) 
     model2 = get_model(model_path = "rois_contrastive_classif_ortho_0001_regularized.pth",to_compare=True)
     device = get_device()
-    num_samples = 2
+    num_samples = 4
     # trainer= Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="rois_ortho_0001_regularized.pth",ortho_reg=0.001)
     #trainer.train()
     print("Loading Data")
@@ -316,17 +316,17 @@ def compare(jsonpath="./dataset_forgetting.json"):
     optimizer = None
     lr_scheduler = None
     
-    #t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation3.pth",to_compare=True)
-    #t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation3.pth",to_compare=True)
+    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation4.pth",to_compare=True)
+    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation4.pth",to_compare=True)
     
-    #print("Training Baseline Model")
-    #t1.train()
+    print("Training Baseline Model")
+    t1.train()
     
-    #print("Training Finetuned Model")
-    #t2.train()
+    print("Training Finetuned Model")
+    t2.train()
     
-    model1 = get_model(model_path = "baseline_segmentation3.pth",to_compare=True)
-    model2 = get_model(model_path = "finetuned_segmentation3.pth",to_compare=True)
+    model1 = get_model(model_path = "baseline_segmentation4.pth",to_compare=True)
+    model2 = get_model(model_path = "finetuned_segmentation4.pth",to_compare=True)
     
     #model1 is the base model and model2 is the finetuned model to be compared
     models = [model1,model2]
