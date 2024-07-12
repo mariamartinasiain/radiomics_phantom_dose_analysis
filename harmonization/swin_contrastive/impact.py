@@ -288,11 +288,11 @@ def compare(jsonpath="./dataset_forgetting.json"):
     print("Data Loade and Transformed")
     data_loader = {"train": train_loader, "test": val_loader}
     dataset = {"train": train_ds, "test": val_ds}
-    optimizer = torch.optim.Adam(model1.parameters(), 1e-4)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
+    optimizer = None
+    lr_scheduler = None
     
-    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation.pth",to_compare=True)
-    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation.pth",to_compare=True)
+    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation2.pth",to_compare=True)
+    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation2.pth",to_compare=True)
     
     print("Training Baseline Model")
     t1.train()
@@ -300,8 +300,8 @@ def compare(jsonpath="./dataset_forgetting.json"):
     print("Training Finetuned Model")
     t2.train()
     
-    model1 = get_model(model_path = "baseline_segmentation.pth")
-    model2 = get_model(model_path = "finetuned_segmentation.pth")
+    model1 = get_model(model_path = "baseline_segmentation2.pth")
+    model2 = get_model(model_path = "finetuned_segmentation2.pth")
     
     #model1 is the base model and model2 is the finetuned model to be compared
     models = [model1,model2]
