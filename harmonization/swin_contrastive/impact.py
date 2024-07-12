@@ -109,17 +109,32 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
         with torch.no_grad():
             for batch in epoch_iterator_val:
                 val_inputs, val_labels = (batch["image"].cuda(), batch["label"].cuda())
+                
+                print(f"Shape of val_inputs: {val_inputs.shape}")
+                print(f"Shape of val_labels: {val_labels.shape}")
+
+                
                 with torch.cuda.amp.autocast():
                     val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
                 print("j" , j)
                 if j == 0:
                     import nibabel as nib
-                    image = val_inputs.cpu().numpy()
+                    img = val_inputs.cpu().numpy()
+                    img = np.squeeze(img)
+                    img = nib.Nifti1Image(img, np.eye(4))
+                    nib.save(img, str(i) + "image.nii.gz")
+                    
                     label = val_labels.cpu().numpy()
+                    label = np.squeeze(label)
+                    label = nib.Nifti1Image(label, np.eye(4))
+                    nib.save(label, str(i) + "label.nii.gz")                    
+                    
                     pred = val_outputs.cpu().numpy()
-                    nib.save(nib.Nifti1Image(image, np.eye(4)), str(i) + "image.nii.gz")
-                    nib.save(nib.Nifti1Image(label, np.eye(4)), str(i) +"label.nii.gz")
-                    nib.save(nib.Nifti1Image(pred, np.eye(4)), str(i) +"pred.nii.gz")
+                    pred = np.squeeze(pred)
+                    pred = nib.Nifti1Image(pred, np.eye(4))
+                    nib.save(pred, str(i) + "pred.nii.gz")
+                    
+            
 
                 j+=1
                 val_labels_list = decollate_batch(val_labels)
