@@ -109,6 +109,27 @@ def process_forbidden_boxes_and_sample(forbidden_boxes_file, big_box_size, subbo
     
     return json_filename
 
+def nload_from(model, weights):
+    with torch.no_grad():
+        # Assuming weights is already the state_dict, not nested under "state_dict" key
+        model.swinViT.patch_embed.proj.weight.copy_(weights["module.patch_embed.proj.weight"])
+        model.swinViT.patch_embed.proj.bias.copy_(weights["module.patch_embed.proj.bias"])
+        
+        for layer_name in ['layers1', 'layers2', 'layers3', 'layers4']:
+            layer = getattr(model.swinViT, layer_name)
+            for bname, block in layer[0].blocks.named_children():
+                block.load_from(weights, n_block=bname, layer=layer_name)
+            
+            layer[0].downsample.reduction.weight.copy_(
+                weights[f"module.{layer_name}.0.downsample.reduction.weight"]
+            )
+            layer[0].downsample.norm.weight.copy_(
+                weights[f"module.{layer_name}.0.downsample.norm.weight"]
+            )
+            layer[0].downsample.norm.bias.copy_(
+                weights[f"module.{layer_name}.0.downsample.norm.bias"]
+            )
+
 
 
 def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt",to_compare=False):
@@ -138,7 +159,7 @@ def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt",to_comp
         model.load_from(weight)
     else:
         weight = torch.load(model_path)
-        model.load_state_dict(weight)
+        nload_from(model,weight)
     
     print("Loaded weight keys:", weight.keys())
     model = model.to('cuda')
