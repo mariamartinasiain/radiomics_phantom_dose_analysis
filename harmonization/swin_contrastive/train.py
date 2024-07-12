@@ -293,11 +293,11 @@ class Train:
         # prepare batch
         imgs_s = batch["image"].cuda()
         #ids = batch["uids"].cuda()
-        print("imgs_s size",imgs_s.size())
+        print("imgs_s size 1",imgs_s.size())
         #print("ids size",ids.size())
         imgs_s = imgs_s.view(imgs_s.shape[0] * imgs_s.shape[1],1, imgs_s.shape[2], imgs_s.shape[3], imgs_s.shape[4]) 
         #ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
-        print("imgs_s size",imgs_s.size())
+        print("imgs_s size 2",imgs_s.size())
         #print("ids size",ids.size())
         if self.to_compare:
             seglab = batch["label"].cuda()
