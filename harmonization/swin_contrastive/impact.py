@@ -185,7 +185,10 @@ def compare_losses(losses,output_file="comparison_results.txt"):
         f.write(f"Mean Difference (Finetuned - Baseline): {mean_difference:.4f}\n")
         f.write(f"Paired t-test results: t-statistic = {t_stat:.4f}, p-value = {p_value:.4f}\n")
 
-
+class DebugPathTransform(Transform):
+    def __call__(self, data):
+        print(data)
+        return data
 
 def compare(jsonpath="./dataset_forgetting.json"):
     print_config()
@@ -254,6 +257,7 @@ def compare(jsonpath="./dataset_forgetting.json"):
     )
     val_transforms = Compose(
         [
+            DebugPathTransform(),
             LoadImaged(keys=["image", "label"], ensure_channel_first=True),
             ScaleIntensityRanged(keys=["image"], a_min=-175, a_max=250, b_min=0.0, b_max=1.0, clip=True),
             CropForegroundd(keys=["image", "label"], source_key="image"),
@@ -291,14 +295,14 @@ def compare(jsonpath="./dataset_forgetting.json"):
     optimizer = None
     lr_scheduler = None
     
-    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation3.pth",to_compare=True)
-    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation3.pth",to_compare=True)
+    #t1 = Train(model1, data_loader, optimizer, lr_scheduler, 200,dataset,savename="baseline_segmentation3.pth",to_compare=True)
+    #t2 = Train(model2, data_loader, optimizer, lr_scheduler, 200,dataset,savename="finetuned_segmentation3.pth",to_compare=True)
     
-    print("Training Baseline Model")
-    t1.train()
+    #print("Training Baseline Model")
+    #t1.train()
     
-    print("Training Finetuned Model")
-    t2.train()
+    #print("Training Finetuned Model")
+    #t2.train()
     
     model1 = get_model(model_path = "baseline_segmentation3.pth",to_compare=True)
     model2 = get_model(model_path = "finetuned_segmentation3.pth",to_compare=True)
