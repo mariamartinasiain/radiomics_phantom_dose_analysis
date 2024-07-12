@@ -171,7 +171,9 @@ def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt",to_comp
         weight = torch.load(model_path)
         for key in weight.keys():
             print(key)
-        n,m = nload_from(model, weight)
+        weight = {k.replace("swinViT.","module."): v for k, v in weight.items()}
+        weight = {"state_dict" : weight}
+        model.load_from(weight)
         
     
     print("Loaded weight keys:", weight.keys())
