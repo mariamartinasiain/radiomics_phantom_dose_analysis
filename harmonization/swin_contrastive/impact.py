@@ -116,6 +116,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 
                 with torch.cuda.amp.autocast():
                     val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
+                    print(f"Shape of val_outputs: {val_outputs.shape}")
                 print("j" , j)
                 if j == 0:
                     import nibabel as nib
