@@ -159,7 +159,8 @@ def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt",to_comp
         model.load_from(weight)
     else:
         weight = torch.load(model_path)
-        nload_from(model,weight)
+        weight = {"state_dict": weight}
+        model.load_from(weight)
     
     print("Loaded weight keys:", weight.keys())
     model = model.to('cuda')
