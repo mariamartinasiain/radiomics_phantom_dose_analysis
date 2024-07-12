@@ -142,6 +142,10 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 val_labels_convert = [post_label(val_label_tensor) for val_label_tensor in val_labels_list]
                 val_outputs_list = decollate_batch(val_outputs)
                 val_output_convert = [post_pred(val_pred_tensor) for val_pred_tensor in val_outputs_list]
+                
+                print(f"Shape of val_labels_convert: {val_labels_convert[0].shape}")
+                print(f"Shape of val_output_convert: {val_output_convert[0].shape}")
+                
                 dice_metric(y_pred=val_output_convert, y=val_labels_convert)
                 print(f"Dice: {dice_metric.aggregate().item()}")
             mean_dice_val = dice_metric.aggregate().item()
