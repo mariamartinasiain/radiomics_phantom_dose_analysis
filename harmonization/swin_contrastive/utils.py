@@ -159,6 +159,8 @@ def get_model(target_size = (64, 64, 32),model_path = "model_swinvit.pt",to_comp
         model.load_from(weight)
     else:
         weight = torch.load(model_path)
+        for key in weight.keys():
+            print(key)
         weight = {"state_dict": weight}
         model.load_from(weight)
     
