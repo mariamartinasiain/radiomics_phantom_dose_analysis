@@ -328,14 +328,14 @@ class Train:
             self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
             #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
             
-            features = torch.mean(bottleneck, dim=(2, 3, 4))
-            accu = self.classification_step(features, scanner_labels)
+            # features = torch.mean(bottleneck, dim=(2, 3, 4))
+            # accu = self.classification_step(features, scanner_labels)
             #print(f"Train Accuracy: {accu}%")
             #accu = 0
             #self.losses_dict['classification_loss'] = 0.0
 
             # Orthogonality loss
-            self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
+            #self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
             print(f"Orthogonality Loss: {self.losses_dict['orthogonality_loss']}")
 
 
@@ -835,7 +835,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="random_contrast.pth",ortho_reg=0.001)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=768,savename="random_contrast.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
