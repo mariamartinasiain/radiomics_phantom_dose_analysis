@@ -802,7 +802,7 @@ def main():
         #LoadImaged(keys=["image"]),
         LazyPatchLoader(roi_size=[64, 64, 32]),
         #DebugTransform2(),
-        EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
+        #EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         #EncodeLabels(encoder=encoder),
         ExtractScannerLabel(),
@@ -819,7 +819,7 @@ def main():
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
