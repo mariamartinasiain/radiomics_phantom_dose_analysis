@@ -837,7 +837,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=768,savename="random_contrast.pth",ortho_reg=0.001)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=768,savename="random_contrast2.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):

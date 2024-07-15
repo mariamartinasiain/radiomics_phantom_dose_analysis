@@ -269,7 +269,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
 
 
 def main():
-    fnames = ["rois_contrastive_classif_ortho_0001_regularized","rois_contrastive_ortho_0001","rois_contrastive_ortho_0001_regularized"]
+    fnames = ["random_contrast"]
     for fname in fnames:
         model = get_model(model_path=f"{fname}.pth")
         run_inference(model,fname = fname)
