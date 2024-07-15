@@ -310,7 +310,9 @@ class Train:
             #ids = all_labels
 
             ids = batch["uids"].cuda()
-            print("ids size",ids.size())
+            print("ids size 1",ids.size())
+            ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
+            print("ids size 2",ids.size())
 
             scanner_labels = batch["scanner_label"].cuda()
             
