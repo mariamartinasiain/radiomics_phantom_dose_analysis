@@ -306,8 +306,12 @@ class Train:
 
         # encoder inference
         if not self.to_compare:
-            all_labels = batch["roi_label"].cuda()
-            ids = all_labels
+            #all_labels = batch["roi_label"].cuda()
+            #ids = all_labels
+
+            ids = batch["uids"].cuda()
+            print("ids size",ids.size())
+
             scanner_labels = batch["scanner_label"].cuda()
             
             latents = self.model.swinViT(imgs_s)
@@ -800,7 +804,7 @@ def main():
         #DebugTransform2(),
         EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
-        EncodeLabels(encoder=encoder),
+        #EncodeLabels(encoder=encoder),
         ExtractScannerLabel(),
         EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
