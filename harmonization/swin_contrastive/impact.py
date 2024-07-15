@@ -316,8 +316,8 @@ def compare(jsonpath="./dataset_forgetting.json"):
     optimizer = None
     lr_scheduler = None
     
-    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 400,dataset,savename="baseline_segmentation4.pth",to_compare=True)
-    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 400,dataset,savename="finetuned_segmentation4.pth",to_compare=True)
+    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 500,dataset,savename="baseline_segmentation5.pth",to_compare=True)
+    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 500,dataset,savename="finetuned_segmentation5.pth",to_compare=True)
     
     print("Training Baseline Model")
     t1.train()
@@ -325,8 +325,8 @@ def compare(jsonpath="./dataset_forgetting.json"):
     print("Training Finetuned Model")
     t2.train()
     
-    model1 = get_model(model_path = "baseline_segmentation4.pth",to_compare=True)
-    model2 = get_model(model_path = "finetuned_segmentation4.pth",to_compare=True)
+    model1 = get_model(model_path = "baseline_segmentation5.pth",to_compare=True)
+    model2 = get_model(model_path = "finetuned_segmentation5.pth",to_compare=True)
     
     #model1 is the base model and model2 is the finetuned model to be compared
     models = [model1,model2]

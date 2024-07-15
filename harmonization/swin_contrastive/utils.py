@@ -241,18 +241,18 @@ def save_losses(train_losses, output_dir, to_compare=False):
     
     # with open(loss_file, 'w') as f:
     #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
-    with open('contrast_losses.json', 'w') as f:
+    with open(f"{output_dir}_contrast_losses.json", 'w') as f:
         json.dump({'contrast_losses': serializable_contrast_losses}, f)
-    with open('classification_losses.json', 'w') as f:
+    with open(f"{output_dir}_classification_losses.json", 'w') as f:
         json.dump({'classification_losses': serializable_classification_losses}, f)
-    with open('total_losses.json', 'w') as f:
+    with open(f"{output_dir}_total_losses.json", 'w') as f:
         json.dump({'total_losses': serializable_total_losses}, f)
-    with open('reconstruction_losses.json', 'w') as f:
+    with open(f"{output_dir}_reconstruction_losses.json", 'w') as f:
         json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
-    with open('orthogonality_losses.json', 'w') as f:
+    with open(f"{output_dir}_orthogonality_losses.json", 'w') as f:
         json.dump({'orthogonality_losses': serializable_orthogonality_losses}, f)
     if to_compare:
-        with open('dice_losses', 'w') as f:
+        with open(f"{output_dir}_dice_losses.json", 'w') as f:
             json.dump({'dice_losses': serializable_dice_losses}, f)
     
     
