@@ -10,13 +10,13 @@ def load_losses(file_path):
 def plot_loaded_losses(name=''):
     step_interval = 1  # Adjust this value if needed
 
-    contrast_losses = np.array(load_losses(f"{name}_contrast_losses.json")['contrast_losses'])
-    classification_losses = np.array(load_losses(f"{name}_classification_losses.json")['classification_losses'])
+    contrast_losses = np.array(load_losses(f"{name}_losses.json_contrast_losses.json")['contrast_losses'])
+    classification_losses = np.array(load_losses(f"{name}_losses.json_classification_losses.json")['classification_losses'])
     total_losses = np.array(load_losses(f"{name}_total_losses.json")['total_losses'])
-    reconstruction_losses = np.array(load_losses(f"{name}_reconstruction_losses.json")['reconstruction_losses'])
+    reconstruction_losses = np.array(load_losses(f"{name}_losses.json_reconstruction_losses.json")['reconstruction_losses'])
     #self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
-    orthogonality_losses = np.array(load_losses(f"{name}_orthogonality_losses.json")['orthogonality_losses'])
-    dice_losses = np.array(load_losses(f"{name}_dice_losses.json")['dice_losses']) 
+    orthogonality_losses = np.array(load_losses(f"{name}_losses.json_orthogonality_losses.json")['orthogonality_losses'])
+    dice_losses = np.array(load_losses(f"{name}_losses.json_dice_losses.json")['dice_losses']) 
 
     fig, ax = plt.subplots(2, 2, figsize=(15, 10))
 
