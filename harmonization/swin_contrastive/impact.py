@@ -81,6 +81,21 @@ def quick_weight_check(model1, model2, n_samples=100, seed=42):
     
     return sample_sum1,sample_sum2
 
+def save_nifti(data, filename):
+    import nibabel as nib
+    # Convertir en numpy array si ce n'est pas déjà le cas
+    data_np = data.cpu().numpy() if hasattr(data, 'cpu') else np.array(data)
+    
+    # Créer l'objet Nifti1Image
+    img = nib.Nifti1Image(data_np, np.eye(4))
+    
+    # Mettre à jour les métadonnées de l'en-tête
+    img.header['pixdim'] = [1.0] * 8  # Taille de voxel par défaut à 1 pour toutes les dimensions
+    img.header['dim'] = [len(data_np.shape)] + list(data_np.shape) + [1] * (8 - len(data_np.shape) - 1)
+    
+    # Sauvegarder l'image
+    nib.save(img, filename)
+
 def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,val_loader=None):
     print_config()
     device_id = 0
@@ -131,21 +146,14 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 print(f"Shape of val_output_convert: {val_output_convert[0].shape}")
 
                 if j == 0:
-                    import nibabel as nib
-                    img = val_inputs[:,:,:,:,:].cpu().numpy()
-                    img = np.squeeze(img)
-                    img = nib.Nifti1Image(img, np.eye(4))
-                    nib.save(img, str(i) + "image.nii.gz")
                     
-                    label = val_labels_convert[0][:,:,:,:,:].cpu().numpy()
-                    label = np.squeeze(label)
-                    label = nib.Nifti1Image(label, np.eye(4))
-                    nib.save(label, str(i) + "label.nii.gz")                    
+                    # img = val_inputs[:,:,:,:,:].cpu().numpy()
+                    # img = np.squeeze(img)
+                    # img = nib.Nifti1Image(img, np.eye(4))
+                    # nib.save(img, str(i) + "image.nii.gz")
                     
-                    pred = val_output_convert[0][:,:,:,:,:].cpu().numpy()
-                    pred = np.squeeze(pred)
-                    pred = nib.Nifti1Image(pred, np.eye(4))
-                    nib.save(pred, str(i) + "pred.nii.gz")
+                    save_nifti(val_labels_convert[0], f"{i}_label.nii.gz")
+                    save_nifti(val_output_convert[0], f"{i}_pred.nii.gz")
                 
                 dice_metric(y_pred=val_output_convert, y=val_labels_convert)
                 print(f"Dice: {dice_metric.aggregate().item()}")
