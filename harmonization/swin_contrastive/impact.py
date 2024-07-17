@@ -136,7 +136,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                     
             
 
-                j+=1
+                
                 val_labels_list = decollate_batch(val_labels)
                 val_labels_convert = [post_label(val_label_tensor) for val_label_tensor in val_labels_list]
                 val_outputs_list = decollate_batch(val_outputs)
@@ -154,7 +154,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                     
                     save_nifti(val_labels_convert[0], f"{i}_label.nii.gz")
                     save_nifti(val_output_convert[0], f"{i}_pred.nii.gz")
-                
+                j+=1
                 dice_metric(y_pred=val_output_convert, y=val_labels_convert)
                 print(f"Dice: {dice_metric.aggregate().item()}")
             mean_dice_val = dice_metric.aggregate().item()
