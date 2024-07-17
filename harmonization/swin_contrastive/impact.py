@@ -131,6 +131,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                     
                     val_outputs_single_channel = torch.argmax(val_outputs, dim=1, keepdim=True)
                     segmentation_map = val_outputs_single_channel.squeeze().cpu().numpy()
+                    segmentation_map = segmentation_map.astype(np.uint8)
                     header = nib.Nifti1Header()
                     header.set_data_dtype(np.uint8)
                     nifti_img = nib.Nifti1Image(segmentation_map, affine=np.eye(4), header=header)
