@@ -16,7 +16,7 @@ def plot_loaded_losses(name=''):
     reconstruction_losses = np.array(load_losses(f"{name}_losses.json_reconstruction_losses.json")['reconstruction_losses'])
     #self.train_losses['orthogonality_losses'].append(self.losses_dict['orthogonality_loss'])
     orthogonality_losses = np.array(load_losses(f"{name}_losses.json_orthogonality_losses.json")['orthogonality_losses'])
-    dice_losses = np.array(load_losses(f"{name}_losses.json_dice_losses.json")['dice_losses']) 
+    #dice_losses = np.array(load_losses(f"{name}_losses.json_dice_losses.json")['dice_losses']) 
 
     fig, ax = plt.subplots(2, 2, figsize=(15, 10))
 
@@ -28,13 +28,13 @@ def plot_loaded_losses(name=''):
     ax[0, 0].set_ylabel('Loss')
     ax[0, 0].legend()
 
-    points = len(dice_losses)
-    steps = np.arange(0, points * step_interval, step_interval)
-    ax[0, 1].plot(steps, dice_losses, label='dice losses')
-    ax[0, 1].set_title('dice_losses')
-    ax[0, 1].set_xlabel('Steps')
-    ax[0, 1].set_ylabel('Loss')
-    ax[0, 1].legend()
+    # points = len(dice_losses)
+    # steps = np.arange(0, points * step_interval, step_interval)
+    # ax[0, 1].plot(steps, dice_losses, label='dice losses')
+    # ax[0, 1].set_title('dice_losses')
+    # ax[0, 1].set_xlabel('Steps')
+    # ax[0, 1].set_ylabel('Loss')
+    # ax[0, 1].legend()
 
     points = len(orthogonality_losses)
     steps = np.arange(0, points * step_interval, step_interval)
