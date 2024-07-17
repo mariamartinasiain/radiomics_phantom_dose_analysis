@@ -130,16 +130,9 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                     nib.save(label, str(i) + "label.nii.gz")                    
                     
                     val_outputs_single_channel = torch.argmax(val_outputs, dim=1, keepdim=True)
-
-                    # Scale the values to the range 0-255
-                    val_outputs_scaled = (val_outputs_single_channel / 13.0) * 255.0
-
-                    # Convert to integer values
-                    val_outputs_byte = val_outputs_scaled.byte()
-
-                    pred = val_outputs_byte[0,:,:,:,:].cpu().numpy()
-                    pred = np.squeeze(pred)
-                    pred = nib.Nifti1Image(pred, np.eye(4))
+                    segmentation_map = val_outputs_single_channel.squeeze().cpu().numpy()
+                    nifti_img = nib.Nifti1Image(segmentation_map, affine=np.eye(4))
+                    pred = nib.Nifti1Image(nifti_img, np.eye(4))
                     nib.save(pred, str(i) + "pred.nii.gz")
                     
             
