@@ -82,7 +82,6 @@ def quick_weight_check(model1, model2, n_samples=100, seed=42):
     return sample_sum1,sample_sum2
 
 def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,val_loader=None):
-    torch.backends.cudnn.benchmark = True
     print_config()
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
@@ -114,9 +113,9 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 print(f"Shape of val_labels: {val_labels.shape}")
 
                 
-                with torch.cuda.amp.autocast():
-                    val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
-                    print(f"Shape of val_outputs: {val_outputs.shape}")
+                # with torch.cuda.amp.autocast():
+                val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
+                print(f"Shape of val_outputs: {val_outputs.shape}")
                 print("j" , j)
                 if j == 0:
                     import nibabel as nib
@@ -212,6 +211,7 @@ class DebugPathTransform(Transform):
         return data
 
 def compare(jsonpath="./dataset_forgetting.json"):
+    torch.backends.cudnn.benchmark = True
     print_config()
     model1 = get_model(model_path = "model_swinvit.pt",to_compare=True) 
     model2 = get_model(model_path = "rois_contrastive_classif_ortho_0001_regularized.pth",to_compare=True)
@@ -316,14 +316,14 @@ def compare(jsonpath="./dataset_forgetting.json"):
     optimizer = None
     lr_scheduler = None
     
-    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 500,dataset,savename="baseline_segmentation5.pth",to_compare=True)
-    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 500,dataset,savename="finetuned_segmentation5.pth",to_compare=True)
+    #t1 = Train(model1, data_loader, optimizer, lr_scheduler, 500,dataset,savename="baseline_segmentation5.pth",to_compare=True)
+    #t2 = Train(model2, data_loader, optimizer, lr_scheduler, 500,dataset,savename="finetuned_segmentation5.pth",to_compare=True)
     
     print("Training Baseline Model")
-    t1.train()
+    #t1.train()
     
     print("Training Finetuned Model")
-    t2.train()
+    #t2.train()
     
     model1 = get_model(model_path = "baseline_segmentation5.pth",to_compare=True)
     model2 = get_model(model_path = "finetuned_segmentation5.pth",to_compare=True)
