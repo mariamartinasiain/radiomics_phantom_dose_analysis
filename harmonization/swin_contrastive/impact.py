@@ -117,22 +117,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
                 print(f"Shape of val_outputs: {val_outputs.shape}")
                 print("j" , j)
-                if j == 0:
-                    import nibabel as nib
-                    img = val_inputs[0,:,:,:,:].cpu().numpy()
-                    img = np.squeeze(img)
-                    img = nib.Nifti1Image(img, np.eye(4))
-                    nib.save(img, str(i) + "image.nii.gz")
-                    
-                    label = val_labels[0,:,:,:,:].cpu().numpy()
-                    label = np.squeeze(label)
-                    label = nib.Nifti1Image(label, np.eye(4))
-                    nib.save(label, str(i) + "label.nii.gz")                    
-                    
-                    pred = val_outputs[0,:,:,:,:].cpu().numpy()
-                    pred = np.squeeze(pred)
-                    pred = nib.Nifti1Image(pred, np.eye(4))
-                    nib.save(pred, str(i) + "pred.nii.gz")
+                
                     
             
 
@@ -144,6 +129,23 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 
                 print(f"Shape of val_labels_convert: {val_labels_convert[0].shape}")
                 print(f"Shape of val_output_convert: {val_output_convert[0].shape}")
+
+                if j == 0:
+                    import nibabel as nib
+                    img = val_inputs[0,:,:,:,:].cpu().numpy()
+                    img = np.squeeze(img)
+                    img = nib.Nifti1Image(img, np.eye(4))
+                    nib.save(img, str(i) + "image.nii.gz")
+                    
+                    label = val_labels_convert[0][0,:,:,:,:].cpu().numpy()
+                    label = np.squeeze(label)
+                    label = nib.Nifti1Image(label, np.eye(4))
+                    nib.save(label, str(i) + "label.nii.gz")                    
+                    
+                    pred = val_output_convert[0][0,:,:,:,:].cpu().numpy()
+                    pred = np.squeeze(pred)
+                    pred = nib.Nifti1Image(pred, np.eye(4))
+                    nib.save(pred, str(i) + "pred.nii.gz")
                 
                 dice_metric(y_pred=val_output_convert, y=val_labels_convert)
                 print(f"Dice: {dice_metric.aggregate().item()}")
