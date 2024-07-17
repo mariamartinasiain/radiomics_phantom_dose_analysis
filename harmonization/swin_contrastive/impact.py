@@ -117,19 +117,6 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                 val_outputs = sliding_window_inference(val_inputs, (96, 96, 96), 4, model)
                 print(f"Shape of val_outputs: {val_outputs.shape}")
                 print("j" , j)
-                
-                    
-            
-
-                
-                val_labels_list = decollate_batch(val_labels)
-                val_labels_convert = [post_label(val_label_tensor) for val_label_tensor in val_labels_list]
-                val_outputs_list = decollate_batch(val_outputs)
-                val_output_convert = [post_pred(val_pred_tensor) for val_pred_tensor in val_outputs_list]
-                
-                print(f"Shape of val_labels_convert: {val_labels_convert[0].shape}")
-                print(f"Shape of val_output_convert: {val_output_convert[0].shape}")
-
                 if j == 0:
                     import nibabel as nib
                     img = val_inputs[0,:,:,:,:].cpu().numpy()
@@ -137,16 +124,36 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
                     img = nib.Nifti1Image(img, np.eye(4))
                     nib.save(img, str(i) + "image.nii.gz")
                     
-                    label = val_labels_convert[0][:,:,:,:,:].cpu().numpy()
+                    label = val_labels[0,:,:,:,:].cpu().numpy()
                     label = np.squeeze(label)
                     label = nib.Nifti1Image(label, np.eye(4))
                     nib.save(label, str(i) + "label.nii.gz")                    
                     
-                    pred = val_output_convert[0][:,:,:,:,:].cpu().numpy()
+                    val_outputs_single_channel = torch.argmax(val_outputs, dim=1, keepdim=True)
+
+                    # Scale the values to the range 0-255
+                    val_outputs_scaled = (val_outputs_single_channel / 13.0) * 255.0
+
+                    # Convert to integer values
+                    val_outputs_byte = val_outputs_scaled.byte()
+
+                    pred = val_outputs_byte[0,:,:,:,:].cpu().numpy()
                     pred = np.squeeze(pred)
                     pred = nib.Nifti1Image(pred, np.eye(4))
                     nib.save(pred, str(i) + "pred.nii.gz")
+                    
+            
+
                 j+=1
+                val_labels_list = decollate_batch(val_labels)
+                val_labels_convert = [post_label(val_label_tensor) for val_label_tensor in val_labels_list]
+                val_outputs_list = decollate_batch(val_outputs)
+                val_output_convert = [post_pred(val_pred_tensor) for val_pred_tensor in val_outputs_list]
+                
+                print(f"Shape of val_labels_convert: {val_labels_convert[0].shape}")
+                print(f"Shape of val_output_convert: {val_output_convert[0].shape}")
+                
+                
                 dice_metric(y_pred=val_output_convert, y=val_labels_convert)
                 print(f"Dice: {dice_metric.aggregate().item()}")
             mean_dice_val = dice_metric.aggregate().item()
