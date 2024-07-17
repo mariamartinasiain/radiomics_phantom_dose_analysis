@@ -281,7 +281,7 @@ class Train:
 
             epoch_iterator.refresh()
             if step % self.step_interval == 0:
-                self.save_losses(average_loss,loss_file=f'{self.save_name}_losses.json')
+                self.save_losses(average_loss,loss_file=f'{self.save_name}')
         self.total_progress_bar.update(1)
         self.epoch += 1
         
