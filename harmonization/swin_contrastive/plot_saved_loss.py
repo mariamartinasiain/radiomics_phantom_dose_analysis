@@ -56,7 +56,7 @@ def plot_loaded_losses(name=''):
     
 
     plt.tight_layout()
-    plt.savefig('loaded_losses_plot.png')
+    plt.savefig(f'{name}__losses_plot.png')
     plt.show()
 
 if __name__ == '__main__':
