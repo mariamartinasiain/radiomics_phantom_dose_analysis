@@ -816,7 +816,7 @@ def main():
 
     #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
 
-    jsonpath = "./resized_light_dataset_info_10.json"
+    jsonpath = "./registered_light_dataset_info_10.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
