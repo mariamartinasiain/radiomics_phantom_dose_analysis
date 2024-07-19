@@ -712,7 +712,7 @@ class LazyPatchLoader(Transform):
             itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
             shape = itk_image.GetLargestPossibleRegion().GetSize()
             
-            #print("shape",shape)
+            print("shape",shape)
             
             #shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # XYZ order
             
@@ -733,9 +733,9 @@ class LazyPatchLoader(Transform):
                 # Use the current position from the shuffled list
                 start_x, start_y, start_z = self.precomputed_positions[self.current_position_index]
                 
-                # print("start_x",start_x)
-                # print("start_y",start_y)
-                # print("start_z",start_z)
+                print("start_x",start_x)
+                print("start_y",start_y)
+                print("start_z",start_z)
                 
                 self.current_position_index += 1
                 
@@ -744,8 +744,8 @@ class LazyPatchLoader(Transform):
                 
                 extract_index = [int(start_x), int(start_y), int(start_z)]  # ITK ZYX order
                 
-                # print("extract_index",extract_index)
-                # print("shape",shape)
+                print("extract_index",extract_index)
+                print("shape",shape)
                 
                 extract_size = [int(self.roi_size[0]), int(self.roi_size[1]), int(self.roi_size[2])]
                 
@@ -814,6 +814,8 @@ def main():
         
     ])
 
+
+    #/mnt/nas7/data/reza/registered_dataset/C1_174148_iCT_256_ID84_Harmonized_10mGy_FBP_NrFiles_343.nii.gz
     #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
 
     jsonpath = "./registered_light_dataset_info_10.json"
