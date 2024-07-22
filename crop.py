@@ -1,7 +1,36 @@
 import SimpleITK as sitk
+import pydicom
 import os
 
+def check_mask_metadata(file_path):
+    dcm = pydicom.dcmread(file_path)
+    
+    print(f"Image size: {dcm.Rows}x{dcm.Columns}")
+    
+    if (0x0020, 0x0032) in dcm:
+        print(f"Image Position (Patient): {dcm[0x0020, 0x0032].value}")
+    
+    if (0x0020, 0x0037) in dcm:
+        print(f"Image Orientation (Patient): {dcm[0x0020, 0x0037].value}")
+    
+    if (0x0020, 0x0052) in dcm:
+        print(f"Frame of Reference UID: {dcm[0x0020, 0x0052].value}")
+    
+    if (0x0062, 0x0001) in dcm:
+        print(f"Segmentation Type: {dcm[0x0062, 0x0001].value}")
+    
+    # Check for any private tags
+    private_tags = [tag for tag in dcm.keys() if tag.is_private]
+    if private_tags:
+        print("Private tags found:")
+        for tag in private_tags:
+            print(f"  {tag}: {dcm[tag].value}")
+
 def crop_volume(input_path, output_path, crop_coords):
+    # Check mask metadata
+    print("Mask metadata:")
+    check_mask_metadata(input_path)
+    
     # Read the image
     reader = sitk.ImageFileReader()
     reader.SetFileName(input_path)
@@ -9,7 +38,7 @@ def crop_volume(input_path, output_path, crop_coords):
 
     # Get image size
     size = image.GetSize()
-    print(f"Original image size: {size}")
+    print(f"\nOriginal image size (from SimpleITK): {size}")
 
     # Flip crop coordinates from [z_start, z_end, y_start, y_end, x_start, x_end]
     # to [x_start, x_end, y_start, y_end, z_start, z_end]
@@ -45,7 +74,7 @@ def main():
     # Crop the mask
     crop_volume(mask_file, output_path, crop_coords)
 
-    print(f"Mask cropped and saved as {output_path}")
+    print(f"\nMask cropped and saved as {output_path}")
 
 if __name__ == "__main__":
     main()
