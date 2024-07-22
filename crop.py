@@ -4,7 +4,7 @@ from monai.transforms import (
     SaveImage,
     Compose,
     SpatialPad,
-    Crop
+    SpatialCrop
 )
 from monai.data import Dataset, DataLoader
 
@@ -12,8 +12,8 @@ def create_transform_pipeline(reference_size, crop_coords):
     return Compose([
         LoadImage(image_only=True),
         SpatialPad(spatial_size=reference_size, mode='constant'),
-        Crop(roi_start=[crop_coords[4], crop_coords[2], crop_coords[0]],
-             roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]])
+        SpatialCrop(roi_start=[crop_coords[4], crop_coords[2], crop_coords[0]],
+                    roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]])
     ])
 
 def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
