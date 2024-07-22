@@ -18,6 +18,7 @@ def create_transform_pipeline(reference_size, crop_coords):
 def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     print(f"Mask file: {mask_file}")
     print(f"Reference DICOM folder: {reference_dicom_folder}")
+    print(f"Output path: {output_path}")
 
     # Load reference image to get its size
     reference_loader = LoadImage(image_only=True)
@@ -50,7 +51,7 @@ def main():
     crop_coords = [13, 323, 120, 395, 64, 445]
 
     # Output path for the processed mask
-    output_path = os.path.join(base_path, f"{reference_volume}_processed_mask.nii.gz")
+    output_path = os.path.join("",f"{reference_volume}_processed_mask.nii.gz")
 
     # Process the volume
     process_volume(mask_file, output_path, crop_coords, reference_dicom_folder)
