@@ -9,6 +9,7 @@ def print_sitk_metadata(image):
         print(f"{key}: {image.GetMetaData(key)}")
 
 import numpy as np
+import SimpleITK as sitk
 
 def crop_volume(input_path, output_path, crop_coords):
     # Read the image
@@ -43,7 +44,10 @@ def crop_volume(input_path, output_path, crop_coords):
 
     # Create a new image with the extended size
     extended_image = sitk.Image(new_size, image.GetPixelID())
-    extended_image.CopyInformation(image)
+    
+    # Set the metadata for the extended image
+    extended_image.SetSpacing(spacing)
+    extended_image.SetDirection(direction)
     extended_image.SetOrigin((0, 0, 0))  # Reset origin for simplicity
 
     # Paste the original image into the extended image
@@ -76,12 +80,23 @@ def crop_volume(input_path, output_path, crop_coords):
     # Crop the extended image
     cropped_image = sitk.Crop(extended_image, adjusted_coords[::2], crop_size)
 
+    # Set the origin of the cropped image
+    new_origin = (
+        origin[0] + adjusted_coords[0] * spacing[0],
+        origin[1] + adjusted_coords[2] * spacing[1],
+        origin[2] + adjusted_coords[4] * spacing[2]
+    )
+    cropped_image.SetOrigin(new_origin)
+
     # Write the cropped image
     writer = sitk.ImageFileWriter()
     writer.SetFileName(output_path)
     writer.Execute(cropped_image)
 
     print(f"\nFinal cropped image size: {cropped_image.GetSize()}")
+    print(f"Final cropped image origin: {cropped_image.GetOrigin()}")
+    print(f"Final cropped image spacing: {cropped_image.GetSpacing()}")
+    print(f"Final cropped image direction: {cropped_image.GetDirection()}")
 
 def main():
     base_path = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1"
