@@ -8,6 +8,8 @@ def print_sitk_metadata(image):
     for key in image.GetMetaDataKeys():
         print(f"{key}: {image.GetMetaData(key)}")
 
+import numpy as np
+
 def crop_volume(input_path, output_path, crop_coords):
     # Read the image
     reader = sitk.ImageFileReader()
@@ -28,14 +30,16 @@ def crop_volume(input_path, output_path, crop_coords):
     print(f"Direction: {direction}")
 
     # Calculate the shift based on the origin
-    shift = np.array([-int(origin[0]), -int(origin[1]), -int(origin[2])])
+    shift = np.array([-int(round(origin[0])), -int(round(origin[1])), -int(round(origin[2]))])
 
     # Calculate new size to encompass the entire volume
     new_size = [
-        max(size[0], crop_coords[5] + shift[0]),
-        max(size[1], crop_coords[3] + shift[1]),
-        max(size[2], crop_coords[1] + shift[2])
+        int(max(size[0], crop_coords[5] + shift[0])),
+        int(max(size[1], crop_coords[3] + shift[1])),
+        int(max(size[2], crop_coords[1] + shift[2]))
     ]
+
+    print(f"\nNew extended size: {new_size}")
 
     # Create a new image with the extended size
     extended_image = sitk.Image(new_size, image.GetPixelID())
@@ -44,19 +48,19 @@ def crop_volume(input_path, output_path, crop_coords):
 
     # Paste the original image into the extended image
     paster = sitk.PasteImageFilter()
-    paster.SetDestinationIndex((shift[0], shift[1], shift[2]))
+    paster.SetDestinationIndex((int(shift[0]), int(shift[1]), int(shift[2])))
     extended_image = paster.Execute(extended_image, image)
 
-    print(f"\nExtended Image Size: {extended_image.GetSize()}")
+    print(f"Extended Image Size: {extended_image.GetSize()}")
 
     # Adjust crop coordinates based on the shift
     adjusted_coords = [
-        crop_coords[4] + shift[0],  # x_start
-        crop_coords[5] + shift[0],  # x_end
-        crop_coords[2] + shift[1],  # y_start
-        crop_coords[3] + shift[1],  # y_end
-        crop_coords[0] + shift[2],  # z_start
-        crop_coords[1] + shift[2]   # z_end
+        int(crop_coords[4] + shift[0]),  # x_start
+        int(crop_coords[5] + shift[0]),  # x_end
+        int(crop_coords[2] + shift[1]),  # y_start
+        int(crop_coords[3] + shift[1]),  # y_end
+        int(crop_coords[0] + shift[2]),  # z_start
+        int(crop_coords[1] + shift[2])   # z_end
     ]
 
     # Calculate new size for cropping
