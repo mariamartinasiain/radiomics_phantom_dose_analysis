@@ -5,8 +5,10 @@ import SimpleITK as sitk
 import os
 
 def pad_segmentation(seg, target_shape, start_index, end_index):
+    print("Start pad_segmentation")
     padded_seg = np.zeros(target_shape, dtype=seg.dtype)
     padded_seg[:, :, start_index:end_index] = seg
+    print("End pad_segmentation")
     return padded_seg
 
 def find_closest_index(array, value):
@@ -75,11 +77,9 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
         seg, full_mask.shape, starting_index_global, ending_index_global
     )
 
-    # Add this segment to the full mask
-    full_mask = np.logical_or(full_mask, padded_seg).astype(np.uint8)
 
     # Convert to SimpleITK image for cropping
-    sitk_image = sitk.GetImageFromArray(full_mask)
+    sitk_image = sitk.GetImageFromArray(padded_seg)
 
     # Save the full mask as NIFTI
     full_mask_path = os.path.splitext(output_path)[0] + "_full.nii.gz"
