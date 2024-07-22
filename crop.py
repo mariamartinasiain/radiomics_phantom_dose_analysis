@@ -1,57 +1,44 @@
 import os
-import SimpleITK as sitk
-import numpy as np
+from monai.transforms import (
+    LoadImage,
+    SaveImage,
+    Compose,
+    SpatialPad,
+    Crop
+)
+from monai.data import Dataset, DataLoader
 
-def pad_and_crop_segmentation(seg_image, reference_image, crop_coords):
-    print("Start pad_and_crop_segmentation")
-    print("Segmentation image size:", seg_image.GetSize())
-    print("Reference image size:", reference_image.GetSize())
-    
-    # Pad the segmentation to match the reference image size
-    padded_seg = sitk.ConstantPad(seg_image, 
-                                  reference_image.GetSize() - seg_image.GetSize(),
-                                  [0, 0, 0])
-    
-    print("Padded segmentation size:", padded_seg.GetSize())
-    
-    # Crop the padded segmentation
-    crop_start = [crop_coords[4], crop_coords[2], crop_coords[0]]
-    crop_size = [crop_coords[5] - crop_coords[4],
-                 crop_coords[3] - crop_coords[2],
-                 crop_coords[1] - crop_coords[0]]
-    cropped_seg = sitk.Crop(padded_seg, crop_start, crop_size)
-    
-    print("Cropped segmentation size:", cropped_seg.GetSize())
-    print("End pad_and_crop_segmentation")
-    return padded_seg, cropped_seg
+def create_transform_pipeline(reference_size, crop_coords):
+    return Compose([
+        LoadImage(image_only=True),
+        SpatialPad(spatial_size=reference_size, mode='constant'),
+        Crop(roi_start=[crop_coords[4], crop_coords[2], crop_coords[0]],
+             roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]])
+    ])
 
 def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     print(f"Mask file: {mask_file}")
     print(f"Reference DICOM folder: {reference_dicom_folder}")
+
+    # Load reference image to get its size
+    reference_loader = LoadImage(image_only=True)
+    reference_image = reference_loader(reference_dicom_folder)
+    reference_size = reference_image.shape[1:]  # Assuming channel-first format
+
+    # Create and apply transform pipeline
+    transform = create_transform_pipeline(reference_size, crop_coords)
+    dataset = Dataset([mask_file], transform=transform)
+    loader = DataLoader(dataset, batch_size=1)
     
-    # Load the segmentation mask
-    seg_image = sitk.ReadImage(mask_file)
-    print("Loaded segmentation mask size:", seg_image.GetSize())
-
-    # Load the reference DICOM image
-    reference_image = sitk.ReadImage(reference_dicom_folder)
-    print("Loaded reference image size:", reference_image.GetSize())
-
-    # Pad and crop the segmentation
-    padded_seg, cropped_seg = pad_and_crop_segmentation(seg_image, reference_image, crop_coords)
-
-    # Save the full padded mask
-    full_mask_path = os.path.splitext(output_path)[0] + "_full.nii.gz"
-    sitk.WriteImage(padded_seg, full_mask_path)
-    print(f"Full mask saved as {full_mask_path}")
-
-    # Save the cropped mask
-    cropped_mask_path = os.path.splitext(output_path)[0] + "_cropped.nii.gz"
-    sitk.WriteImage(cropped_seg, cropped_mask_path)
-    print(f"Cropped mask saved as {cropped_mask_path}")
-
-    print(f"Cropped image size: {cropped_seg.GetSize()}")
-    print(f"Mask cropped and saved as {output_path}")
+    for processed_mask in loader:
+        processed_mask = processed_mask[0]  # Remove batch dimension
+        
+        # Save the processed mask
+        saver = SaveImage(output_dir=os.path.dirname(output_path), output_postfix="", output_ext=".nii.gz", resample=False)
+        saver(processed_mask)
+        
+        print(f"Processed mask shape: {processed_mask.shape}")
+        print(f"Mask processed and saved as {output_path}")
 
 def main():
     base_path = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1"
@@ -62,8 +49,8 @@ def main():
     # Crop coordinates [z_start, z_end, y_start, y_end, x_start, x_end]
     crop_coords = [13, 323, 120, 395, 64, 445]
 
-    # Output path for the cropped mask
-    output_path = os.path.join(base_path, f"{reference_volume}_cropped_mask.dcm")
+    # Output path for the processed mask
+    output_path = os.path.join(base_path, f"{reference_volume}_processed_mask.nii.gz")
 
     # Process the volume
     process_volume(mask_file, output_path, crop_coords, reference_dicom_folder)
