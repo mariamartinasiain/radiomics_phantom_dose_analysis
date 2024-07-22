@@ -9,7 +9,7 @@ from monai.transforms import (
 
 def create_transform_pipeline(reference_size, crop_coords):
     return Compose([
-        LoadImage(),
+        LoadImage(ensure_channel_first=True),
         SpatialPad(spatial_size=(reference_size[0], reference_size[1], reference_size[2]), mode='constant'),
         SpatialCrop(roi_start=[crop_coords[4], crop_coords[2], crop_coords[0]],
                     roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]])
