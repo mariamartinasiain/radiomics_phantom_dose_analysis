@@ -22,7 +22,7 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     # Load reference image to get its size
     reference_loader = LoadImage(image_only=True)
     reference_image = reference_loader(reference_dicom_folder)
-    reference_size = reference_image.shape[1:]  # Assuming channel-first format
+    reference_size = reference_image.shape  
 
     # Create and apply transform pipeline
     transform = create_transform_pipeline(reference_size, crop_coords)
