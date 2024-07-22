@@ -22,6 +22,8 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     
     # Read the DICOM segmentation file
     dicom_seg = pydicom.dcmread(mask_file)
+    readerp = pydicom_seg.SegmentReader()
+    result = readerp.read(dicom_seg)
     reader = sitk.ImageFileReader()
     reader.SetFileName(mask_file)
     reader.LoadPrivateTagsOn()
@@ -29,11 +31,15 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Read reference DICOM files
     dicom_files = [os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.isdigit()]
+    print(f"Number of potential DICOM files found: {len(dicom_files)}")
+    print(f"dicom_files: {dicom_files}")
     dicom_files.sort()
     print(f"Number of potential DICOM files found: {len(dicom_files)}")
 
     dicom_datasets = []
     all_instance_z_locations = []
+
+    
     for f in dicom_files:
         try:
             ds = pydicom.dcmread(f)
@@ -56,12 +62,15 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
         for f in dicom_seg.PerFrameFunctionalGroupsSequence
     ]
     all_referenced_z_locations = np.unique(all_referenced_z_locations)
+    print(f"Number of referenced Z locations: {len(all_referenced_z_locations)}")
+    print(f"Referenced Z locations: {all_referenced_z_locations}")
 
     min_referenced_z_location = min(all_referenced_z_locations)
+    print(f"Minimum referenced Z location: {min_referenced_z_location}")
 
     # Find the closest index instead of exact match
     starting_index_global = find_closest_index(all_instance_z_locations, min_referenced_z_location)
-    ending_index_global = starting_index_global + 343
+    ending_index_global = starting_index_global + len(all_referenced_z_locations)
 
     print(f"Starting index: {starting_index_global}, Ending index: {ending_index_global}")
 
