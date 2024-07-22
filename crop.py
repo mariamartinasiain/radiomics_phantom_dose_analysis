@@ -2,12 +2,9 @@ import os
 from monai.transforms import (
     LoadImage,
     SaveImage,
-    CropForeground,
     SpatialPad,
     Resize,
-    Compose,
 )
-from monai.data import Dataset, DataLoader
 import numpy as np
 
 def pad_and_crop_segmentation(seg_image, reference_image, crop_coords):
@@ -36,7 +33,7 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     seg_image = loader(mask_file)
 
     # Load the reference DICOM image
-    reference_image, reference_meta = loader(reference_dicom_folder)
+    reference_image = loader(reference_dicom_folder)
 
     # Pad and crop the segmentation
     padded_seg, cropped_seg = pad_and_crop_segmentation(seg_image, reference_image, crop_coords)
@@ -44,13 +41,13 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     # Save the full padded mask
     full_mask_path = os.path.splitext(output_path)[0] + "_full.nii.gz"
     saver = SaveImage(output_dir=os.path.dirname(full_mask_path), output_postfix="", output_ext=".nii.gz", resample=False)
-    saver(padded_seg, meta_data=reference_meta)
+    saver(padded_seg)
     print(f"Full mask saved as {full_mask_path}")
 
     # Save the cropped mask
     cropped_mask_path = os.path.splitext(output_path)[0] + "_cropped.nii.gz"
     saver = SaveImage(output_dir=os.path.dirname(cropped_mask_path), output_postfix="", output_ext=".nii.gz", resample=False)
-    saver(cropped_seg, meta_data=reference_meta)
+    saver(cropped_seg)
     print(f"Cropped mask saved as {cropped_mask_path}")
 
     print(f"Cropped image size: {cropped_seg.shape}")
