@@ -204,7 +204,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
     transforms = Compose([
         LoadImaged(keys=["image"], ensure_channel_first=True),
         #DebugTransform(),
-        ##ropOnROId(keys=["image"],roi_key="roi",size=target_size),
+        #cropOnROId(keys=["image"],roi_key="roi",size=target_size),
         # ScaleIntensityd(keys=["image"],minv=0.0, maxv=1.0),
         # Spacingd(
         #     keys=["image"],
@@ -223,7 +223,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open(f"{fname}_features.csv", "w", newline="") as csvfile:
+    with open(f"features_{fname}.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()

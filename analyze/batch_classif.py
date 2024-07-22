@@ -17,17 +17,7 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'small_rois_contrastive_classif_ortho_0001': (272),
-    'large_rois_contrastive_classif_ortho_0001' : (2800), 
-    
-    'small_rois_contrastive_ortho_0001': (272),
-    'large_rois_contrastive_ortho_0001' : (2800), 
-    
-    'small_rois_contrastive_classif_ortho_0001_regularized': (272),
-    'large_rois_contrastive_classif_ortho_0001_regularized' : (2800), 
-    
-    'small_rois_contrastive_ortho_0001_regularized': (272),
-    'large_rois_contrastive_ortho_0001_regularized' : (2800), 
+    'random_contrast2' : (3072),
     
 }
 classif_types = ['scanner','roi_large']
