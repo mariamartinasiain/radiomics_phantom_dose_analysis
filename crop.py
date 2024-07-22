@@ -23,6 +23,10 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     reference_loader = LoadImage(image_only=True)
     reference_image = reference_loader(reference_dicom_folder)
     reference_size = reference_image.shape  
+
+    mask_loader = LoadImage(image_only=True)
+    mask = mask_loader(mask_file)
+    print(f"Mask shape: {mask.shape}")
     print(f"Reference image shape: {reference_size}")
 
     # Create and apply transform pipeline
