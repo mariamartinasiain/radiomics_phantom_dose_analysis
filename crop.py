@@ -31,11 +31,15 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Read reference DICOM files
     dicom_files = [os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.isdigit()]
+    print(f"Number of potential DICOM files found: {len(dicom_files)}")
+    print(f"dicom_files: {dicom_files}")
     dicom_files.sort()
     print(f"Number of potential DICOM files found: {len(dicom_files)}")
 
     dicom_datasets = []
     all_instance_z_locations = []
+
+    
     for f in dicom_files:
         try:
             ds = pydicom.dcmread(f)
@@ -58,8 +62,11 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
         for f in dicom_seg.PerFrameFunctionalGroupsSequence
     ]
     all_referenced_z_locations = np.unique(all_referenced_z_locations)
+    print(f"Number of referenced Z locations: {len(all_referenced_z_locations)}")
+    print(f"Referenced Z locations: {all_referenced_z_locations}")
 
     min_referenced_z_location = min(all_referenced_z_locations)
+    print(f"Minimum referenced Z location: {min_referenced_z_location}")
 
     # Find the closest index instead of exact match
     starting_index_global = find_closest_index(all_instance_z_locations, min_referenced_z_location)
@@ -74,11 +81,11 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
 
     # Change axes to match DICOM
-    #seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
+    seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
 
     # Pad segmentation to match DICOM dimensions
     padded_seg = pad_segmentation(
-        segmentation_image_data, full_mask.shape, starting_index_global, ending_index_global
+        seg, full_mask.shape, starting_index_global, ending_index_global
     )
 
 
