@@ -6,14 +6,14 @@ from monai.transforms import (
     SpatialPad,
     SpatialCrop
 )
-from monai.data import Dataset, DataLoader
 
-def create_transform_pipeline(reference_size, crop_coords):
+def create_transform_pipeline(reference_size, crop_coords, output_path):
     return Compose([
         LoadImage(image_only=True),
         SpatialPad(spatial_size=reference_size, mode='constant'),
         SpatialCrop(roi_start=[crop_coords[4], crop_coords[2], crop_coords[0]],
-                    roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]])
+                    roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]]),
+        SaveImage(output_dir=os.path.dirname(output_path), output_postfix="", output_ext=".nii.gz", resample=False)
     ])
 
 def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
@@ -26,19 +26,10 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     reference_size = reference_image.shape[1:]  # Assuming channel-first format
 
     # Create and apply transform pipeline
-    transform = create_transform_pipeline(reference_size, crop_coords)
-    dataset = Dataset([mask_file], transform=transform)
-    loader = DataLoader(dataset, batch_size=1)
+    transform = create_transform_pipeline(reference_size, crop_coords, output_path)
+    processed_mask = transform(mask_file)
     
-    for processed_mask in loader:
-        processed_mask = processed_mask[0]  # Remove batch dimension
-        
-        # Save the processed mask
-        saver = SaveImage(output_dir=os.path.dirname(output_path), output_postfix="", output_ext=".nii.gz", resample=False)
-        saver(processed_mask)
-        
-        print(f"Processed mask shape: {processed_mask.shape}")
-        print(f"Mask processed and saved as {output_path}")
+    print(f"Mask processed and saved as {output_path}")
 
 def main():
     base_path = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1"
