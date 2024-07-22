@@ -63,20 +63,18 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Process all segments into a single mask
     full_mask = np.zeros((512, 512, len(dicom_datasets)), dtype=np.uint8)
-    
-    for segment_number in result.available_segments:
-        segmentation_image_data = result.segment_data(segment_number)
+    segmentation_image_data = result.segment_data()
 
-        # Change axes to match DICOM
-        seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
+    # Change axes to match DICOM
+    seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
 
-        # Pad segmentation to match DICOM dimensions
-        padded_seg = pad_segmentation(
-            seg, full_mask.shape, starting_index_global, ending_index_global
-        )
+    # Pad segmentation to match DICOM dimensions
+    padded_seg = pad_segmentation(
+        seg, full_mask.shape, starting_index_global, ending_index_global
+    )
 
-        # Add this segment to the full mask
-        full_mask = np.logical_or(full_mask, padded_seg).astype(np.uint8)
+    # Add this segment to the full mask
+    full_mask = np.logical_or(full_mask, padded_seg).astype(np.uint8)
 
     # Convert to SimpleITK image for cropping
     sitk_image = sitk.GetImageFromArray(full_mask)
