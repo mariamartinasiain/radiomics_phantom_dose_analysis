@@ -7,6 +7,10 @@ import os
 def pad_segmentation(seg, target_shape, start_index, end_index):
     print("Start pad_segmentation")
     padded_seg = np.zeros(target_shape, dtype=seg.dtype)
+    print("padded_seg shape: ", padded_seg.shape)
+    print("seg shape: ", seg.shape)
+    print("start_index: ", start_index)
+    print("end_index: ", end_index)
     padded_seg[:, :, start_index:end_index] = seg
     print("End pad_segmentation")
     return padded_seg
