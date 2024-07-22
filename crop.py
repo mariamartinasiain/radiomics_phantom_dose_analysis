@@ -1,6 +1,7 @@
 import SimpleITK as sitk
 import pydicom
 import os
+import numpy as np
 
 def print_sitk_metadata(image):
     print("SimpleITK Metadata:")
