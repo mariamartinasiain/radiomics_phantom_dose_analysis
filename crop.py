@@ -1,26 +1,27 @@
 import os
-from monai.transforms import (
-    LoadImage,
-    SaveImage,
-    SpatialPad,
-    Resize,
-)
+import SimpleITK as sitk
 import numpy as np
 
 def pad_and_crop_segmentation(seg_image, reference_image, crop_coords):
     print("Start pad_and_crop_segmentation")
+    print("Segmentation image size:", seg_image.GetSize())
+    print("Reference image size:", reference_image.GetSize())
     
     # Pad the segmentation to match the reference image size
-    padder = SpatialPad(spatial_size=reference_image.shape, mode='constant')
-    padded_seg = padder(seg_image)
+    padded_seg = sitk.ConstantPad(seg_image, 
+                                  reference_image.GetSize() - seg_image.GetSize(),
+                                  [0, 0, 0])
     
-    print("padded_seg shape: ", padded_seg.shape)
-    print("original seg shape: ", seg_image.shape)
+    print("Padded segmentation size:", padded_seg.GetSize())
     
     # Crop the padded segmentation
-    cropper = Resize(spatial_size=crop_coords[1::2])
-    cropped_seg = cropper(padded_seg[None, ...])[0]
+    crop_start = [crop_coords[4], crop_coords[2], crop_coords[0]]
+    crop_size = [crop_coords[5] - crop_coords[4],
+                 crop_coords[3] - crop_coords[2],
+                 crop_coords[1] - crop_coords[0]]
+    cropped_seg = sitk.Crop(padded_seg, crop_start, crop_size)
     
+    print("Cropped segmentation size:", cropped_seg.GetSize())
     print("End pad_and_crop_segmentation")
     return padded_seg, cropped_seg
 
@@ -29,28 +30,27 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     print(f"Reference DICOM folder: {reference_dicom_folder}")
     
     # Load the segmentation mask
-    loader = LoadImage(image_only=True)
-    seg_image = loader(mask_file)
+    seg_image = sitk.ReadImage(mask_file)
+    print("Loaded segmentation mask size:", seg_image.GetSize())
 
     # Load the reference DICOM image
-    reference_image = loader(reference_dicom_folder)
+    reference_image = sitk.ReadImage(reference_dicom_folder)
+    print("Loaded reference image size:", reference_image.GetSize())
 
     # Pad and crop the segmentation
     padded_seg, cropped_seg = pad_and_crop_segmentation(seg_image, reference_image, crop_coords)
 
     # Save the full padded mask
     full_mask_path = os.path.splitext(output_path)[0] + "_full.nii.gz"
-    saver = SaveImage(output_dir=os.path.dirname(full_mask_path), output_postfix="", output_ext=".nii.gz", resample=False)
-    saver(padded_seg)
+    sitk.WriteImage(padded_seg, full_mask_path)
     print(f"Full mask saved as {full_mask_path}")
 
     # Save the cropped mask
     cropped_mask_path = os.path.splitext(output_path)[0] + "_cropped.nii.gz"
-    saver = SaveImage(output_dir=os.path.dirname(cropped_mask_path), output_postfix="", output_ext=".nii.gz", resample=False)
-    saver(cropped_seg)
+    sitk.WriteImage(cropped_seg, cropped_mask_path)
     print(f"Cropped mask saved as {cropped_mask_path}")
 
-    print(f"Cropped image size: {cropped_seg.shape}")
+    print(f"Cropped image size: {cropped_seg.GetSize()}")
     print(f"Mask cropped and saved as {output_path}")
 
 def main():
