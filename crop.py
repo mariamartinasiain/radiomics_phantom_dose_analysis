@@ -10,7 +10,7 @@ def pad_segmentation(seg_image, target_shape, start_index, end_index):
     print("seg shape: ", seg_array.shape)
     print("start_index: ", start_index)
     print("end_index: ", end_index)
-    padded_seg[:, :, start_index:end_index] = seg_array
+    padded_seg[start_index:end_index, :, :] = seg_array
     print("End pad_segmentation")
     return sitk.GetImageFromArray(padded_seg)
 
@@ -40,12 +40,13 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     ref_origin = reference_image.GetOrigin()
 
     # Calculer les indices de début et de fin pour le padding
-    z_positions = [float(reference_image.GetMetaData(f"0020|0032").split('\\')[-1]) for i in range(ref_size[2])]
-    seg_z_positions = [float(seg_image.GetMetaData(f"0020|0032").split('\\')[-1]) for i in range(seg_image.GetSize()[2])]
+    seg_size = seg_image.GetSize()
+    start_index = 0
+    end_index = seg_size[2]
 
-    min_seg_z = min(seg_z_positions)
-    start_index = find_closest_index(z_positions, min_seg_z)
-    end_index = start_index + seg_image.GetSize()[2]
+    if ref_size[2] > seg_size[2]:
+        start_index = (ref_size[2] - seg_size[2]) // 2
+        end_index = start_index + seg_size[2]
 
     # Padding de l'image de segmentation
     padded_seg = pad_segmentation(seg_image, (ref_size[2], ref_size[1], ref_size[0]), start_index, end_index)
@@ -59,10 +60,10 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     print(f"Full mask saved as {full_mask_path}")
 
     # Crop l'image
-    crop_start = [crop_coords[0], crop_coords[2], crop_coords[4]]
-    crop_size = [crop_coords[1] - crop_coords[0],
+    crop_start = [crop_coords[4], crop_coords[2], crop_coords[0]]
+    crop_size = [crop_coords[5] - crop_coords[4],
                  crop_coords[3] - crop_coords[2],
-                 crop_coords[5] - crop_coords[4]]
+                 crop_coords[1] - crop_coords[0]]
 
     print(f"Image size: {padded_seg.GetSize()}")
     print(f"Crop start: {crop_start}")
