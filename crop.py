@@ -35,7 +35,7 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     processed_mask = transform(mask_file)
     
     # Save the processed mask
-    saver = SaveImage(output_dir=os.path.dirname(output_path), output_ext=".nii.gz", resample=False,squeeze_end_dims=True,print_log=True)
+    saver = SaveImage(output_dir='./', output_ext=".nii.gz", resample=False,squeeze_end_dims=True,print_log=True)
     saver(processed_mask)
     
     print(f"Processed mask shape: {processed_mask.shape}")
