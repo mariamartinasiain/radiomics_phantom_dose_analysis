@@ -67,12 +67,11 @@ from monai.data import decollate_batch
 from tqdm import tqdm
 
 class Train:
-    def __init__(self, model, data_loader, optimizer, lr_scheduler, max_iterations, dataset, 
+    def __init__(self, model, data_loader, optimizer, max_iterations, dataset, 
                  val_interval=500, device=None, savename="model.pth"):
         self.model = model
         self.data_loader = data_loader
         self.optimizer = optimizer
-        self.lr_scheduler = lr_scheduler
         self.max_iterations = max_iterations
         self.dataset = dataset
         self.val_interval = val_interval
@@ -413,10 +412,9 @@ def compare(jsonpath="./dataset_forgetting.json"):
     data_loader = {"train": train_loader, "test": val_loader}
     dataset = {"train": train_ds, "test": val_ds}
     optimizer = torch.optim.AdamW(model1.parameters(), lr=1e-4, weight_decay=1e-5)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5000, gamma=0.1)
     
-    t1 = Train(model1, data_loader, optimizer, lr_scheduler, 500, dataset, savename="baseline_segmentation5.pth", to_compare=True)
-    t2 = Train(model2, data_loader, optimizer, lr_scheduler, 500, dataset, savename="finetuned_segmentation5.pth", to_compare=True)
+    t1 = Train(model1, data_loader, optimizer, 500, dataset, savename="baseline_segmentation5.pth")
+    t2 = Train(model2, data_loader, optimizer, 500, dataset, savename="finetuned_segmentation5.pth")
     
     print("Training Baseline Model")
     baseline_loss_values, baseline_metric_values = t1.train()
