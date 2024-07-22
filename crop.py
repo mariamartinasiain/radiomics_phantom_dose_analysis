@@ -7,13 +7,12 @@ from monai.transforms import (
     SpatialCrop
 )
 
-def create_transform_pipeline(reference_size, crop_coords, output_path):
+def create_transform_pipeline(reference_size, crop_coords):
     return Compose([
         LoadImage(image_only=True),
         SpatialPad(spatial_size=reference_size, mode='constant'),
         SpatialCrop(roi_start=[crop_coords[4], crop_coords[2], crop_coords[0]],
-                    roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]]),
-        SaveImage(output_dir=os.path.dirname(output_path), output_postfix="", output_ext=".nii.gz", resample=False)
+                    roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]])
     ])
 
 def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
@@ -26,9 +25,14 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     reference_size = reference_image.shape[1:]  # Assuming channel-first format
 
     # Create and apply transform pipeline
-    transform = create_transform_pipeline(reference_size, crop_coords, output_path)
+    transform = create_transform_pipeline(reference_size, crop_coords)
     processed_mask = transform(mask_file)
     
+    # Save the processed mask
+    saver = SaveImage(output_dir=os.path.dirname(output_path), output_postfix="", output_ext=".nii.gz", resample=False)
+    saver(processed_mask)
+    
+    print(f"Processed mask shape: {processed_mask.shape}")
     print(f"Mask processed and saved as {output_path}")
 
 def main():
