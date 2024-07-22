@@ -61,7 +61,7 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Find the closest index instead of exact match
     starting_index_global = find_closest_index(all_instance_z_locations, min_referenced_z_location)
-    ending_index_global = starting_index_global + len(343)
+    ending_index_global = starting_index_global + 343
 
     print(f"Starting index: {starting_index_global}, Ending index: {ending_index_global}")
 
