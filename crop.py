@@ -1,107 +1,56 @@
 import SimpleITK as sitk
 import pydicom
 import os
-import numpy as np
 
-def print_sitk_metadata(image):
-    print("SimpleITK Metadata:")
-    for key in image.GetMetaDataKeys():
-        print(f"{key}: {image.GetMetaData(key)}")
+def check_mask_metadata(file_path):
+    dcm = pydicom.dcmread(file_path)
+    
+    print(f"Image size: {dcm.Rows}x{dcm.Columns}")
+    if hasattr(dcm, 'NumberOfFrames'):
+        print(f"Number of frames: {dcm.NumberOfFrames}")
+    
+    print("\nAll DICOM tags:")
+    for elem in dcm:
+        if elem.VR != "SQ":  # Skip sequence items to avoid clutter
+            print(f"{elem.tag}: {elem.name} = {repr(elem.value)}")
 
-import numpy as np
-import SimpleITK as sitk
+# The rest of the script remains the same
 
-import numpy as np
-import SimpleITK as sitk
+# The rest of the script remains the same
 
 def crop_volume(input_path, output_path, crop_coords):
+    # Check mask metadata
+    print("Mask metadata:")
+    check_mask_metadata(input_path)
+    
     # Read the image
     reader = sitk.ImageFileReader()
     reader.SetFileName(input_path)
-    reader.LoadPrivateTagsOn()
     image = reader.Execute()
 
-    # Get image properties
+    # Get image size
     size = image.GetSize()
-    spacing = image.GetSpacing()
-    origin = image.GetOrigin()
-    direction = image.GetDirection()
+    print(f"\nOriginal image size (from SimpleITK): {size}")
 
-    print(f"\nOriginal Image properties:")
-    print(f"Size: {size}")
-    print(f"Spacing: {spacing}")
-    print(f"Origin: {origin}")
-    print(f"Direction: {direction}")
-
-    # Calculate the shift based on the origin
-    shift = np.array([-int(round(origin[0])), -int(round(origin[1])), -int(round(origin[2]))])
-
-    # Calculate new size to encompass the entire volume
-    new_size = [
-        int(max(size[0], crop_coords[5] + shift[0])),
-        int(max(size[1], crop_coords[3] + shift[1])),
-        int(max(size[2], crop_coords[1] + shift[2]))
-    ]
-
-    print(f"\nNew extended size: {new_size}")
-
-    # Create a new image with the extended size
-    extended_image = sitk.Image(new_size, image.GetPixelID())
+    # Flip crop coordinates from [z_start, z_end, y_start, y_end, x_start, x_end]
+    # to [x_start, x_end, y_start, y_end, z_start, z_end]
+    flipped_coords = crop_coords[4:6] + crop_coords[2:4] + crop_coords[0:2]
     
-    # Set the metadata for the extended image
-    extended_image.SetSpacing(spacing)
-    extended_image.SetDirection(direction)
-    extended_image.SetOrigin((0, 0, 0))  # Reset origin for simplicity
+    # Calculate new size
+    new_size = [flipped_coords[1] - flipped_coords[0], 
+                flipped_coords[3] - flipped_coords[2], 
+                flipped_coords[5] - flipped_coords[4]]
+    
+    print(f"Crop coordinates: {flipped_coords}")
+    print(f"New size: {new_size}")
 
-    # Paste the original image into the extended image
-    paster = sitk.PasteImageFilter()
-    paster.SetDestinationIndex((int(shift[0]), int(shift[1]), int(shift[2])))
-    extended_image = paster.Execute(extended_image, image)
-
-    print(f"Extended Image Size: {extended_image.GetSize()}")
-
-    # Adjust crop coordinates based on the shift
-    adjusted_coords = [
-        max(0, min(int(crop_coords[4] + shift[0]), new_size[0] - 1)),  # x_start
-        max(0, min(int(crop_coords[5] + shift[0]), new_size[0])),      # x_end
-        max(0, min(int(crop_coords[2] + shift[1]), new_size[1] - 1)),  # y_start
-        max(0, min(int(crop_coords[3] + shift[1]), new_size[1])),      # y_end
-        max(0, min(int(crop_coords[0] + shift[2]), new_size[2] - 1)),  # z_start
-        max(0, min(int(crop_coords[1] + shift[2]), new_size[2]))       # z_end
-    ]
-
-    # Calculate new size for cropping
-    crop_size = [
-        max(1, adjusted_coords[1] - adjusted_coords[0]),
-        max(1, adjusted_coords[3] - adjusted_coords[2]),
-        max(1, adjusted_coords[5] - adjusted_coords[4])
-    ]
-
-    print(f"Adjusted crop coordinates: {adjusted_coords}")
-    print(f"Crop size: {crop_size}")
-
-    # Crop the extended image
-    cropped_image = sitk.Crop(extended_image, adjusted_coords[::2], crop_size)
-
-    # Set the origin of the cropped image
-    new_origin = (
-        origin[0] + adjusted_coords[0] * spacing[0],
-        origin[1] + adjusted_coords[2] * spacing[1],
-        origin[2] + adjusted_coords[4] * spacing[2]
-    )
-    cropped_image.SetOrigin(new_origin)
+    # Crop the image
+    cropped_image = sitk.Crop(image, flipped_coords[::2], new_size)
 
     # Write the cropped image
     writer = sitk.ImageFileWriter()
     writer.SetFileName(output_path)
     writer.Execute(cropped_image)
-
-    print(f"\nFinal cropped image size: {cropped_image.GetSize()}")
-    print(f"Final cropped image origin: {cropped_image.GetOrigin()}")
-    print(f"Final cropped image spacing: {cropped_image.GetSpacing()}")
-    print(f"Final cropped image direction: {cropped_image.GetDirection()}")
-
-    return cropped_image
 
 def main():
     base_path = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1"
