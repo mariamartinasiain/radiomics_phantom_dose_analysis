@@ -10,6 +10,8 @@ def pad_segmentation(seg, target_shape, start_index, end_index):
     return padded_seg
 
 def find_closest_index(array, value):
+    if not array:
+        raise ValueError("Input array is empty")
     return np.argmin(np.abs(np.array(array) - value))
 
 def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
@@ -20,10 +22,26 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Read reference DICOM files
     dicom_files = sorted([os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.endswith('.dcm')])
-    dicom_datasets = [pydicom.dcmread(f) for f in dicom_files]
+    print(f"Number of DICOM files found: {len(dicom_files)}")
 
-    # Find smallest patient Z position to define starting index
-    all_instance_z_locations = [float(ds.ImagePositionPatient[-1]) for ds in dicom_datasets]
+    dicom_datasets = []
+    all_instance_z_locations = []
+    for f in dicom_files:
+        try:
+            ds = pydicom.dcmread(f)
+            dicom_datasets.append(ds)
+            if hasattr(ds, 'ImagePositionPatient'):
+                all_instance_z_locations.append(float(ds.ImagePositionPatient[-1]))
+            else:
+                print(f"Warning: ImagePositionPatient not found in file {f}")
+        except Exception as e:
+            print(f"Error reading file {f}: {e}")
+
+    print(f"Number of valid DICOM datasets: {len(dicom_datasets)}")
+    print(f"Number of Z locations found: {len(all_instance_z_locations)}")
+
+    if not all_instance_z_locations:
+        raise ValueError("No valid Z locations found in DICOM files")
 
     all_referenced_z_locations = [
         float(f.PlanePositionSequence[0].ImagePositionPatient[-1])
@@ -36,6 +54,8 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     # Find the closest index instead of exact match
     starting_index_global = find_closest_index(all_instance_z_locations, min_referenced_z_location)
     ending_index_global = starting_index_global + len(all_referenced_z_locations)
+
+    print(f"Starting index: {starting_index_global}, Ending index: {ending_index_global}")
 
     # Process all segments into a single mask
     full_mask = np.zeros((512, 512, len(dicom_datasets)), dtype=np.uint8)
