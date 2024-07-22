@@ -60,6 +60,7 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     ending_index_global = starting_index_global + len(all_referenced_z_locations)
 
     print(f"Starting index: {starting_index_global}, Ending index: {ending_index_global}")
+    print(f"Result size: {result.segmentation_shape}")
 
     # Process all segments into a single mask
     full_mask = np.zeros((512, 512, len(dicom_datasets)), dtype=np.uint8)
