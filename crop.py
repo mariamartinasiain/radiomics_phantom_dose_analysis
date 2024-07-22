@@ -15,14 +15,18 @@ def find_closest_index(array, value):
     return np.argmin(np.abs(np.array(array) - value))
 
 def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
+    print(f"Mask file: {mask_file}")
+    print(f"Reference DICOM folder: {reference_dicom_folder}")
+    
     # Read the DICOM segmentation file
     dicom_seg = pydicom.dcmread(mask_file)
     reader = pydicom_seg.SegmentReader()
     result = reader.read(dicom_seg)
 
     # Read reference DICOM files
-    dicom_files = sorted([os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.endswith('.dcm')])
-    print(f"Number of DICOM files found: {len(dicom_files)}")
+    dicom_files = [os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.isdigit()]
+    dicom_files.sort()
+    print(f"Number of potential DICOM files found: {len(dicom_files)}")
 
     dicom_datasets = []
     all_instance_z_locations = []
