@@ -70,11 +70,11 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     segmentation_image_data = image
 
     # Change axes to match DICOM
-    seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
+    #seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
 
     # Pad segmentation to match DICOM dimensions
     padded_seg = pad_segmentation(
-        seg, full_mask.shape, starting_index_global, ending_index_global
+        segmentation_image_data, full_mask.shape, starting_index_global, ending_index_global
     )
 
 
