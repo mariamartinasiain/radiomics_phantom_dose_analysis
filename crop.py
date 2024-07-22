@@ -6,7 +6,7 @@ import os
 
 def pad_segmentation(seg, target_shape, start_index, end_index):
     padded_seg = np.zeros(target_shape, dtype=seg.dtype)
-    padded_seg[:, :, start_index:end_index] = seg
+    padded_seg[start_index:end_index, :, :] = seg
     return padded_seg
 
 def find_closest_index(array, value):
@@ -62,13 +62,13 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     print(f"Starting index: {starting_index_global}, Ending index: {ending_index_global}")
 
     # Process all segments into a single mask
-    full_mask = np.zeros((512, 512, len(dicom_datasets)), dtype=np.uint8)
+    full_mask = np.zeros((len(dicom_datasets), 512, 512), dtype=np.uint8)
     
     for segment_number in result.available_segments:
         segmentation_image_data = result.segment_data(segment_number)
 
         # Change axes to match DICOM
-        seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
+        seg = np.swapaxes(segmentation_image_data, 0, -1)
 
         # Pad segmentation to match DICOM dimensions
         padded_seg = pad_segmentation(
@@ -81,7 +81,12 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     # Convert to SimpleITK image for cropping
     sitk_image = sitk.GetImageFromArray(full_mask)
 
-    # Crop the image
+    # Save the full mask as NIFTI
+    full_mask_path = os.path.splitext(output_path)[0] + "_full.nii.gz"
+    sitk.WriteImage(sitk_image, full_mask_path)
+    print(f"Full mask saved as {full_mask_path}")
+
+    # Adjust crop coordinates for (z, y, x) order
     crop_start = [crop_coords[0], crop_coords[2], crop_coords[4]]
     crop_size = [crop_coords[1] - crop_coords[0],
                  crop_coords[3] - crop_coords[2],
@@ -98,15 +103,12 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     cropped_image = sitk.Crop(sitk_image, crop_start, crop_size)
 
-    # Write the cropped image
-    writer = sitk.ImageFileWriter()
-    writer.SetFileName(output_path)
-    writer.Execute(cropped_image)
+    # Save the cropped mask as NIFTI
+    cropped_mask_path = os.path.splitext(output_path)[0] + "_cropped.nii.gz"
+    sitk.WriteImage(cropped_image, cropped_mask_path)
+    print(f"Cropped mask saved as {cropped_mask_path}")
 
     print(f"Cropped image size: {cropped_image.GetSize()}")
-    print(f"Mask cropped and saved as {output_path}")
-
-# The main function remains the same
 
 def main():
     base_path = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1"
