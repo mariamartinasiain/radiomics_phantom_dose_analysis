@@ -6,25 +6,15 @@ def check_mask_metadata(file_path):
     dcm = pydicom.dcmread(file_path)
     
     print(f"Image size: {dcm.Rows}x{dcm.Columns}")
+    if hasattr(dcm, 'NumberOfFrames'):
+        print(f"Number of frames: {dcm.NumberOfFrames}")
     
-    if (0x0020, 0x0032) in dcm:
-        print(f"Image Position (Patient): {dcm[0x0020, 0x0032].value}")
-    
-    if (0x0020, 0x0037) in dcm:
-        print(f"Image Orientation (Patient): {dcm[0x0020, 0x0037].value}")
-    
-    if (0x0020, 0x0052) in dcm:
-        print(f"Frame of Reference UID: {dcm[0x0020, 0x0052].value}")
-    
-    if (0x0062, 0x0001) in dcm:
-        print(f"Segmentation Type: {dcm[0x0062, 0x0001].value}")
-    
-    # Check for any private tags
-    private_tags = [tag for tag in dcm.keys() if tag.is_private]
-    if private_tags:
-        print("Private tags found:")
-        for tag in private_tags:
-            print(f"  {tag}: {dcm[tag].value}")
+    print("\nAll DICOM tags:")
+    for elem in dcm:
+        if elem.VR != "SQ":  # Skip sequence items to avoid clutter
+            print(f"{elem.tag}: {elem.name} = {repr(elem.value)}")
+
+# The rest of the script remains the same
 
 def crop_volume(input_path, output_path, crop_coords):
     # Check mask metadata
