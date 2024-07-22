@@ -20,8 +20,10 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     
     # Read the DICOM segmentation file
     dicom_seg = pydicom.dcmread(mask_file)
-    reader = pydicom_seg.SegmentReader()
-    result = reader.read(dicom_seg)
+    reader = sitk.ImageFileReader()
+    reader.SetFileName(mask_file)
+    reader.LoadPrivateTagsOn()
+    image = reader.Execute()
 
     # Read reference DICOM files
     dicom_files = [os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.isdigit()]
@@ -64,7 +66,7 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Process all segments into a single mask
     full_mask = np.zeros((512, 512, len(dicom_datasets)), dtype=np.uint8)
-    segmentation_image_data = result
+    segmentation_image_data = image
 
     # Change axes to match DICOM
     seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
