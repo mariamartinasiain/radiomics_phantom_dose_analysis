@@ -9,6 +9,9 @@ def pad_segmentation(seg, target_shape, start_index, end_index):
     padded_seg[:, :, start_index:end_index] = seg
     return padded_seg
 
+def find_closest_index(array, value):
+    return np.argmin(np.abs(np.array(array) - value))
+
 def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     # Read the DICOM segmentation file
     dicom_seg = pydicom.dcmread(mask_file)
@@ -16,7 +19,7 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     result = reader.read(dicom_seg)
 
     # Read reference DICOM files
-    dicom_files = [os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.endswith('.dcm')]
+    dicom_files = sorted([os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.endswith('.dcm')])
     dicom_datasets = [pydicom.dcmread(f) for f in dicom_files]
 
     # Find smallest patient Z position to define starting index
@@ -30,7 +33,8 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     min_referenced_z_location = min(all_referenced_z_locations)
 
-    starting_index_global = all_instance_z_locations.index(min_referenced_z_location)
+    # Find the closest index instead of exact match
+    starting_index_global = find_closest_index(all_instance_z_locations, min_referenced_z_location)
     ending_index_global = starting_index_global + len(all_referenced_z_locations)
 
     # Process all segments into a single mask
@@ -68,6 +72,8 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     print(f"Cropped image size: {cropped_image.GetSize()}")
     print(f"Mask cropped and saved as {output_path}")
+
+# The main function remains the same
 
 def main():
     base_path = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1"
