@@ -24,14 +24,20 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     # Lire le fichier de segmentation DICOM
     seg_image = sitk.ReadImage(mask_file)
 
-    # Lire les fichiers DICOM de référence
-    reference_image = sitk.ReadImage(reference_dicom_folder)
+    # Lire la série DICOM de référence
+    reader = sitk.ImageSeriesReader()
+    dicom_names = reader.GetGDCMSeriesFileNames(reference_dicom_folder)
+    reader.SetFileNames(dicom_names)
+    reference_image = reader.Execute()
 
     # Obtenir les métadonnées nécessaires
     ref_size = reference_image.GetSize()
     ref_spacing = reference_image.GetSpacing()
     ref_direction = reference_image.GetDirection()
     ref_origin = reference_image.GetOrigin()
+
+    print(f"Reference image size: {ref_size}")
+    print(f"Segmentation image size: {seg_image.GetSize()}")
 
     # Padding de l'image de segmentation
     padded_seg = pad_segmentation(seg_image, (ref_size[2], ref_size[1], ref_size[0]))
@@ -51,7 +57,7 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
                  crop_coords[3] - crop_coords[2],
                  crop_coords[1] - crop_coords[0]]
 
-    print(f"Image size: {padded_seg.GetSize()}")
+    print(f"Padded image size: {padded_seg.GetSize()}")
     print(f"Crop start: {crop_start}")
     print(f"Crop size: {crop_size}")
 
