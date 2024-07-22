@@ -11,6 +11,9 @@ def print_sitk_metadata(image):
 import numpy as np
 import SimpleITK as sitk
 
+import numpy as np
+import SimpleITK as sitk
+
 def crop_volume(input_path, output_path, crop_coords):
     # Read the image
     reader = sitk.ImageFileReader()
@@ -59,19 +62,19 @@ def crop_volume(input_path, output_path, crop_coords):
 
     # Adjust crop coordinates based on the shift
     adjusted_coords = [
-        int(crop_coords[4] + shift[0]),  # x_start
-        int(crop_coords[5] + shift[0]),  # x_end
-        int(crop_coords[2] + shift[1]),  # y_start
-        int(crop_coords[3] + shift[1]),  # y_end
-        int(crop_coords[0] + shift[2]),  # z_start
-        int(crop_coords[1] + shift[2])   # z_end
+        max(0, min(int(crop_coords[4] + shift[0]), new_size[0] - 1)),  # x_start
+        max(0, min(int(crop_coords[5] + shift[0]), new_size[0])),      # x_end
+        max(0, min(int(crop_coords[2] + shift[1]), new_size[1] - 1)),  # y_start
+        max(0, min(int(crop_coords[3] + shift[1]), new_size[1])),      # y_end
+        max(0, min(int(crop_coords[0] + shift[2]), new_size[2] - 1)),  # z_start
+        max(0, min(int(crop_coords[1] + shift[2]), new_size[2]))       # z_end
     ]
 
     # Calculate new size for cropping
     crop_size = [
-        adjusted_coords[1] - adjusted_coords[0],
-        adjusted_coords[3] - adjusted_coords[2],
-        adjusted_coords[5] - adjusted_coords[4]
+        max(1, adjusted_coords[1] - adjusted_coords[0]),
+        max(1, adjusted_coords[3] - adjusted_coords[2]),
+        max(1, adjusted_coords[5] - adjusted_coords[4])
     ]
 
     print(f"Adjusted crop coordinates: {adjusted_coords}")
@@ -97,6 +100,8 @@ def crop_volume(input_path, output_path, crop_coords):
     print(f"Final cropped image origin: {cropped_image.GetOrigin()}")
     print(f"Final cropped image spacing: {cropped_image.GetSpacing()}")
     print(f"Final cropped image direction: {cropped_image.GetDirection()}")
+
+    return cropped_image
 
 def main():
     base_path = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1"
