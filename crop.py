@@ -15,33 +15,74 @@ def find_closest_index(array, value):
     return np.argmin(np.abs(np.array(array) - value))
 
 def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
+    print(f"Mask file: {mask_file}")
+    print(f"Reference DICOM folder: {reference_dicom_folder}")
+    
     # Read the DICOM segmentation file
     dicom_seg = pydicom.dcmread(mask_file)
     reader = pydicom_seg.SegmentReader()
     result = reader.read(dicom_seg)
 
-    # Read reference DICOM files
+    # Read and save the original volume
     dicom_files = sorted([os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.isdigit()])
-    
-    # Read the original volume
     original_volume = sitk.ReadImage(dicom_files)
-    
-    # Save the original volume as NIFTI
     volume_path = os.path.splitext(output_path)[0] + "_volume.nii.gz"
     sitk.WriteImage(original_volume, volume_path)
     print(f"Original volume saved as {volume_path}")
 
-    # Process the segmentation mask
-    full_mask = np.zeros(original_volume.GetSize()[::-1], dtype=np.uint8)
+    dicom_datasets = []
+    all_instance_z_locations = []
+    for f in dicom_files:
+        try:
+            ds = pydicom.dcmread(f)
+            dicom_datasets.append(ds)
+            if hasattr(ds, 'ImagePositionPatient'):
+                all_instance_z_locations.append(float(ds.ImagePositionPatient[-1]))
+            else:
+                print(f"Warning: ImagePositionPatient not found in file {f}")
+        except Exception as e:
+            print(f"Error reading file {f}: {e}")
+
+    print(f"Number of valid DICOM datasets: {len(dicom_datasets)}")
+    print(f"Number of Z locations found: {len(all_instance_z_locations)}")
+
+    if not all_instance_z_locations:
+        raise ValueError("No valid Z locations found in DICOM files")
+
+    all_referenced_z_locations = [
+        float(f.PlanePositionSequence[0].ImagePositionPatient[-1])
+        for f in dicom_seg.PerFrameFunctionalGroupsSequence
+    ]
+    all_referenced_z_locations = np.unique(all_referenced_z_locations)
+
+    min_referenced_z_location = min(all_referenced_z_locations)
+
+    # Find the closest index instead of exact match
+    starting_index_global = find_closest_index(all_instance_z_locations, min_referenced_z_location)
+    ending_index_global = starting_index_global + len(all_referenced_z_locations)
+
+    print(f"Starting index: {starting_index_global}, Ending index: {ending_index_global}")
+
+    # Process all segments into a single mask
+    full_mask = np.zeros((len(dicom_datasets), 512, 512), dtype=np.uint8)
     
     for segment_number in result.available_segments:
         segmentation_image_data = result.segment_data(segment_number)
+
+        # Change axes to match DICOM
         seg = np.swapaxes(segmentation_image_data, 0, -1)
-        full_mask = np.logical_or(full_mask, seg).astype(np.uint8)
+
+        # Pad segmentation to match DICOM dimensions
+        padded_seg = pad_segmentation(
+            seg, full_mask.shape, starting_index_global, ending_index_global
+        )
+
+        # Add this segment to the full mask
+        full_mask = np.logical_or(full_mask, padded_seg).astype(np.uint8)
 
     # Convert to SimpleITK image for cropping
-    sitk_mask = sitk.GetImageFromArray(full_mask)
-    sitk_mask.CopyInformation(original_volume)
+    sitk_image = sitk.GetImageFromArray(full_mask)
+    sitk_image.CopyInformation(original_volume)
 
     # Adjust crop coordinates for (z, y, x) order
     crop_start = [crop_coords[0], crop_coords[2], crop_coords[4]]
@@ -49,23 +90,18 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
                  crop_coords[3] - crop_coords[2],
                  crop_coords[5] - crop_coords[4]]
 
-    # Ensure crop is within image bounds
-    image_size = sitk_mask.GetSize()
-    crop_start = [max(0, min(s, image_size[i] - 1)) for i, s in enumerate(crop_start)]
-    crop_size = [min(s, image_size[i] - crop_start[i]) for i, s in enumerate(crop_size)]
-
-    print(f"Image size: {image_size}")
+    print(f"Image size: {sitk_image.GetSize()}")
     print(f"Crop start: {crop_start}")
     print(f"Crop size: {crop_size}")
 
-    cropped_mask = sitk.Crop(sitk_mask, crop_start, crop_size)
+    cropped_image = sitk.Crop(sitk_image, crop_start, crop_size)
 
     # Save the cropped mask as NIFTI
     cropped_mask_path = os.path.splitext(output_path)[0] + "_cropped_mask.nii.gz"
-    sitk.WriteImage(cropped_mask, cropped_mask_path)
+    sitk.WriteImage(cropped_image, cropped_mask_path)
     print(f"Cropped mask saved as {cropped_mask_path}")
 
-    print(f"Cropped mask size: {cropped_mask.GetSize()}")
+    print(f"Cropped image size: {cropped_image.GetSize()}")
 
 # The main function remains the same
 
