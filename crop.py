@@ -9,8 +9,8 @@ from monai.transforms import (
 
 def create_transform_pipeline(reference_size, crop_coords):
     return Compose([
-        LoadImage(),
-        SpatialPad(spatial_size=[reference_size[0], reference_size[1], reference_size[2]], mode='constant'),
+        LoadImage(ensure_channel_first=True),
+        SpatialPad(spatial_size=(reference_size[0], reference_size[1], reference_size[2]), mode='constant'),
         SpatialCrop(roi_start=[crop_coords[4], crop_coords[2], crop_coords[0]],
                     roi_end=[crop_coords[5], crop_coords[3], crop_coords[1]])
     ])
@@ -34,7 +34,7 @@ def process_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     processed_mask = transform(mask_file)
     
     # Save the processed mask
-    saver = SaveImage(output_dir=os.path.dirname(output_path), output_postfix="", output_ext=".nii.gz", resample=False)
+    saver = SaveImage(output_dir=os.path.dirname(output_path), output_postfix="", output_ext=".nii.gz", resample=False,squeeze_end_dims=True,print_log=True)
     saver(processed_mask)
     
     print(f"Processed mask shape: {processed_mask.shape}")
