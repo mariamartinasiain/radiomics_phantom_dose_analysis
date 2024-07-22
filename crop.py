@@ -1,7 +1,6 @@
 import pydicom
 import pydicom_seg
 import numpy as np
-import SimpleITK as sitk
 import os
 
 def pad_segmentation(seg, target_shape, start_index, end_index):
@@ -26,24 +25,17 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     
     # Read the DICOM segmentation file
     dicom_seg = pydicom.dcmread(mask_file)
-    readerp = pydicom_seg.SegmentReader()
-    result = readerp.read(dicom_seg)
-    reader = sitk.ImageFileReader()
-    reader.SetFileName(mask_file)
-    reader.LoadPrivateTagsOn()
-    image = reader.Execute()
+    reader = pydicom_seg.SegmentReader()
+    result = reader.read(dicom_seg)
 
     # Read reference DICOM files
-    dicom_files = [os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.isdigit()]
+    dicom_files = [os.path.join(reference_dicom_folder, f) for f in os.listdir(reference_dicom_folder) if f.endswith('.dcm')]
     print(f"Number of potential DICOM files found: {len(dicom_files)}")
-    print(f"dicom_files: {dicom_files}")
     dicom_files.sort()
-    print(f"Number of potential DICOM files found: {len(dicom_files)}")
 
     dicom_datasets = []
     all_instance_z_locations = []
 
-    
     for f in dicom_files:
         try:
             ds = pydicom.dcmread(f)
@@ -74,32 +66,23 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Find the closest index instead of exact match
     starting_index_global = find_closest_index(all_instance_z_locations, min_referenced_z_location)
-    ending_index_global = starting_index_global + 155#len(all_referenced_z_locations)
+    ending_index_global = starting_index_global + len(all_referenced_z_locations)
 
     print(f"Starting index: {starting_index_global}, Ending index: {ending_index_global}")
 
     # Process all segments into a single mask
     full_mask = np.zeros((512, 512, len(dicom_datasets)), dtype=np.uint8)
-    #from image to array :
-    segmentation_image_data =  sitk.GetArrayFromImage(image)
-
+    
+    # Extract segmentation data
+    segmentation_data = result.segmentation_data[0]  # Assuming single segment
 
     # Change axes to match DICOM
-    seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
+    seg = np.fliplr(np.swapaxes(segmentation_data, 0, -1))
 
     # Pad segmentation to match DICOM dimensions
     padded_seg = pad_segmentation(
-        seg, (512,512,512), starting_index_global, ending_index_global
+        seg, (512, 512, 512), starting_index_global, ending_index_global
     )
-
-
-    # Convert to SimpleITK image for cropping
-    sitk_image = sitk.GetImageFromArray(padded_seg)
-
-    # Save the full mask as NIFTI
-    full_mask_path = os.path.splitext(output_path)[0] + "_full.nii.gz"
-    sitk.WriteImage(sitk_image, full_mask_path)
-    print(f"Full mask saved as {full_mask_path}")
 
     # Crop the image
     crop_start = [crop_coords[0], crop_coords[2], crop_coords[4]]
@@ -108,7 +91,7 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
                  crop_coords[5] - crop_coords[4]]
 
     # Ensure crop is within image bounds
-    image_size = sitk_image.GetSize()
+    image_size = padded_seg.shape
     crop_start = [max(0, min(s, image_size[i] - 1)) for i, s in enumerate(crop_start)]
     crop_size = [min(s, image_size[i] - crop_start[i]) for i, s in enumerate(crop_size)]
 
@@ -116,21 +99,40 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     print(f"Crop start: {crop_start}")
     print(f"Crop size: {crop_size}")
 
-    cropped_image = sitk.Crop(sitk_image, crop_start, crop_size)
+    cropped_image = padded_seg[crop_start[0]:crop_start[0]+crop_size[0],
+                               crop_start[1]:crop_start[1]+crop_size[1],
+                               crop_start[2]:crop_start[2]+crop_size[2]]
 
-    cropped_mask_path = os.path.splitext(output_path)[0] + "_cropped.nii.gz"
-    sitk.WriteImage(cropped_image, cropped_mask_path)
-    print(f"Cropped mask saved as {cropped_mask_path}")
+    print(f"Cropped image size: {cropped_image.shape}")
 
-    print(f"Cropped image size: {cropped_image.GetSize()}")
+    # Save the cropped image as a new DICOM file
+    new_dicom = pydicom.Dataset()
+    new_dicom.file_meta = pydicom.Dataset()
+    new_dicom.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+    new_dicom.is_little_endian = True
+    new_dicom.is_implicit_VR = False
 
-    # Write the cropped image
-    writer = sitk.ImageFileWriter()
-    writer.SetFileName(output_path)
-    writer.Execute(cropped_image)
+    new_dicom.SOPClassUID = dicom_seg.SOPClassUID
+    new_dicom.SOPInstanceUID = pydicom.uid.generate_uid()
+    new_dicom.StudyInstanceUID = dicom_seg.StudyInstanceUID
+    new_dicom.SeriesInstanceUID = pydicom.uid.generate_uid()
+    new_dicom.FrameOfReferenceUID = dicom_seg.FrameOfReferenceUID
 
-    print(f"Cropped image size: {cropped_image.GetSize()}")
-    print(f"Mask cropped and saved as {output_path}")
+    new_dicom.Modality = 'SEG'
+    new_dicom.SeriesDescription = 'Cropped Segmentation'
+
+    # Add the pixel data
+    new_dicom.PixelData = cropped_image.tobytes()
+    new_dicom.Rows, new_dicom.Columns = cropped_image.shape[:2]
+    new_dicom.SamplesPerPixel = 1
+    new_dicom.PhotometricInterpretation = "MONOCHROME2"
+    new_dicom.PixelRepresentation = 0
+    new_dicom.BitsAllocated = 8
+    new_dicom.BitsStored = 8
+    new_dicom.HighBit = 7
+
+    new_dicom.save_as(output_path)
+    print(f"Cropped mask saved as {output_path}")
 
 # The main function remains the same
 
