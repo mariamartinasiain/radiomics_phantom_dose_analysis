@@ -89,7 +89,7 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Pad segmentation to match DICOM dimensions
     padded_seg = pad_segmentation(
-        seg, full_mask.shape, starting_index_global, ending_index_global
+        seg, (512,512,512), starting_index_global, ending_index_global
     )
 
 
