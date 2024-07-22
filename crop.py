@@ -2,35 +2,34 @@ import SimpleITK as sitk
 import pydicom
 import os
 
-def check_mask_metadata(file_path):
-    dcm = pydicom.dcmread(file_path)
-    
-    print(f"Image size: {dcm.Rows}x{dcm.Columns}")
-    if hasattr(dcm, 'NumberOfFrames'):
-        print(f"Number of frames: {dcm.NumberOfFrames}")
-    
-    print("\nAll DICOM tags:")
-    for elem in dcm:
-        if elem.VR != "SQ":  # Skip sequence items to avoid clutter
-            print(f"{elem.tag}: {elem.name} = {repr(elem.value)}")
-
-# The rest of the script remains the same
-
-# The rest of the script remains the same
+def print_sitk_metadata(image):
+    print("SimpleITK Metadata:")
+    for key in image.GetMetaDataKeys():
+        print(f"{key}: {image.GetMetaData(key)}")
 
 def crop_volume(input_path, output_path, crop_coords):
-    # Check mask metadata
-    print("Mask metadata:")
-    check_mask_metadata(input_path)
-    
     # Read the image
     reader = sitk.ImageFileReader()
     reader.SetFileName(input_path)
+    reader.LoadPrivateTagsOn()
+    reader.ReadImageInformation()
+    
+    # Print metadata
+    print_sitk_metadata(reader)
+    
     image = reader.Execute()
 
     # Get image size
     size = image.GetSize()
-    print(f"\nOriginal image size (from SimpleITK): {size}")
+    spacing = image.GetSpacing()
+    origin = image.GetOrigin()
+    direction = image.GetDirection()
+
+    print(f"\nImage properties:")
+    print(f"Size: {size}")
+    print(f"Spacing: {spacing}")
+    print(f"Origin: {origin}")
+    print(f"Direction: {direction}")
 
     # Flip crop coordinates from [z_start, z_end, y_start, y_end, x_start, x_end]
     # to [x_start, x_end, y_start, y_end, z_start, z_end]
@@ -41,7 +40,7 @@ def crop_volume(input_path, output_path, crop_coords):
                 flipped_coords[3] - flipped_coords[2], 
                 flipped_coords[5] - flipped_coords[4]]
     
-    print(f"Crop coordinates: {flipped_coords}")
+    print(f"\nCrop coordinates: {flipped_coords}")
     print(f"New size: {new_size}")
 
     # Crop the image
