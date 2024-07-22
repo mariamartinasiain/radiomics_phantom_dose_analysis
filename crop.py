@@ -67,7 +67,8 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
 
     # Process all segments into a single mask
     full_mask = np.zeros((512, 512, len(dicom_datasets)), dtype=np.uint8)
-    segmentation_image_data = image
+    #from image to array :
+    segmentation_image_data = np.array(image) 
 
     # Change axes to match DICOM
     #seg = np.fliplr(np.swapaxes(segmentation_image_data, 0, -1))
