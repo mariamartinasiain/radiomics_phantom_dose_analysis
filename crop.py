@@ -82,10 +82,19 @@ def crop_volume(mask_file, output_path, crop_coords, reference_dicom_folder):
     sitk_image = sitk.GetImageFromArray(full_mask)
 
     # Crop the image
-    crop_start = [crop_coords[4], crop_coords[2], crop_coords[0]]
-    crop_size = [crop_coords[5] - crop_coords[4],
+    crop_start = [crop_coords[0], crop_coords[2], crop_coords[4]]
+    crop_size = [crop_coords[1] - crop_coords[0],
                  crop_coords[3] - crop_coords[2],
-                 crop_coords[1] - crop_coords[0]]
+                 crop_coords[5] - crop_coords[4]]
+
+    # Ensure crop is within image bounds
+    image_size = sitk_image.GetSize()
+    crop_start = [max(0, min(s, image_size[i] - 1)) for i, s in enumerate(crop_start)]
+    crop_size = [min(s, image_size[i] - crop_start[i]) for i, s in enumerate(crop_size)]
+
+    print(f"Image size: {image_size}")
+    print(f"Crop start: {crop_start}")
+    print(f"Crop size: {crop_size}")
 
     cropped_image = sitk.Crop(sitk_image, crop_start, crop_size)
 
