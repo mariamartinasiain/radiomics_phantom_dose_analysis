@@ -190,7 +190,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
     losses = [[] for _ in models]
     dataset = val_ds
     dataload = val_loader
-    dataset.start()
+    #dataset.start()
 
     s1,s2 = quick_weight_check(models[0], models[1])
     print(f"Weight Check: {s1} vs {s2}")
@@ -255,7 +255,7 @@ def run_testing(models,jsonpath = "./dataset_forgetting_test.json",val_ds=None,v
             dice_metric.reset()
         losses[i].append(mean_dice_val)   
         
-    dataset.shutdown()
+    #dataset.shutdown()
     
     print("Done !")
     return losses
@@ -423,7 +423,7 @@ def compare(jsonpath="./dataset_forgetting.json"):
     #baseline_loss_values, baseline_metric_values = t1.train()
     
     print("Training Finetuned Model")
-    finetuned_loss_values, finetuned_metric_values = t2.train()
+    #finetuned_loss_values, finetuned_metric_values = t2.train()
     
     model1 = get_model(model_path="baseline_segmentation5.pth", to_compare=True)
     model2 = get_model(model_path="finetuned_segmentation5.pth", to_compare=True)
