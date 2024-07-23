@@ -413,20 +413,20 @@ def compare(jsonpath="./dataset_forgetting.json"):
     dataset = {"train": train_ds, "test": val_ds}
     optimizer = torch.optim.AdamW(model1.parameters(), lr=1e-4, weight_decay=1e-5)
     
-    #t1 = Train(model1, data_loader, optimizer, 20000, dataset, savename="baseline_segmentation5.pth")
+    t1 = Train(model1, data_loader, optimizer, 50000, dataset, savename="baseline_segmentation6.pth")
 
     optimizer = torch.optim.AdamW(model2.parameters(), lr=1e-4, weight_decay=1e-5)
 
-    t2 = Train(model2, data_loader, optimizer, 200, dataset, savename="finetuned_segmentation5.pth")
+    t2 = Train(model2, data_loader, optimizer, 50000, dataset, savename="finetuned_segmentation6.pth")
     
     #print("Training Baseline Model")
-    #baseline_loss_values, baseline_metric_values = t1.train()
+    baseline_loss_values, baseline_metric_values = t1.train()
     
     print("Training Finetuned Model")
-    #finetuned_loss_values, finetuned_metric_values = t2.train()
+    finetuned_loss_values, finetuned_metric_values = t2.train()
     
-    model1 = get_model(model_path="baseline_segmentation5.pth", to_compare=True)
-    model2 = get_model(model_path="finetuned_segmentation5.pth", to_compare=True)
+    model1 = get_model(model_path="baseline_segmentation6.pth", to_compare=True)
+    model2 = get_model(model_path="finetuned_segmentation6.pth", to_compare=True)
     
     models = [model1, model2]
     
