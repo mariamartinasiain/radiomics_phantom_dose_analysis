@@ -419,8 +419,8 @@ def compare(jsonpath="./dataset_forgetting.json"):
 
     t2 = Train(model2, data_loader, optimizer, 200, dataset, savename="finetuned_segmentation5.pth")
     
-    print("Training Baseline Model")
-    baseline_loss_values, baseline_metric_values = t1.train()
+    #print("Training Baseline Model")
+    #baseline_loss_values, baseline_metric_values = t1.train()
     
     print("Training Finetuned Model")
     finetuned_loss_values, finetuned_metric_values = t2.train()
