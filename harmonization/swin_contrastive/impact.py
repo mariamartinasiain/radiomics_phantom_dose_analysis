@@ -415,7 +415,7 @@ def compare(jsonpath="./dataset_forgetting.json"):
     
     #t1 = Train(model1, data_loader, optimizer, 20000, dataset, savename="baseline_segmentation5.pth")
 
-    optimizer = torch.optim.AdamW(model1.parameters(), lr=1e-4, weight_decay=1e-5)
+    optimizer = torch.optim.AdamW(model2.parameters(), lr=1e-4, weight_decay=1e-5)
 
     t2 = Train(model2, data_loader, optimizer, 200, dataset, savename="finetuned_segmentation5.pth")
     
