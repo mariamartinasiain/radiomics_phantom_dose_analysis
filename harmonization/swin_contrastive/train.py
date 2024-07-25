@@ -712,6 +712,7 @@ class LazyPatchLoader(Transform):
             itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
             shape = itk_image.GetLargestPossibleRegion().GetSize()
             
+            print(f"Loading image from path: {image_path}")
             print("shape",shape)
             
             #shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # XYZ order

@@ -425,6 +425,9 @@ def compare(jsonpath="./dataset_forgetting.json"):
     print("Training Finetuned Model")
     finetuned_loss_values, finetuned_metric_values = t2.train()
     
+#     Error in LazyPatchLoader: Could not create IO object for reading file /mnt/nas7/data/reza/registered_dataset_pad/B2_195109_580000_SOMATOM_Edge_Plus_ID28_Harmonized_10mGy_FBP_NrFiles_343.nii.gz
+# The file doesn't exist.
+# Filename = /mnt/nas7/data/reza/registered_dataset_pad/B2_195109_580000_SOMATOM_Edge_Plus_ID28_Harmonized_10mGy_FBP_NrFiles_343.nii.gz
     model1 = get_model(model_path="baseline_segmentation6.pth", to_compare=True)
     model2 = get_model(model_path="finetuned_segmentation6.pth", to_compare=True)
     
