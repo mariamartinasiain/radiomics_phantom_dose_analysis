@@ -307,8 +307,8 @@ class Train:
 
     
         # encoder inference
-        #all_labels = batch["roi_label"].cuda()
-        #ids = all_labels
+        all_labels = batch["roi_label"].cuda()
+        ids = all_labels
 
         ids = batch["uids"].cuda()
         print("ids size 1",ids.size())
