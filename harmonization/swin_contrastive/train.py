@@ -662,14 +662,14 @@ class PrintDebug(Transform):
         return data
 
 class LazyPatchLoader(Transform):
-    def __init__(self, roi_size=(64, 64, 32), num_patches=4, variety_size=10,reader=None, positions_file="output/valid_positions_positions.json"):
+    def __init__(self, roi_size=(64, 64, 32), num_patches=4, variety_size=12,reader=None, positions_file="output/valid_positions_positions.json"):
         self.position_file = positions_file
         self.roi_size = roi_size
         self.num_patches = num_patches  # Nombre de patches à extraire
         self.reader = reader or ITKReader()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.variety_size = variety_size
-        self.precomputed_positions = load_subbox_positions(positions_file,order='XYZ')
+        self.precomputed_positions = load_subbox_positions(positions_file,order='XYZ',num_positions=variety_size)
         self.current_position_index = 0
 
     def precompute_positions(self, shape):

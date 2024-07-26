@@ -43,7 +43,8 @@ from tqdm import tqdm
 import json
 import random
 
-def load_subbox_positions(filename, order='XYZ'):
+def load_subbox_positions(filename, order='XYZ', num_positions=None, seed=42):
+    # Chargement des positions
     if filename.endswith('.npy'):
         positions = np.load(filename)
     elif filename.endswith('.json'):
@@ -51,6 +52,11 @@ def load_subbox_positions(filename, order='XYZ'):
             positions = json.load(f)
     else:
         raise ValueError("Format de fichier non supporté. Utilisez .npy ou .json")
+    
+    # Sélection aléatoire des positions si num_positions est spécifié
+    if num_positions is not None:
+        random.seed(seed)
+        positions = random.sample(list(positions), min(num_positions, len(positions)))
     
     if order.upper() == 'XYZ':
         return positions
@@ -67,7 +73,7 @@ def load_forbidden_boxes(filename):
             forbidden_boxes.append((pos, [64, 64, 32]))  # Ajout de la taille fixe
     return forbidden_boxes
 
-def sample_subboxes(box_list, big_box_size, subbox_size, num_samples):
+def sample_subboxes(box_list, big_box_size, subbox_size, num_samples, constraint_box):
     def overlaps(pos, size):
         for box in box_list:
             b_pos, b_size = box
@@ -75,14 +81,23 @@ def sample_subboxes(box_list, big_box_size, subbox_size, num_samples):
                 return True
         return False
 
+    def inside_constraint_box(pos):
+        return (constraint_box[0] <= pos[2] < constraint_box[1] and
+                constraint_box[2] <= pos[0] < constraint_box[3] and
+                constraint_box[4] <= pos[1] < constraint_box[5])
+
     valid_positions = []
     attempts = 0
     max_attempts = num_samples * 100
 
     while len(valid_positions) < num_samples and attempts < max_attempts:
-        pos = [random.randint(0, big - sub) for big, sub in zip(big_box_size, subbox_size)]
+        pos = [
+            random.randint(constraint_box[2], constraint_box[3] - subbox_size[0]),
+            random.randint(constraint_box[4], constraint_box[5] - subbox_size[1]),
+            random.randint(constraint_box[0], constraint_box[1] - subbox_size[2])
+        ]
         
-        if not overlaps(pos, subbox_size):
+        if not overlaps(pos, subbox_size) and inside_constraint_box(pos):
             valid_positions.append(pos)
         
         attempts += 1
@@ -399,11 +414,21 @@ def main_box():
     num_samples = 1000
     output_dir = "output"
     filename_prefix = "valid_positions"
+    constraint_box = [13, 323, 120, 395, 64, 445]  # z_start, z_end, x_start, x_end, y_start, y_end
 
-    result_file = process_forbidden_boxes_and_sample(
-        forbidden_boxes_file, big_box_size, subbox_size, num_samples, output_dir, filename_prefix
-    )
-    print(f"Les positions valides ont été sauvegardées dans : {result_file}")
+    # Charger les boîtes interdites
+    forbidden_boxes = load_forbidden_boxes(forbidden_boxes_file)
+    
+    # Échantillonner et sauvegarder les sous-boîtes valides
+    valid_positions = sample_subboxes(forbidden_boxes, big_box_size, subbox_size, num_samples, constraint_box)
+    
+    # Sauvegarder les positions valides
+    os.makedirs(output_dir, exist_ok=True)
+    json_filename = os.path.join(output_dir, f"{filename_prefix}_positions.json")
+    with open(json_filename, 'w') as f:
+        json.dump(valid_positions, f)
+    
+    print(f"Les positions valides ont été sauvegardées dans : {json_filename}")
   
 def resize_image(input_output):
     input_path, output_path, target_size = input_output
