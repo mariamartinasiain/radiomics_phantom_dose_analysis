@@ -120,6 +120,7 @@ class OrthogonalityLoss:
 class Train:
     def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth',ortho_reg=0.05,to_compare=False):
         self.model = model
+        self.model = self.model.double()
         self.in_channels = 1
         self.classifier = classifier
         self.data_loader = data_loader
