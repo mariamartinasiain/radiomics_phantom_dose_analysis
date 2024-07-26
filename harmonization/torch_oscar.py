@@ -14,21 +14,23 @@ from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_N
 from harmonization.swin_contrastive.swinunetr import custom_collate_fn, load_data
 
 def convert_tf_to_pytorch():
-    tf.disable_v2_behavior()
-    sess = tf.Session()
-    saver = tf.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
+    # Load the TensorFlow model
+    tf.compat.v1.disable_eager_execution()
+    sess = tf.compat.v1.Session()
+    saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
     saver.restore(sess, tf.train.latest_checkpoint('./'))
 
-    graph = tf.get_default_graph()
+    graph = tf.compat.v1.get_default_graph()
     x = graph.get_tensor_by_name("x_start:0")
     keepProb = graph.get_tensor_by_name("keepProb:0")
     feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
 
+    # Convert to ONNX
     onnx_model, _ = tf2onnx.convert.from_session(sess, input_names=['x_start:0', 'keepProb:0'], output_names=['MaxPool3D_1:0'])
     onnx.save(onnx_model, "tf_model.onnx")
 
+    # Convert ONNX to PyTorch
     pytorch_model = ConvertModel(onnx.load("tf_model.onnx"))
-    torch.save(pytorch_model.state_dict(), 'pytorch_model.pth')
 
     return pytorch_model
 
