@@ -1,5 +1,6 @@
 import tensorflow as tf
 import tf2onnx
+from tf2torch import tf2torch
 import torch
 from onnx2pytorch import ConvertModel
 import onnx
@@ -15,34 +16,30 @@ from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_N
 from harmonization.swin_contrastive.swinunetr import custom_collate_fn, load_data
 
 def convert_tf_to_pytorch():
-    # Load the TensorFlow model
+    # Disable eager execution to work with the old-style TF1.x model
     tf.compat.v1.disable_eager_execution()
-    sess = tf.compat.v1.Session()
-    saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
-    saver.restore(sess, tf.train.latest_checkpoint('./'))
-
-    graph = tf.compat.v1.get_default_graph()
-    x = graph.get_tensor_by_name("x_start:0")
-    keepProb = graph.get_tensor_by_name("keepProb:0")
-    feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
-
-    # Save the model in SavedModel format
-    tf.compat.v1.saved_model.simple_save(sess, "./saved_model", 
-                                         inputs={"x_start": x, "keepProb": keepProb},
-                                         outputs={"MaxPool3D_1": feature_tensor})
-
-    # Convert to ONNX using tf2onnx command-line tool
-    cmd = f"python -m tf2onnx.convert --saved-model ./saved_model --output tf_model.onnx"
-    result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
-    print(result.stdout)
-
-    # Convert ONNX to PyTorch
-    pytorch_model = ConvertModel(onnx.load("tf_model.onnx"))
-
-
-
+    
+    # Load the TensorFlow model
+    with tf.compat.v1.Session() as sess:
+        saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
+        saver.restore(sess, tf.train.latest_checkpoint('./'))
+        
+        graph = tf.compat.v1.get_default_graph()
+        
+        # Get input and output tensors
+        x = graph.get_tensor_by_name("x_start:0")
+        keepProb = graph.get_tensor_by_name("keepProb:0")
+        feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
+        
+        # Create a function that represents the model
+        def tf_model(x, keepProb):
+            return sess.run(feature_tensor, feed_dict={x: x, keepProb: keepProb})
+        
+        # Convert TensorFlow function to PyTorch module
+        input_shape = (1, 131072)  # Adjust this based on your actual input shape
+        pytorch_model = tf2torch(tf_model, input_shape=[input_shape, ()])
+    
     return pytorch_model
-
 def run_inference():
     jsonpath = "./dataset_info_cropped.json"
     device_id = 0
