@@ -318,8 +318,8 @@ class Train:
 
         scanner_labels = batch["scanner_label"].cuda()
         
-        latents = self.model.swinViT(imgs_s)
-        
+        #latents = self.model.swinViT(imgs_s)
+        latents = self.model(imgs_s)
         
         #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
         nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
