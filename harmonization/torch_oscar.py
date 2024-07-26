@@ -39,7 +39,7 @@ def convert_tf_to_pytorch():
                                          outputs={"MaxPool3D_1": feature_tensor})
 
     # Convert to ONNX using tf2onnx command-line tool
-    cmd = f"python -m tf2onnx.convert --saved-model ./saved_model --output tf_model.onnx"
+    cmd = f"python -m tf2onnx.convert --saved-model ./saved_model2 --output tf_model.onnx"
     result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
     print(result.stdout)
 
