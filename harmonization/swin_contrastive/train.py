@@ -16,7 +16,7 @@ from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped,RandCropd,RandSpatialCropd
 from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform
-from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data,save_losses,get_model, load_subbox_positions
+from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data,save_losses,get_model, load_subbox_positions, get_oscar_for_training
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
@@ -32,6 +32,7 @@ import threading
 from scipy.spatial import procrustes
 import imageio
 import nibabel as nib
+
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -803,7 +804,8 @@ def main():
     jsonpath = "./registered_light_dataset_info_10.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
-    model = get_model(target_size=(64, 64, 32))
+    #model = get_model(target_size=(64, 64, 32))
+    model = get_oscar_for_training()
     
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)

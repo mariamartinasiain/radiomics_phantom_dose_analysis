@@ -9,7 +9,10 @@ from monai.data import SmartCacheDataset, ThreadDataLoader
 from tqdm import tqdm
 import os
 import json
-import os
+import tensorflow as tf
+import subprocess
+from onnx2pytorch import ConvertModel
+import onnx
 import json
 import SimpleITK as sitk
 from multiprocessing import Pool
@@ -490,6 +493,53 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 343)):
     
     successful = sum(results)
     print(f"Traitement terminé. {successful}/{len(data)} images ont été redimensionnées avec succès.")
+
+
+def convert_tf_to_pytorch(for_training=False):
+    # Load the TensorFlow model
+    tf.compat.v1.disable_eager_execution()
+    sess = tf.compat.v1.Session()
+    saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
+    saver.restore(sess, tf.train.latest_checkpoint('./'))
+
+    graph = tf.compat.v1.get_default_graph()
+    x = graph.get_tensor_by_name("x_start:0")
+    keepProb = graph.get_tensor_by_name("keepProb:0")
+    feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
+
+    # Save the model in SavedModel format
+    tf.compat.v1.saved_model.simple_save(sess, "./saved_model_temp", 
+                                         inputs={"x_start": x, "keepProb": keepProb},
+                                         outputs={"MaxPool3D_1": feature_tensor})
+
+    # Convert to ONNX using tf2onnx command-line tool
+    cmd = f"python -m tf2onnx.convert --saved-model ./saved_model_temp --output tf_model_temp.onnx"
+    result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
+    print(result.stdout)
+
+    # Convert ONNX to PyTorch
+    pytorch_model = ConvertModel(onnx.load("tf_model_temp.onnx"))
+
+    # Clean up temporary files
+    os.remove("tf_model_temp.onnx")
+    os.system("rm -rf ./saved_model_temp")
+
+    if for_training:
+        # Set requires_grad to True for all parameters
+        for param in pytorch_model.parameters():
+            param.requires_grad = True
+
+    # Move model to GPU if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    pytorch_model = pytorch_model.to(device)
+
+    return pytorch_model
+
+def get_pytorch_model_for_inference():
+    return convert_tf_to_pytorch(for_training=False)
+
+def get_oscar_for_training():
+    return convert_tf_to_pytorch(for_training=True)
 
 if __name__ == "__main__":
     main_box()

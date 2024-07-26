@@ -14,6 +14,7 @@ from monai.data import SmartCacheDataset, ThreadDataLoader
 
 from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_NAME_FIELD, SERIES_DESCRIPTION_FIELD, SERIES_NUMBER_FIELD, SLICE_THICKNESS_FIELD
 from harmonization.swin_contrastive.swinunetr import custom_collate_fn, load_data
+from harmonization.swin_contrastive.utils import get_pytorch_model_for_inference
 import tensorflow as tf
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -22,35 +23,6 @@ if gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
     except RuntimeError as e:
         print(e)
-def convert_tf_to_pytorch():
-    # Load the TensorFlow model
-    tf.compat.v1.disable_eager_execution()
-    sess = tf.compat.v1.Session()
-    saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
-    saver.restore(sess, tf.train.latest_checkpoint('./'))
-
-    graph = tf.compat.v1.get_default_graph()
-    x = graph.get_tensor_by_name("x_start:0")
-    keepProb = graph.get_tensor_by_name("keepProb:0")
-    feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
-
-    # Save the model in SavedModel format
-    tf.compat.v1.saved_model.simple_save(sess, "./saved_model2", 
-                                         inputs={"x_start": x, "keepProb": keepProb},
-                                         outputs={"MaxPool3D_1": feature_tensor})
-
-    # Convert to ONNX using tf2onnx command-line tool
-    cmd = f"python -m tf2onnx.convert --saved-model ./saved_model2 --output tf_model.onnx"
-    result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
-    print(result.stdout)
-
-    # Convert ONNX to PyTorch
-    pytorch_model = ConvertModel(onnx.load("tf_model.onnx"))
-
-    os.remove("tf_model.onnx")
-    os.system("rm -rf ./saved_model")
-
-    return pytorch_model
 
 def run_inference():
     jsonpath = "./dataset_info_cropped.json"
@@ -60,7 +32,7 @@ def run_inference():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Convert and load the PyTorch model
-    pytorch_model = convert_tf_to_pytorch()
+    pytorch_model = get_pytorch_model_for_inference()
     pytorch_model.to(device)
     pytorch_model.eval()
 
