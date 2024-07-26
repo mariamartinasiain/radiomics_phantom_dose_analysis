@@ -11,7 +11,7 @@ from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, EnsureTyp
 from monai.data import SmartCacheDataset, ThreadDataLoader
 
 from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_NAME_FIELD, SERIES_DESCRIPTION_FIELD, SERIES_NUMBER_FIELD, SLICE_THICKNESS_FIELD
-from swin_contrastive.swinunetr import custom_collate_fn, load_data
+from harmonization.swin_contrastive.swinunetr import custom_collate_fn, load_data
 
 def convert_tf_to_pytorch():
     tf.disable_v2_behavior()
