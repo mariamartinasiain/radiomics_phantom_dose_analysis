@@ -35,7 +35,7 @@ def convert_tf_to_pytorch():
     feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
 
     # Save the model in SavedModel format
-    tf.compat.v1.saved_model.simple_save(sess, "./saved_model", 
+    tf.compat.v1.saved_model.simple_save(sess, "./saved_model2", 
                                          inputs={"x_start": x, "keepProb": keepProb},
                                          outputs={"MaxPool3D_1": feature_tensor})
 
