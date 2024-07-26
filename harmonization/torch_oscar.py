@@ -7,6 +7,7 @@ import os
 import numpy as np
 import csv
 import subprocess
+import os
 from tqdm import tqdm
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, EnsureTyped
 from monai.data import SmartCacheDataset, ThreadDataLoader
@@ -46,7 +47,8 @@ def convert_tf_to_pytorch():
     # Convert ONNX to PyTorch
     pytorch_model = ConvertModel(onnx.load("tf_model.onnx"))
 
-
+    os.remove("tf_model.onnx")
+    os.system("rm -rf ./saved_model")
 
     return pytorch_model
 
