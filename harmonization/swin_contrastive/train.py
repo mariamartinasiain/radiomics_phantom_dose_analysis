@@ -784,12 +784,12 @@ def main():
     transforms = Compose([
         #PrintDebug(),
         #Resized(keys=["image"],spatial_size = (512,512,343)),
-        #LoadImaged(keys=["image"]),
-        LazyPatchLoader(roi_size=[64, 64, 32]),
+        LoadImaged(keys=["image"]),
+        #LazyPatchLoader(roi_size=[64, 64, 32]),
         #DebugTransform2(),
         #EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
-        #EncodeLabels(encoder=encoder),
+        EncodeLabels(encoder=encoder),
         ExtractScannerLabel(),
         EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
@@ -801,7 +801,8 @@ def main():
     #/mnt/nas7/data/reza/registered_dataset/C1_174148_iCT_256_ID84_Harmonized_10mGy_FBP_NrFiles_343.nii.gz
     #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
 
-    jsonpath = "./registered_light_dataset_info_10.json"
+    #jsonpath = "./registered_light_dataset_info_10.json"
+    jsonpath = "./dataset_info_cropped.json"
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     #model = get_model(target_size=(64, 64, 32))
