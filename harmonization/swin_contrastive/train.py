@@ -297,7 +297,10 @@ class Train:
         #ids = batch["uids"].cuda()
         print("imgs_s size 1",imgs_s.size())
         #print("ids size",ids.size())
-        imgs_s = imgs_s.view(imgs_s.shape[0] * imgs_s.shape[1],1, imgs_s.shape[2], imgs_s.shape[3], imgs_s.shape[4]) 
+        if len(imgs_s.size()) == 5:
+            imgs_s = imgs_s.view(imgs_s.shape[0] * imgs_s.shape[1],1, imgs_s.shape[2], imgs_s.shape[3], imgs_s.shape[4])
+        else :
+            imgs_s = imgs_s
         #ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
         print("imgs_s size 2",imgs_s.size())
         #print("ids size",ids.size())
@@ -798,11 +801,9 @@ def main():
     ])
 
 
-    #/mnt/nas7/data/reza/registered_dataset/C1_174148_iCT_256_ID84_Harmonized_10mGy_FBP_NrFiles_343.nii.gz
-    #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
-
     #jsonpath = "./registered_light_dataset_info_10.json"
     jsonpath = "./dataset_info_cropped.json"
+    
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     #model = get_model(target_size=(64, 64, 32))
