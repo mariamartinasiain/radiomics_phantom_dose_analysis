@@ -492,4 +492,4 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 343)):
     print(f"Traitement terminé. {successful}/{len(data)} images ont été redimensionnées avec succès.")
 
 if __name__ == "__main__":
-    main_box("light_dataset_info_10.json", "output")
+    main_box()
