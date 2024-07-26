@@ -6,6 +6,7 @@ import onnx
 import os
 import numpy as np
 import csv
+import subprocess
 from tqdm import tqdm
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, EnsureTyped
 from monai.data import SmartCacheDataset, ThreadDataLoader
@@ -25,23 +26,20 @@ def convert_tf_to_pytorch():
     keepProb = graph.get_tensor_by_name("keepProb:0")
     feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
 
-    # Convert to ONNX
-    input_signature = [
-        tf.TensorSpec((None, 131072), tf.float32, name="x_start"),
-        tf.TensorSpec((), tf.float32, name="keepProb")
-    ]
-    
-    model_proto, _ = tf2onnx.convert.from_session(
-        sess,
-        input_names=["x_start:0", "keepProb:0"],
-        output_names=["MaxPool3D_1:0"],
-        input_signature=input_signature
-    )
-    
-    onnx.save(model_proto, "tf_model.onnx")
+    # Save the model in SavedModel format
+    tf.compat.v1.saved_model.simple_save(sess, "./saved_model", 
+                                         inputs={"x_start": x, "keepProb": keepProb},
+                                         outputs={"MaxPool3D_1": feature_tensor})
+
+    # Convert to ONNX using tf2onnx command-line tool
+    cmd = f"python -m tf2onnx.convert --saved-model ./saved_model --output tf_model.onnx"
+    result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
+    print(result.stdout)
 
     # Convert ONNX to PyTorch
     pytorch_model = ConvertModel(onnx.load("tf_model.onnx"))
+
+
 
     return pytorch_model
 
