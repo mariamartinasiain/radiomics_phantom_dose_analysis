@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ToTensord,EnsureTyped
-from swin_contrastive.swinunetr import CropOnROId
+from harmonization.swin_contrastive.swinunetr import CropOnROId
 from monai.data import SmartCacheDataset, DataLoader,ThreadDataLoader
 import torch
 
