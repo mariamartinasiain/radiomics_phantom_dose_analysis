@@ -300,46 +300,42 @@ class Train:
         #ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
         print("imgs_s size 2",imgs_s.size())
         #print("ids size",ids.size())
-        if self.to_compare:
-            seglab = batch["label"].cuda()
-            print("seglab size",seglab.size())
-        
 
+    
         # encoder inference
-        if not self.to_compare:
-            #all_labels = batch["roi_label"].cuda()
-            #ids = all_labels
+        #all_labels = batch["roi_label"].cuda()
+        #ids = all_labels
 
-            ids = batch["uids"].cuda()
-            print("ids size 1",ids.size())
-            ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
-            print("ids size 2",ids.size())
+        ids = batch["uids"].cuda()
+        print("ids size 1",ids.size())
+        ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
+        print("ids size 2",ids.size())
 
-            scanner_labels = batch["scanner_label"].cuda()
-            
-            latents = self.model.swinViT(imgs_s)
-            
-            
-            #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
-            nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
-            nlatents = [latents[0], latents[1], latents[2], latents[3],0]
-            nlatents[4] = nlatents4
-            #print("bottleneck size",bottleneck.size())
-            #print("nlatents[4] size",nlatents[4].size())
-            
-            #print("ids size",ids.size())
-            self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
-            #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
-            
-            # features = torch.mean(bottleneck, dim=(2, 3, 4))
-            # accu = self.classification_step(features, scanner_labels)
-            #print(f"Train Accuracy: {accu}%")
-            accu = 0
-            self.losses_dict['classification_loss'] = 0.0
+        scanner_labels = batch["scanner_label"].cuda()
+        
+        latents = self.model.swinViT(imgs_s)
+        
+        
+        #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
+        nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
+        nlatents = [latents[0], latents[1], latents[2], latents[3],0]
+        nlatents[4] = nlatents4
+        #print("bottleneck size",bottleneck.size())
+        #print("nlatents[4] size",nlatents[4].size())
+        
+        #print("ids size",ids.size())
+        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+        #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
+        
+        # features = torch.mean(bottleneck, dim=(2, 3, 4))
+        # accu = self.classification_step(features, scanner_labels)
+        #print(f"Train Accuracy: {accu}%")
+        accu = 0
+        self.losses_dict['classification_loss'] = 0.0
 
-            # Orthogonality loss
-            #self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
-            print(f"Orthogonality Loss: {self.losses_dict['orthogonality_loss']}")
+        # Orthogonality loss
+        #self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
+        print(f"Orthogonality Loss: {self.losses_dict['orthogonality_loss']}")
 
 
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
@@ -361,35 +357,19 @@ class Train:
         #self.reconstruction_step(reconstructed_imgs, imgs_s) 
         self.losses_dict['reconstruction_loss'] = 0.0
 
-        if not self.to_compare:
-            # if self.epoch >= 5:
-            #     self.losses_dict['total_loss'] = \
-            #     self.ortho_reg*self.losses_dict['orthogonality_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] +  self.losses_dict['classification_loss'] 
-            # 
-            # elif self.epoch >= 2:
-            #     self.losses_dict['total_loss'] = \
-            #     self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.losses_dict['classification_loss'] 
-            # else:
-            #     self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
-            self.losses_dict['total_loss'] = \
-            self.losses_dict['contrast_loss']
+        # if self.epoch >= 5:
+        #     self.losses_dict['total_loss'] = \
+        #     self.ortho_reg*self.losses_dict['orthogonality_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] +  self.losses_dict['classification_loss'] 
+        # 
+        # elif self.epoch >= 2:
+        #     self.losses_dict['total_loss'] = \
+        #     self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.losses_dict['classification_loss'] 
+        # else:
+        #     self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
+        self.losses_dict['total_loss'] = \
+        self.losses_dict['contrast_loss']
             
             
-        else:
-            logit_map = self.model(imgs_s)
-            
-            print(f"logit map shape {logit_map.size()}")
-            print(f"seglab shape {seglab.size()}")
-            
-            lossdice = self.diceloss(logit_map, seglab)
-            self.losses_dict['dice_loss'] = lossdice.item()
-            self.losses_dict['total_loss'] = lossdice
-            accu = 0
-            self.losses_dict['classification_loss'] = 0.0
-            self.losses_dict['contrast_loss'] = 0.0
-            self.losses_dict['orthogonality_loss'] = 0.0
-            self.losses_dict['reconstruction_loss'] = 0.0
-
         self.losses_dict['total_loss'].backward()
         self.optimizer.step()
         return self.losses_dict, accu
@@ -825,7 +805,7 @@ def main():
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
     
-    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
+    train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
     
     train_loader = ThreadDataLoader(train_dataset, batch_size=8, shuffle=True,collate_fn=custom_collate_fn)
