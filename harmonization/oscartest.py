@@ -1,7 +1,7 @@
 import tensorflow.compat.v1 as tf
 
 from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_NAME_FIELD, SERIES_DESCRIPTION_FIELD, SERIES_NUMBER_FIELD, SLICE_THICKNESS_FIELD
-from swin_contrastive.swinunetr import custom_collate_fn, load_data
+from harmonization.swin_contrastive.swinunetr import custom_collate_fn, load_data
 tf.disable_v2_behavior()
 import os
 import numpy as np
