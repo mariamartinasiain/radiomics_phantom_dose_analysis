@@ -26,13 +26,17 @@ def convert_tf_to_pytorch():
     feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
 
     # Convert to ONNX
-    input_spec = [
+    input_signature = [
         tf.TensorSpec((None, 131072), tf.float32, name="x_start"),
         tf.TensorSpec((), tf.float32, name="keepProb")
     ]
-    output_spec = [tf.TensorSpec((None, 16384), tf.float32, name="MaxPool3D_1")]
     
-    model_proto, _ = tf2onnx.convert.from_keras(sess, input_signature=input_spec, output_signature=output_spec)
+    model_proto, _ = tf2onnx.convert.from_session(
+        sess,
+        input_names=["x_start:0", "keepProb:0"],
+        output_names=["MaxPool3D_1:0"],
+        input_signature=input_signature
+    )
     
     onnx.save(model_proto, "tf_model.onnx")
 
