@@ -17,7 +17,7 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'random_contrast2' : (3072),
+    'random_contrast_registered' : (3072),
     
 }
 classif_types = ['scanner','roi_large']

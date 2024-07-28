@@ -255,12 +255,12 @@ def silhouette_score_analysis(color_mode='series_desc', mg_filter=None, filepath
     
 
 def batch_analysis():
-    color_modes = ['reconstruction']
+    color_modes = ['roi','reconstruction', 'series_desc', 'manufacturer','all']
     mg_filters = [None, 10]
     #features_files = ['../../all_dataset_features/pyradiomics_features.csv','../../all_dataset_features/swin_deepfeatures.csv','../../all_dataset_features/averaged_swin_deepfeatures.csv','../../all_dataset_features/pca_swin_deepfeatures.csv','../../all_dataset_features/new_model_swin_deepfeatures.csv','../../all_dataset_features/features_ocar_full.csv','../../all_dataset_features/features_swinunetr_full.csv','../../all_dataset_features/pyradiomics_features_full.csv']
     #datasetnames = ['pyradiomics_features','swin_deepfeatures','averaged_swin_deepfeatures','pca_swin_deepfeatures','new_model_swin_deepfeatures','features_ocar_full','features_swinunetr_full','pyradiomics_features_full']
-    features_files = ['../../all_dataset_features/normalized_swin_features.csv']
-    datasetnames = ['normalized_swin_features']
+    features_files = ['torch_normalized_deepfeaturesoscar.csv']
+    datasetnames = ['torch_normalized_deepfeaturesoscar']
     for features_file in features_files:
         for color_mode in color_modes:
             for mg_filter in mg_filters:

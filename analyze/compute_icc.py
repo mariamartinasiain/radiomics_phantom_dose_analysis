@@ -33,13 +33,13 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
 
 
 def main():
-    csv_path = '../../all_dataset_features/features_ocar_full.csv'
+    csv_path = '../random_contrast_features.csv'
     icc_results = auto_detect_and_calculate_icc(csv_path)
 
     icc_results_sorted = icc_results.sort_values(by='ICC', ascending=False)
     print(icc_results_sorted)
 
-    output_path = '../../all_dataset_features/features_ocar_full_icc_results.csv'
+    output_path = 'random_contrast_features_icc_results.csv'
     icc_results_sorted.to_csv(output_path, index=False)
     print(f"Les résultats ICC sont enregistrés dans {output_path}")
 

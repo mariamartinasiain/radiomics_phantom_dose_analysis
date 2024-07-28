@@ -66,12 +66,13 @@ def plot_comparison(mean_accuracies_dict, lowest_accuracies_dict, lowest_accurac
 
 def main():
     files = {
-        'SwinUNETR': '../../accu/results_roi_large__None_features_swinunetr_full.csv.csv',
-        'OSCAR': '../../accu/results_roi_large__None_features_oscar_full.csv.csv',
-        'Pyradiomics': '../../accu/results_roi_large__None_features_pyradiomics_full.csv.csv',
-        'SwinFinetune': '../../accu/results_roi_large__None_features_swin_finetune.csv.csv',
-        'SwinUNETRAveraged': '../../accu/results_roi_large__None_features_swin_finetune_averaged.csv.csv',
-        'SwinFinetuneAveraged': '../../accu/results_roi_large__None_features_swinunetr_full_averaged.csv.csv',
+        #'SwinUNETR': '../../accu/results_roi_large__None_features_swinunetr_full.csv.csv',
+        # 'OSCAR': '../../accu/results_roi_large__None_features_oscar_full.csv.csv',
+        # 'Pyradiomics': '../../accu/results_roi_large__None_features_pyradiomics_full.csv.csv',
+        # 'SwinFinetune': '../../accu/results_roi_large__None_features_swin_finetune.csv.csv',
+        # 'SwinUNETRAveraged': '../../accu/results_roi_large__None_features_swin_finetune_averaged.csv.csv',
+        # 'SwinFinetuneAveraged': '../../accu/results_roi_large__None_features_swinunetr_full_averaged.csv.csv',
+        'SwinUNETR random crop contrastive': 'results_scanner_999_None_features_random_contrast2.csv',
     }
 
     mean_accuracies_dict = {}
