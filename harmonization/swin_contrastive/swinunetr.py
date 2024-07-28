@@ -269,7 +269,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
 
 
 def main():
-    fnames = ["random_contrast2"]
+    fnames = ["random_contrast_registered"]
     for fname in fnames:
         model = get_model(model_path=f"{fname}.pth")
         run_inference(model,fname = fname)
