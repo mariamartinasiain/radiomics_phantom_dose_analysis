@@ -515,29 +515,6 @@ class PyTorchModel(nn.Module):
         x = x.view(x.size(0), -1)  # Flatten to 2048 features
         return x
 
-I apologize for the confusion and my oversight. You're absolutely right, and I should have been more attentive to our previous discussion. Let's return to the PyTorch model we developed earlier. Here's the correct implementation, combining what we discussed before:
-pythonCopyimport torch
-import torch.nn as nn
-import tensorflow as tf
-
-class PyTorchModel(nn.Module):
-    def __init__(self):
-        super(PyTorchModel, self).__init__()
-        
-        self.conv1 = nn.Conv3d(1, 32, kernel_size=5, stride=1, padding=2)
-        self.pool1 = nn.MaxPool3d(kernel_size=4, stride=4)
-        self.conv2 = nn.Conv3d(32, 64, kernel_size=5, stride=1, padding=2)
-        self.pool2 = nn.MaxPool3d(kernel_size=4, stride=4)
-        
-    def forward(self, x):
-        x = x.view(-1, 64, 64, 32, 1)
-        x = x.permute(0, 4, 1, 2, 3)
-        
-        x = self.pool1(torch.relu(self.conv1(x)))
-        x = self.pool2(torch.relu(self.conv2(x)))
-        x = x.view(x.size(0), -1)  # Flatten to 2048 features
-        return x
-
 def convert_tf_to_pytorch(for_training=False):
     tf.compat.v1.disable_eager_execution()
     sess = tf.compat.v1.Session()
