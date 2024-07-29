@@ -429,12 +429,14 @@ class Train:
             #print("btneck size",btneck.size())
             btneck = btneck[boolids]
             #print("new btneck size",btneck.size())
-            num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
+            #num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
+            num_elements = 1
             #print("num_elements",num_elements)
         
             # (nbatch_size, 768,D, H, W) -> (nbatch_size * num_elements, latentsize)
-            embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, latentsize)
-            
+            #embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, latentsize)
+            embeddings = btneck
+
             #contrast_ind = torch.arange(offset,offset+num_elements) #with this one under patch of the cropped ROI patch will be compared to each other : negatives within same roi
             contrast_ind = torch.full((num_elements,), offset) #negatives only between different r
             labels = contrast_ind.repeat(btneck.shape[0]) 
@@ -847,7 +849,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=768,savename="random_contrast_registered_oscar.pth",ortho_reg=0.001)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=768,savename="contrast_oscar.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
