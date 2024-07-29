@@ -503,6 +503,16 @@ def convert_tf_to_pytorch(for_training=False):
     saver.restore(sess, tf.train.latest_checkpoint('./'))
 
     graph = tf.compat.v1.get_default_graph()
+
+    print("Operations in the graph:")
+    for op in graph.get_operations():
+        print(op.name, op.type)
+
+    # Print trainable variables (weights and biases)
+    print("\nTrainable variables:")
+    for var in tf.compat.v1.trainable_variables():
+        print(var.name, var.shape)
+
     x = graph.get_tensor_by_name("x_start:0")
     keepProb = graph.get_tensor_by_name("keepProb:0")
     feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
