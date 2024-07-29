@@ -530,10 +530,13 @@ def convert_tf_to_pytorch(for_training=False):
     conv2_kernel = graph.get_tensor_by_name('Variable_2/read:0')
     conv2_bias = graph.get_tensor_by_name('Variable_3/read:0')
     
-    pytorch_model.conv1.weight.data = torch.FloatTensor(sess.run(conv1_kernel).transpose(4, 3, 0, 1, 2))
-    pytorch_model.conv1.bias.data = torch.FloatTensor(sess.run(conv1_bias))
-    pytorch_model.conv2.weight.data = torch.FloatTensor(sess.run(conv2_kernel).transpose(4, 3, 0, 1, 2))
-    pytorch_model.conv2.bias.data = torch.FloatTensor(sess.run(conv2_bias))
+    pytorch_model.conv1.weight.data = torch.DoubleTensor(sess.run(conv1_kernel).transpose(4, 3, 0, 1, 2))
+    pytorch_model.conv1.bias.data = torch.DoubleTensor(sess.run(conv1_bias))
+    pytorch_model.conv2.weight.data = torch.DoubleTensor(sess.run(conv2_kernel).transpose(4, 3, 0, 1, 2))
+    pytorch_model.conv2.bias.data = torch.DoubleTensor(sess.run(conv2_bias))
+    
+    # Convertir tous les paramètres en double précision
+    pytorch_model = pytorch_model.double()
     
     if for_training:
         for param in pytorch_model.parameters():
