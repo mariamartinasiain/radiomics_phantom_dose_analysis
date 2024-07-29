@@ -23,6 +23,10 @@ if gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
     except RuntimeError as e:
         print(e)
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  
+import torch
+torch.cuda.set_device(0)
 
 def run_inference():
     jsonpath = "./dataset_info_cropped.json"
