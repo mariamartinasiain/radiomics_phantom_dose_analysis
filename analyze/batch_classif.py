@@ -17,7 +17,10 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'random_contrast_registered' : (3072),
+    'combat_pyradiomics_full' : (86),
+    'combat_oscar_full' : (2048),
+    'combat_swinunetr_full' : (3072),
+
     
 }
 classif_types = ['scanner','roi_large']
