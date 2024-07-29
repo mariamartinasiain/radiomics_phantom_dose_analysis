@@ -334,14 +334,18 @@ class Train:
         
         #latents = self.model.swinViT(imgs_s)
         latents = self.model(imgs_s)
+        print("latents shape",latents.size())
         
         #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
-        nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
-        nlatents = [latents[0], latents[1], latents[2], latents[3],0]
-        nlatents[4] = nlatents4
+        #nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
+        #nlatents = [latents[0], latents[1], latents[2], latents[3],0]
+        #nlatents[4] = nlatents4
         #print("bottleneck size",bottleneck.size())
         #print("nlatents[4] size",nlatents[4].size())
-        
+
+        nlatents = [0,0,0,0,0]
+        nlatents[4] = latents
+
         #print("ids size",ids.size())
         self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
         #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
