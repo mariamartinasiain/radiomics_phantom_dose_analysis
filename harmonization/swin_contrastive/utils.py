@@ -516,6 +516,9 @@ class PyTorchModel(nn.Module):
         return x
 
 def convert_tf_to_pytorch():
+    device_id = 0
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    torch.cuda.set_device(device_id)
     tf.compat.v1.disable_eager_execution()
     sess = tf.compat.v1.Session()
     saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')

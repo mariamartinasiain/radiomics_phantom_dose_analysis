@@ -293,7 +293,7 @@ class Train:
         self.optimizer.zero_grad()
 
         # prepare batch
-        imgs_s = batch["image"].double().cuda()
+        imgs_s = batch["image"].cuda().double()
         #ids = batch["uids"].cuda()
         print("imgs_s size 1",imgs_s.size())
         #print("ids size",ids.size())
