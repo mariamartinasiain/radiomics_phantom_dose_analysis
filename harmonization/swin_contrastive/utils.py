@@ -515,7 +515,7 @@ class PyTorchModel(nn.Module):
         x = x.view(x.size(0), -1)  # Flatten to 2048 features
         return x
 
-def convert_tf_to_pytorch(for_training=False):
+def convert_tf_to_pytorch():
     tf.compat.v1.disable_eager_execution()
     sess = tf.compat.v1.Session()
     saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
@@ -538,12 +538,9 @@ def convert_tf_to_pytorch(for_training=False):
     # Convertir tous les paramètres en double précision
     pytorch_model = pytorch_model.double()
     
-    if for_training:
-        for param in pytorch_model.parameters():
-            param.requires_grad = True
+    for param in pytorch_model.parameters():
+        param.requires_grad = True
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    pytorch_model = pytorch_model.to(device)
     
     return pytorch_model
 
