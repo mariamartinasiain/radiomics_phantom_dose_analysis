@@ -94,6 +94,10 @@ def load_data(filepath, color_mode='roi', mg_filter=None,rep_filter=None):
     #verifier si features est plutot une liste ou un string d'une liste
     if features.columns[0] == 'deepfeatures':
         features = features['deepfeatures'].apply(eval).apply(pd.Series)
+    #ou verifier si il y a une colone deepfeatures
+    elif 'deepfeatures' in features.columns:
+        features = features['deepfeatures'].apply(eval).apply(pd.Series)
+    
     if color_mode == 'roi':
         labels = data['ROI']
         supp_info = data['SeriesNumber']
@@ -259,8 +263,8 @@ def batch_analysis():
     mg_filters = [None, 10]
     #features_files = ['../../all_dataset_features/pyradiomics_features.csv','../../all_dataset_features/swin_deepfeatures.csv','../../all_dataset_features/averaged_swin_deepfeatures.csv','../../all_dataset_features/pca_swin_deepfeatures.csv','../../all_dataset_features/new_model_swin_deepfeatures.csv','../../all_dataset_features/features_ocar_full.csv','../../all_dataset_features/features_swinunetr_full.csv','../../all_dataset_features/pyradiomics_features_full.csv']
     #datasetnames = ['pyradiomics_features','swin_deepfeatures','averaged_swin_deepfeatures','pca_swin_deepfeatures','new_model_swin_deepfeatures','features_ocar_full','features_swinunetr_full','pyradiomics_features_full']
-    features_files = ['features_combat_oscar_full.csv','features_combat_pyradiomics_full.csv','features_combat_swinunetr_full.csv']
-    datasetnames = ['features_combat_oscar_full','features_combat_pyradiomics_full','features_combat_swinunetr_full']
+    features_files = ['features_combat_pyradiomics_full.csv','features_combat_swinunetr_full.csv']
+    datasetnames = ['features_combat_pyradiomics_full','features_combat_swinunetr_full']
     for features_file in features_files:
         for color_mode in color_modes:
             for mg_filter in mg_filters:

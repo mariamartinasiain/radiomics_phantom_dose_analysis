@@ -33,15 +33,12 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
 
 
 def main():
-    csv_path = '../random_contrast_features.csv'
-    icc_results = auto_detect_and_calculate_icc(csv_path)
-
-    icc_results_sorted = icc_results.sort_values(by='ICC', ascending=False)
-    print(icc_results_sorted)
-
-    output_path = 'random_contrast_features_icc_results.csv'
-    icc_results_sorted.to_csv(output_path, index=False)
-    print(f"Les résultats ICC sont enregistrés dans {output_path}")
+    csv_path = ['features_combat_oscar_full.csv', 'features_combat_pyradiomics_full.csv', 'features_combat_swinunetr_full.csv']
+    for path in csv_path:
+        icc_results = auto_detect_and_calculate_icc(path)
+        icc_results_sorted = icc_results.sort_values(by='ICC', ascending=False)
+        print(icc_results_sorted)
+        icc_results_sorted.to_csv(f'icc_{path}', index=False)
 
 if __name__ == '__main__':
     main()
