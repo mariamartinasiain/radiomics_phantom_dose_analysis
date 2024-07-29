@@ -504,14 +504,27 @@ def convert_tf_to_pytorch(for_training=False):
 
     graph = tf.compat.v1.get_default_graph()
 
-    print("Operations in the graph:")
-    for op in graph.get_operations():
-        print(op.name, op.type)
+    print("Model Architecture:")
+    operations = graph.get_operations()
+    layer_ops = [op for op in operations if op.type in ['Conv3D', 'MaxPool3D', 'MatMul', 'BiasAdd', 'Relu']]
 
-    # Print trainable variables (weights and biases)
-    print("\nTrainable variables:")
-    for var in tf.compat.v1.trainable_variables():
-        print(var.name, var.shape)
+    for op in layer_ops:
+        if op.type == 'Conv3D':
+            input_shape = op.inputs[0].shape
+            output_shape = op.outputs[0].shape
+            kernel_shape = op.inputs[1].shape
+            print(f"Conv3D: Input {input_shape}, Output {output_shape}, Kernel {kernel_shape}")
+        elif op.type == 'MaxPool3D':
+            input_shape = op.inputs[0].shape
+            output_shape = op.outputs[0].shape
+            print(f"MaxPool3D: Input {input_shape}, Output {output_shape}")
+        elif op.type == 'MatMul':
+            input_shape = op.inputs[0].shape
+            output_shape = op.outputs[0].shape
+            print(f"Fully Connected: Input {input_shape}, Output {output_shape}")
+        elif op.type == 'Relu':
+            input_shape = op.inputs[0].shape
+            print(f"ReLU: Shape {input_shape}")
 
     x = graph.get_tensor_by_name("x_start:0")
     keepProb = graph.get_tensor_by_name("keepProb:0")
