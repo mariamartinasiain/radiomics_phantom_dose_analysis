@@ -411,7 +411,8 @@ class Train:
     def contrastive_step(self, latents,ids,latentsize = 768): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
         #print("ids",ids)
         
-        total_num_elements = latents[4].shape[0] * latents[4].shape[2] * latents[4].shape[3] * latents[4].shape[4]
+        #total_num_elements = latents[4].shape[0] * latents[4].shape[2] * latents[4].shape[3] * latents[4].shape[4]
+        total_num_elements = latents[4].shape[0]
         all_embeddings = torch.empty(total_num_elements, latentsize)
         all_labels = torch.empty(total_num_elements, dtype=torch.long)
         
