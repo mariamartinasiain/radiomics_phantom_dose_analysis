@@ -371,10 +371,10 @@ class Train:
         # nib.save(img, "reconstructed_image.nii")
         
         #saving original image to disk
-        img = imgs_s[0,:,:,:,:].detach().cpu().numpy()
-        img = np.squeeze(img)
-        img = nib.Nifti1Image(img, np.eye(4))
-        nib.save(img, "original_image.nii")
+        # img = imgs_s[0,:,:,:,:].detach().cpu().numpy()
+        # img = np.squeeze(img)
+        # img = nib.Nifti1Image(img, np.eye(4))
+        # nib.save(img, "original_image.nii")
         
         
         #self.reconstruction_step(reconstructed_imgs, imgs_s) 
