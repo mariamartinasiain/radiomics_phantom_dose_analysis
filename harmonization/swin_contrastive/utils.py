@@ -508,23 +508,20 @@ def convert_tf_to_pytorch(for_training=False):
     operations = graph.get_operations()
     layer_ops = [op for op in operations if op.type in ['Conv3D', 'MaxPool3D', 'MatMul', 'BiasAdd', 'Relu']]
 
-    for op in layer_ops:
-        if op.type == 'Conv3D':
-            input_shape = op.inputs[0].shape
-            output_shape = op.outputs[0].shape
-            kernel_shape = op.inputs[1].shape
-            print(f"Conv3D: Input {input_shape}, Output {output_shape}, Kernel {kernel_shape}")
-        elif op.type == 'MaxPool3D':
-            input_shape = op.inputs[0].shape
-            output_shape = op.outputs[0].shape
-            print(f"MaxPool3D: Input {input_shape}, Output {output_shape}")
-        elif op.type == 'MatMul':
-            input_shape = op.inputs[0].shape
-            output_shape = op.outputs[0].shape
-            print(f"Fully Connected: Input {input_shape}, Output {output_shape}")
-        elif op.type == 'Relu':
-            input_shape = op.inputs[0].shape
-            print(f"ReLU: Shape {input_shape}")
+    print("Model Architecture:")
+    operations = graph.get_operations()
+    relevant_ops = ['Conv3D', 'MaxPool3D', 'MatMul', 'BiasAdd', 'Relu', 'Reshape', 'Flatten', 'Concat']
+    
+    for op in operations:
+        if op.type in relevant_ops:
+            print(f"Operation: {op.name}, Type: {op.type}")
+            print("  Inputs:")
+            for input in op.inputs:
+                print(f"    {input.name}: {input.shape}")
+            print("  Outputs:")
+            for output in op.outputs:
+                print(f"    {output.name}: {output.shape}")
+            print()
 
     x = graph.get_tensor_by_name("x_start:0")
     keepProb = graph.get_tensor_by_name("keepProb:0")
