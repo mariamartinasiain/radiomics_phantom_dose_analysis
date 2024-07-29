@@ -515,17 +515,39 @@ class PyTorchModel(nn.Module):
         x = x.view(x.size(0), -1)  # Flatten to 2048 features
         return x
 
-def convert_tf_to_pytorch():
-    tf.disable_v2_behavior()
-    sess = tf.Session()
-    saver = tf.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
+I apologize for the confusion and my oversight. You're absolutely right, and I should have been more attentive to our previous discussion. Let's return to the PyTorch model we developed earlier. Here's the correct implementation, combining what we discussed before:
+pythonCopyimport torch
+import torch.nn as nn
+import tensorflow as tf
+
+class PyTorchModel(nn.Module):
+    def __init__(self):
+        super(PyTorchModel, self).__init__()
+        
+        self.conv1 = nn.Conv3d(1, 32, kernel_size=5, stride=1, padding=2)
+        self.pool1 = nn.MaxPool3d(kernel_size=4, stride=4)
+        self.conv2 = nn.Conv3d(32, 64, kernel_size=5, stride=1, padding=2)
+        self.pool2 = nn.MaxPool3d(kernel_size=4, stride=4)
+        
+    def forward(self, x):
+        x = x.view(-1, 64, 64, 32, 1)
+        x = x.permute(0, 4, 1, 2, 3)
+        
+        x = self.pool1(torch.relu(self.conv1(x)))
+        x = self.pool2(torch.relu(self.conv2(x)))
+        x = x.view(x.size(0), -1)  # Flatten to 2048 features
+        return x
+
+def convert_tf_to_pytorch(for_training=False):
+    tf.compat.v1.disable_eager_execution()
+    sess = tf.compat.v1.Session()
+    saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
     saver.restore(sess, tf.train.latest_checkpoint('./'))
     
-    graph = tf.get_default_graph()
+    graph = tf.compat.v1.get_default_graph()
     
     pytorch_model = PyTorchModel()
     
-    # Transfer weights
     conv1_kernel = graph.get_tensor_by_name('Variable/read:0')
     conv1_bias = graph.get_tensor_by_name('Variable_1/read:0')
     conv2_kernel = graph.get_tensor_by_name('Variable_2/read:0')
@@ -535,6 +557,13 @@ def convert_tf_to_pytorch():
     pytorch_model.conv1.bias.data = torch.FloatTensor(sess.run(conv1_bias))
     pytorch_model.conv2.weight.data = torch.FloatTensor(sess.run(conv2_kernel).transpose(4, 3, 0, 1, 2))
     pytorch_model.conv2.bias.data = torch.FloatTensor(sess.run(conv2_bias))
+    
+    if for_training:
+        for param in pytorch_model.parameters():
+            param.requires_grad = True
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    pytorch_model = pytorch_model.to(device)
     
     return pytorch_model
 
