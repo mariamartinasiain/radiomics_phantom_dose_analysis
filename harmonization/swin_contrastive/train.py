@@ -756,7 +756,7 @@ class LazyPatchLoader(Transform):
                 if patch.ndim == 3:
                     patch = patch[np.newaxis, ...]
                 
-                patches.append(patch)
+                patches.append(patch.double())
                 self.logger.info(f"Patch shape: {patch.shape}")
 
             patches = np.concatenate(patches, axis=0)
