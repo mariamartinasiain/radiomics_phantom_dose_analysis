@@ -494,72 +494,55 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 343)):
     successful = sum(results)
     print(f"Traitement terminé. {successful}/{len(data)} images ont été redimensionnées avec succès.")
 
+import torch
+import torch.nn as nn
+class PyTorchModel(nn.Module):
+    def __init__(self):
+        super(PyTorchModel, self).__init__()
+        
+        self.conv1 = nn.Conv3d(1, 32, kernel_size=5, stride=1, padding=2)
+        self.pool1 = nn.MaxPool3d(kernel_size=4, stride=4)
+        self.conv2 = nn.Conv3d(32, 64, kernel_size=5, stride=1, padding=2)
+        self.pool2 = nn.MaxPool3d(kernel_size=4, stride=4)
+        
+    def forward(self, x):
+        # Input reshape
+        x = x.view(-1, 64, 64, 32, 1)
+        x = x.permute(0, 4, 1, 2, 3)  # Change to (N, C, D, H, W) format for PyTorch
+        
+        x = self.pool1(torch.relu(self.conv1(x)))
+        x = self.pool2(torch.relu(self.conv2(x)))
+        x = x.view(x.size(0), -1)  # Flatten to 2048 features
+        return x
 
-def convert_tf_to_pytorch(for_training=False):
-    # Load the TensorFlow model
-    tf.compat.v1.disable_eager_execution()
-    sess = tf.compat.v1.Session()
-    saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
+def convert_tf_to_pytorch():
+    tf.disable_v2_behavior()
+    sess = tf.Session()
+    saver = tf.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
     saver.restore(sess, tf.train.latest_checkpoint('./'))
-
-    graph = tf.compat.v1.get_default_graph()
-
-    print("Model Architecture:")
-    operations = graph.get_operations()
-    layer_ops = [op for op in operations if op.type in ['Conv3D', 'MaxPool3D', 'MatMul', 'BiasAdd', 'Relu']]
-
-    print("Model Architecture:")
-    operations = graph.get_operations()
-    relevant_ops = ['Conv3D', 'MaxPool3D', 'MatMul', 'BiasAdd', 'Relu', 'Reshape', 'Flatten', 'Concat']
     
-    for op in operations:
-        if op.type in relevant_ops:
-            print(f"Operation: {op.name}, Type: {op.type}")
-            print("  Inputs:")
-            for input in op.inputs:
-                print(f"    {input.name}: {input.shape}")
-            print("  Outputs:")
-            for output in op.outputs:
-                print(f"    {output.name}: {output.shape}")
-            print()
-
-    x = graph.get_tensor_by_name("x_start:0")
-    keepProb = graph.get_tensor_by_name("keepProb:0")
-    feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
-
-    # Save the model in SavedModel format
-    tf.compat.v1.saved_model.simple_save(sess, "./saved_model_temp", 
-                                         inputs={"x_start": x, "keepProb": keepProb},
-                                         outputs={"MaxPool3D_1": feature_tensor})
-
-    # Convert to ONNX using tf2onnx command-line tool
-    cmd = f"python -m tf2onnx.convert --saved-model ./saved_model_temp --output tf_model_temp.onnx"
-    result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
-    print(result.stdout)
-
-    # Convert ONNX to PyTorch
-    pytorch_model = ConvertModel(onnx.load("tf_model_temp.onnx"))
-
-    # Clean up temporary files
-    os.remove("tf_model_temp.onnx")
-    os.system("rm -rf ./saved_model_temp")
-
-    if for_training:
-        # Set requires_grad to True for all parameters
-        for param in pytorch_model.parameters():
-            param.requires_grad = True
-
-    # Move model to GPU if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    pytorch_model = pytorch_model.to(device)
-
+    graph = tf.get_default_graph()
+    
+    pytorch_model = PyTorchModel()
+    
+    # Transfer weights
+    conv1_kernel = graph.get_tensor_by_name('Variable/read:0')
+    conv1_bias = graph.get_tensor_by_name('Variable_1/read:0')
+    conv2_kernel = graph.get_tensor_by_name('Variable_2/read:0')
+    conv2_bias = graph.get_tensor_by_name('Variable_3/read:0')
+    
+    pytorch_model.conv1.weight.data = torch.FloatTensor(sess.run(conv1_kernel).transpose(4, 3, 0, 1, 2))
+    pytorch_model.conv1.bias.data = torch.FloatTensor(sess.run(conv1_bias))
+    pytorch_model.conv2.weight.data = torch.FloatTensor(sess.run(conv2_kernel).transpose(4, 3, 0, 1, 2))
+    pytorch_model.conv2.bias.data = torch.FloatTensor(sess.run(conv2_bias))
+    
     return pytorch_model
 
 def get_pytorch_model_for_inference():
-    return convert_tf_to_pytorch(for_training=False)
+    return convert_tf_to_pytorch()
 
 def get_oscar_for_training():
-    return convert_tf_to_pytorch(for_training=True)
+    return convert_tf_to_pytorch()
 
 if __name__ == "__main__":
     main_box()
