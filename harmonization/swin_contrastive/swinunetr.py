@@ -274,6 +274,11 @@ def main():
     for fname in fnames:
         #model = get_model(model_path=f"{fname}.pth")
         model = get_model_oscar(path=f"{fname}.pth")
+        device_id = 0
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+        torch.cuda.set_device(device_id)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+        model = model.to(device)
         run_inference(model,fname = fname)
 
 if __name__ == "__main__":

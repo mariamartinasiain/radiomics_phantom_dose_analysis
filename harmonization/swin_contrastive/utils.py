@@ -516,16 +516,11 @@ class PyTorchModel(nn.Module):
         return x
 
 def get_model_oscar(path):
-    # Instancier le modèle
     model = PyTorchModel()
-    
-    # Charger les poids sauvegardés
     state_dict = torch.load(path)
     model.load_state_dict(state_dict)
-    
-    # Mettre le modèle en mode évaluation
     model.eval()
-    
+    model = model.cuda()  # Ajoutez cette ligne
     return model
 
 def convert_tf_to_pytorch():
