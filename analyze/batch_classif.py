@@ -17,9 +17,7 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'combat_pyradiomics_full' : (86),
-    'combat_oscar_full' : (2048),
-    'combat_swinunetr_full' : (3072),
+    'contrast_oscar' : (2048),
 
     
 }
