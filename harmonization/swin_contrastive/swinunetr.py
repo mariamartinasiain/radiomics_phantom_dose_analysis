@@ -11,11 +11,11 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
-from harmonization.swin_contrastive.utils import load_data,get_model
+from harmonization.swin_contrastive.utils import load_data,get_model,get_model_oscar
 from monai.data import Dataset, DataLoader,SmartCacheDataset
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
-from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type,get_model_oscar
+from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type
 from monai.transforms.transform import LazyTransform, MapTransform
 from monai.utils import ensure_tuple,convert_to_tensor
 import threading
