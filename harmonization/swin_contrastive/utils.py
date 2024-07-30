@@ -512,7 +512,7 @@ class PyTorchModel(nn.Module):
         
         x = self.pool1(torch.relu(self.conv1(x)))
         x = self.pool2(torch.relu(self.conv2(x)))
-        x = x.view(x.size(0), -1)  # Flatten to 2048 features
+        x = x.reshape(x.size(0), -1)  # Flatten to 2048 features
         return x
 
 def get_model_oscar(path):
