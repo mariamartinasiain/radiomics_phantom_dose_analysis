@@ -236,8 +236,9 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
             val_inputs = image#.cuda()
             #print(val_inputs.shape)
             
-            val_outputs = model.swinViT(val_inputs)
-            latentrep = val_outputs[4] #48*2^4 = 768
+            #val_outputs = model.swinViT(val_inputs)
+            #latentrep = val_outputs[4] #48*2^4 = 768
+            latentrep = model(val_inputs)
             #latentrep = model.encoder10(latentrep)
             print(latentrep.shape)
             record = {
@@ -269,7 +270,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
 
 
 def main():
-    fnames = ["random_contrast_registered"]
+    fnames = ["contrast_oscar"]
     for fname in fnames:
         model = get_model(model_path=f"{fname}.pth")
         run_inference(model,fname = fname)

@@ -4,7 +4,7 @@ from neuroCombat import neuroCombat
 import ast
 
 
-fname = "features_pyradiomics_full"
+fname = "features_swinunetr_full"
 # Charger le CSV
 df = pd.read_csv(f'{fname}.csv')
 
