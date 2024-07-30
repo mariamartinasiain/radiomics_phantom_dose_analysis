@@ -515,6 +515,19 @@ class PyTorchModel(nn.Module):
         x = x.view(x.size(0), -1)  # Flatten to 2048 features
         return x
 
+def get_model_oscar(path):
+    # Instancier le modèle
+    model = PyTorchModel()
+    
+    # Charger les poids sauvegardés
+    state_dict = torch.load(path)
+    model.load_state_dict(state_dict)
+    
+    # Mettre le modèle en mode évaluation
+    model.eval()
+    
+    return model
+
 def convert_tf_to_pytorch():
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)

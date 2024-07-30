@@ -15,7 +15,7 @@ from harmonization.swin_contrastive.utils import load_data,get_model
 from monai.data import Dataset, DataLoader,SmartCacheDataset
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
-from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type
+from monai.transforms.utils import generate_spatial_bounding_box, compute_divisible_spatial_size,convert_data_type,get_model_oscar
 from monai.transforms.transform import LazyTransform, MapTransform
 from monai.utils import ensure_tuple,convert_to_tensor
 import threading
@@ -272,7 +272,8 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
 def main():
     fnames = ["contrast_oscar"]
     for fname in fnames:
-        model = get_model(model_path=f"{fname}.pth")
+        #model = get_model(model_path=f"{fname}.pth")
+        model = get_model_oscar(path=f"{fname}.pth")
         run_inference(model,fname = fname)
 
 if __name__ == "__main__":
