@@ -308,21 +308,22 @@ class Train:
 
         # prepare batch
         imgs_s = batch["image"].cuda().double()
-        #ids = batch["uids"].cuda()
+        ids = batch["uids"].cuda()
         print("imgs_s size 1",imgs_s.size())
         #print("ids size",ids.size())
         if len(imgs_s.size()) == 5:
             imgs_s = imgs_s.view(imgs_s.shape[0] * imgs_s.shape[1],1, imgs_s.shape[2], imgs_s.shape[3], imgs_s.shape[4])
         else :
             imgs_s = imgs_s
-        #ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
+        
+        ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
         print("imgs_s size 2",imgs_s.size())
         #print("ids size",ids.size())
 
     
         # encoder inference
-        all_labels = batch["roi_label"].cuda()
-        ids = all_labels
+        # all_labels = batch["roi_label"].cuda()
+        # ids = all_labels
 
         #ids = batch["uids"].cuda()
         print("ids size 1",ids.size())
@@ -332,19 +333,20 @@ class Train:
 
         scanner_labels = batch["scanner_label"].cuda()
         
-        #latents = self.model.swinViT(imgs_s)
-        latents = self.model(imgs_s)
+        latents = self.model.swinViT(imgs_s)
+        #latents = self.model(imgs_s)
+        
         print("latents shape",latents.size())
         
         #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
-        #nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
-        #nlatents = [latents[0], latents[1], latents[2], latents[3],0]
-        #nlatents[4] = nlatents4
-        #print("bottleneck size",bottleneck.size())
+        nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
+        nlatents = [latents[0], latents[1], latents[2], latents[3],0]
+        nlatents[4] = nlatents4
+        print("bottleneck size",bottleneck.size())
         #print("nlatents[4] size",nlatents[4].size())
 
-        nlatents = [0,0,0,0,0]
-        nlatents[4] = latents
+        #nlatents = [0,0,0,0,0]
+        #nlatents[4] = latents
 
         #print("ids size",ids.size())
         self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
@@ -411,8 +413,9 @@ class Train:
     def contrastive_step(self, latents,ids,latentsize = 768): #actuellement la loss contrastive est aussi calculé entre sous patchs de la même image, on voudrait eviter ça idealement
         #print("ids",ids)
         
-        #total_num_elements = latents[4].shape[0] * latents[4].shape[2] * latents[4].shape[3] * latents[4].shape[4]
-        total_num_elements = latents[4].shape[0]
+        total_num_elements = latents[4].shape[0] * latents[4].shape[2] * latents[4].shape[3] * latents[4].shape[4]
+        #total_num_elements = latents[4].shape[0]
+        
         all_embeddings = torch.empty(total_num_elements, latentsize)
         all_labels = torch.empty(total_num_elements, dtype=torch.long)
         
@@ -429,13 +432,16 @@ class Train:
             #print("btneck size",btneck.size())
             btneck = btneck[boolids]
             #print("new btneck size",btneck.size())
-            #num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
-            num_elements = 1
+            
+            num_elements = btneck.shape[2] * btneck.shape[3] * btneck.shape[4]
+            #num_elements = 1
+            
             #print("num_elements",num_elements)
         
             # (nbatch_size, 768,D, H, W) -> (nbatch_size * num_elements, latentsize)
-            #embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, latentsize)
-            embeddings = btneck
+            
+            embeddings = btneck.permute(0, 2, 3, 4, 1).reshape(-1, latentsize)
+            #embeddings = btneck
 
             #contrast_ind = torch.arange(offset,offset+num_elements) #with this one under patch of the cropped ROI patch will be compared to each other : negatives within same roi
             contrast_ind = torch.full((num_elements,), offset) #negatives only between different r
@@ -688,7 +694,7 @@ class PrintDebug(Transform):
         return data
 
 class LazyPatchLoader(Transform):
-    def __init__(self, roi_size=(64, 64, 32), num_patches=4, variety_size=12,reader=None, positions_file="output/valid_positions_positions.json"):
+    def __init__(self, roi_size=(64, 64, 32), num_patches=8, variety_size=8,reader=None, positions_file="output/valid_positions_positions.json"):
         self.position_file = positions_file
         self.roi_size = roi_size
         self.num_patches = num_patches  # Nombre de patches à extraire
@@ -809,8 +815,8 @@ def main():
     transforms = Compose([
         #PrintDebug(),
         #Resized(keys=["image"],spatial_size = (512,512,343)),
-        LoadImaged(keys=["image"]),
-        #LazyPatchLoader(roi_size=[64, 64, 32]),
+        #LoadImaged(keys=["image"]),
+        LazyPatchLoader(roi_size=[64, 64, 32]),
         #DebugTransform2(),
         #EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
@@ -836,7 +842,7 @@ def main():
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = ThreadDataLoader(train_dataset, batch_size=64, shuffle=True,collate_fn=custom_collate_fn)
+    train_loader = ThreadDataLoader(train_dataset, batch_size=11, shuffle=True,collate_fn=custom_collate_fn)
     test_loader = ThreadDataLoader(test_dataset, batch_size=3, shuffle=False,collate_fn=custom_collate_fn)
     
     data_loader = {'train': train_loader, 'test': test_loader}
@@ -849,7 +855,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=2048,savename="contrast_oscar.pth",ortho_reg=0.001)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=2048,savename="random_contrast_8_8_swin.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
