@@ -829,8 +829,8 @@ def main():
     ])
 
 
-    #jsonpath = "./registered_light_dataset_info_10.json"
-    jsonpath = "./dataset_info_cropped.json"
+    jsonpath = "./registered_light_dataset_info_10.json"
+    #jsonpath = "./dataset_info_cropped.json"
     
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
@@ -842,7 +842,7 @@ def main():
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = ThreadDataLoader(train_dataset, batch_size=11, shuffle=True,collate_fn=custom_collate_fn)
+    train_loader = ThreadDataLoader(train_dataset, batch_size=8, shuffle=True,collate_fn=custom_collate_fn)
     test_loader = ThreadDataLoader(test_dataset, batch_size=3, shuffle=False,collate_fn=custom_collate_fn)
     
     data_loader = {'train': train_loader, 'test': test_loader}
