@@ -820,7 +820,7 @@ def main():
         #DebugTransform2(),
         #EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
-        EncodeLabels(encoder=encoder),
+        #EncodeLabels(encoder=encoder),
         ExtractScannerLabel(),
         EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
