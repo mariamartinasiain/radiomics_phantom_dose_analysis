@@ -834,8 +834,8 @@ def main():
     
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
-    #model = get_model(target_size=(64, 64, 32))
-    model = get_oscar_for_training()
+    model = get_model(target_size=(64, 64, 32))
+    #model = get_oscar_for_training()
     #transfering model on device 
     model.to(device)
     
