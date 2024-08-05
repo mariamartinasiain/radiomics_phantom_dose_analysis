@@ -236,11 +236,11 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
             val_inputs = image.cuda()
             #print(val_inputs.shape)
             
-            #val_outputs = model.swinViT(val_inputs)
-            #latentrep = val_outputs[4] #48*2^4 = 768
-            latentrep = model(val_inputs.to(device))
+            val_outputs = model.swinViT(val_inputs)
+            latentrep = val_outputs[4] #48*2^4 = 768
+            #latentrep = model(val_inputs.to(device))
             #latentrep = model.encoder10(latentrep)
-            print(latentrep.shape)
+            #print(latentrep.shape)
             record = {
                 "SeriesNumber": batch["info"][SERIES_NUMBER_FIELD][0],
                 "deepfeatures": latentrep.flatten().tolist(),
@@ -270,10 +270,10 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
 
 
 def main():
-    fnames = ["contrast_oscar"]
+    fnames = ["random_contrast_8_8_swin"]
     for fname in fnames:
-        #model = get_model(model_path=f"{fname}.pth")
-        model = get_model_oscar(path=f"{fname}.pth")
+        model = get_model(model_path=f"{fname}.pth")
+        #model = get_model_oscar(path=f"{fname}.pth")
         device_id = 0
         os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
         torch.cuda.set_device(device_id)
