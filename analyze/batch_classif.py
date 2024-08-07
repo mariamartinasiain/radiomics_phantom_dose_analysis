@@ -17,11 +17,14 @@ else:
     print("No GPU found. Using CPU.")
 
 configurations = {
-    'contrast_oscar' : (2048),
+    'random_contrast_5_6_lowLR_12batch_swin' : (3072),
+    'random_contrast_8_8_swin': (3072),
+    'random_contrast_registered' : (3072),
+
 
     
 }
-classif_types = ['scanner','roi_large']
+classif_types = ['roi_small']
 mg_filters = [None]
 for classif_type in classif_types:
     for mg_filter in mg_filters:

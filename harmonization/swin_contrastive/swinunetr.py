@@ -270,7 +270,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
 
 
 def main():
-    fnames = ["random_contrast_8_8_swin"]
+    fnames = ["random_contrast_5_6_lowLR_12batch_swin"]
     for fname in fnames:
         model = get_model(model_path=f"{fname}.pth")
         #model = get_model_oscar(path=f"{fname}.pth")
