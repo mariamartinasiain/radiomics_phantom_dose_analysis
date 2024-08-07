@@ -416,12 +416,13 @@ def main_box():
     subbox_size = [64, 64, 32]  
     num_samples = 1000
     output_dir = "output"
-    filename_prefix = "valid_positions"
-    constraint_box = [13, 323, 120, 395, 64, 445]  # z_start, z_end, x_start, x_end, y_start, y_end
+    filename_prefix = "valid_positions2"
+    constraint_box = [13, 323, 120, 395, 130, 200]  # z_start, z_end, x_start, x_end, y_start, y_end
 
     # Charger les boîtes interdites
-    forbidden_boxes = load_forbidden_boxes(forbidden_boxes_file)
-    
+    #forbidden_boxes = load_forbidden_boxes(forbidden_boxes_file)
+    forbidden_boxes = []
+
     # Échantillonner et sauvegarder les sous-boîtes valides
     valid_positions = sample_subboxes(forbidden_boxes, big_box_size, subbox_size, num_samples, constraint_box)
     

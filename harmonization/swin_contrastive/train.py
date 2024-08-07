@@ -669,7 +669,7 @@ class PrintDebug(Transform):
         return data
 
 class LazyPatchLoader(Transform):
-    def __init__(self, roi_size=(64, 64, 32), num_patches=5, variety_size=6,reader=None, positions_file="output/valid_positions_positions.json"):
+    def __init__(self, roi_size=(64, 64, 32), num_patches=5, variety_size=15,reader=None, positions_file="output/valid_positions2_positions.json"):
         self.position_file = positions_file
         self.roi_size = roi_size
         self.num_patches = num_patches  # Nombre de patches à extraire
@@ -827,10 +827,10 @@ def main():
     
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     
-    optimizer = optim.AdamW(model.parameters(), lr=3e-5, weight_decay=0.005) 
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=768,savename="random_contrast_5_6_lowLR_12batch_swin.pth",ortho_reg=0.001)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=768,savename="liverrandom_contrast_5_15_12batch_swin.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
