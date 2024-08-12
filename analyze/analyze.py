@@ -263,8 +263,8 @@ def batch_analysis():
     mg_filters = [None, 10]
     #features_files = ['../../all_dataset_features/pyradiomics_features.csv','../../all_dataset_features/swin_deepfeatures.csv','../../all_dataset_features/averaged_swin_deepfeatures.csv','../../all_dataset_features/pca_swin_deepfeatures.csv','../../all_dataset_features/new_model_swin_deepfeatures.csv','../../all_dataset_features/features_ocar_full.csv','../../all_dataset_features/features_swinunetr_full.csv','../../all_dataset_features/pyradiomics_features_full.csv']
     #datasetnames = ['pyradiomics_features','swin_deepfeatures','averaged_swin_deepfeatures','pca_swin_deepfeatures','new_model_swin_deepfeatures','features_ocar_full','features_swinunetr_full','pyradiomics_features_full']
-    features_files = ['features_combat_pyradiomics_full.csv','features_combat_swinunetr_full.csv']
-    datasetnames = ['features_combat_pyradiomics_full','features_combat_swinunetr_full']
+    features_files = ['features_liverrandom_contrast_5_15_10batch_swin.csv']
+    datasetnames = ['random crop swin']
     for features_file in features_files:
         for color_mode in color_modes:
             for mg_filter in mg_filters:

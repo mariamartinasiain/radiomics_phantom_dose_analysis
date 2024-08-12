@@ -72,7 +72,38 @@ def main():
         # 'SwinFinetune': '../../accu/results_roi_large__None_features_swin_finetune.csv.csv',
         # 'SwinUNETRAveraged': '../../accu/results_roi_large__None_features_swin_finetune_averaged.csv.csv',
         # 'SwinFinetuneAveraged': '../../accu/results_roi_large__None_features_swinunetr_full_averaged.csv.csv',
-        'SwinUNETR random crop contrastive': 'results_scanner_999_None_features_random_contrast2.csv',
+        
+#         results_roi_large_999_None_features_combat_oscar_full.csv                                                                                             100% 1232    37.0KB/s   00:00    
+# results_roi_large_999_None_features_combat_pyradiomics_full.csv                                                                                       100% 1842    56.8KB/s   00:00    
+# results_roi_large_999_None_features_combat_swinunetr_full.csv   
+# results_roi_large_999_None_features_contrast_oscar.csv 
+        # 'Oscar combat': 'results_scanner_999_None_features_combat_oscar_full.csv',
+        # 'Oscar contrast': 'results_scanner_999_None_features_contrast_oscar.csv',
+        # 'Oscar' : 'results_scanner__None_features_oscar_full.csv.csv',
+        # 'Pyradiomics combat': 'results_scanner_999_None_features_combat_pyradiomics_full.csv',
+        # 'Pyradiomics': 'results_scanner__None_features_pyradiomics_full.csv.csv',
+        # 'SwinUNETR combat': 'results_scanner_999_None_features_combat_swinunetr_full.csv',
+        # 'SwinUNETR random crop contrastive': 'results_scanner_999_None_features_random_contrast_5_6_lowLR_12batch_swin.csv',
+        # 'SwinFinetune' : 'results_scanner__None_features_paper_contrastive2_F1.csv',
+        # 'SwinUNETR': 'results_scanner__None_features_swinunetr_full.csv.csv',
+        # 'swin liver' : 'results_roi_small_999_None_features_liverrandom_contrast_5_15_10batch_swin.csv',
+        'Oscar combat': 'results_roi_large_999_None_features_combat_oscar_full.csv',
+        # # 'Oscar contrast': 'results_roi_large_999_None_features_contrast_oscar.csv',
+        # 'Oscar' : 'results_roi_large__None_features_oscar_full.csv.csv',
+        'Pyradiomics combat': 'results_roi_large_999_None_features_combat_pyradiomics_full.csv',
+        # 'Pyradiomics': 'results_roi_large__None_features_pyradiomics_full.csv.csv',
+        'SwinUNETR combat': 'results_roi_large_999_None_features_combat_swinunetr_full.csv',
+        # 'SwinUNETR random crop contrastive' : 'results_roi_small_999_None_features_random_contrast_registered.csv',
+        # 'SwinUNETR random contrast 8 8' : 'results_roi_small_999_None_features_random_contrast_8_8_swin.csv',
+        # 'SwinUNETR random crop contrastive 5 6 low LR': 'results_roi_small_999_None_features_random_contrast_5_6_lowLR_12batch_swin.csv',
+        # 'SwinFinetune' : 'results_roi_large_crossval_trained_None_swinunetr_paper.csv',
+        # 'SwinUNETR': 'results_roi_large__None_features_swinunetr_full.csv.csv',
+        # 'icc combat radiomics' : 'results_scanner_999_None_features_icc_cb_pyradiomics.csv',
+        # 'icc combat oscar' : 'results_scanner_999_None_features_icc_cb_oscar.csv',
+        # 'icc combat swin' : 'results_scanner_999_None_features_icc_cb_swinunetr.csv',
+        'icc combat radiomics' : 'results_roi_large_999_None_features_icc_cb_pyradiomics.csv',
+        'icc combat oscar' : 'results_roi_large_999_None_features_icc_cb_oscar.csv',
+        'icc combat swin' : 'results_roi_large_999_None_features_icc_cb_swinunetr.csv',
     }
 
     mean_accuracies_dict = {}

@@ -18,7 +18,7 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
     
     results = []
     for feature in feature_columns:
-        icc_data = data[[roi_column, series_column, feature]].dropna()
+        icc_data = data[[series_column,roi_column, feature]].dropna()
         icc_data.columns = ['raters', 'targets', 'ratings']
         try:
             icc = intraclass_corr(data=icc_data, raters='raters', targets='targets', ratings='ratings').set_index('Type').at['ICC3k', 'ICC']
@@ -33,12 +33,12 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
 
 
 def main():
-    csv_path = ['features_combat_oscar_full.csv', 'features_combat_pyradiomics_full.csv', 'features_combat_swinunetr_full.csv']
+    csv_path = ['features_liverrandom_contrast_5_15_10batch_swin.csv']
     for path in csv_path:
         icc_results = auto_detect_and_calculate_icc(path)
         icc_results_sorted = icc_results.sort_values(by='ICC', ascending=False)
         print(icc_results_sorted)
-        icc_results_sorted.to_csv(f'icc_{path}', index=False)
+        icc_results_sorted.to_csv(f'nicc_{path}', index=False)
 
 if __name__ == '__main__':
     main()
