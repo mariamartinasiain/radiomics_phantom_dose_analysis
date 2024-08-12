@@ -129,7 +129,7 @@ class CropOnROI(Crop):
         print("BOX START",box_start_)
         print("BOX END",box_end_)
         #print("bouding box size",spatial_size)
-        self.write_box_start(box_start_)
+        #self.write_box_start(box_start_)
         
         mid_point = np.floor((box_start_ + box_end_) / 2)
         #print("MID POINT",mid_point)
@@ -141,11 +141,14 @@ class CropOnROI(Crop):
                 f.write(f"{box_start[0]},{box_start[1]},{box_start[2]}\n")
 
     
-    def __init__(self, roi,size, lazy=False):
+    def __init__(self, roi,size, lazy=False,precomputed=False):
         super().__init__(lazy)
         self.output_file = "boxpos.txt"
         self.lock = threading.Lock()
-        center = self.compute_center(roi)
+        if precomputed:
+            center = roi
+        else:
+            center = self.compute_center(roi)
         
         self.slices = self.compute_slices(
             roi_center=center, roi_size=size, roi_start=None, roi_end=None, roi_slices=None
@@ -157,12 +160,14 @@ class CropOnROI(Crop):
 class CropOnROId(MapTransform, LazyTransform):
     backend = Crop.backend
 
-    def __init__(self, keys,roi_key,size, allow_missing_keys: bool = False, lazy: bool = False,id_key="id"):
+    def __init__(self, keys,roi_key,size, allow_missing_keys: bool = False, lazy: bool = False,id_key="id",precomputed= False,centers=None):
         MapTransform.__init__(self, keys, allow_missing_keys)
         LazyTransform.__init__(self, lazy)
         self.id_key = id_key
         self.roi_key = roi_key
         self.size = size
+        self.precomputed = precomputed
+        self.centers = centers
 
     @LazyTransform.lazy.setter  # type: ignore
     def lazy(self, value: bool) -> None:
@@ -177,7 +182,10 @@ class CropOnROId(MapTransform, LazyTransform):
         #print("LA SHAPE DE SIZE",(torch.tensor(self.size)).shape)
         for key in self.key_iterator(d):
             #print("KEY",key)
-            d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
+            if self.precomputed:
+                d[key] = CropOnROI(self.centers[d[self.roi_key]],size=self.size,lazy=lazy_,precomputed=self.precomputed)(d[key])
+            else:
+                d[key] = CropOnROI(d[self.roi_key],size=self.size,lazy=lazy_)(d[key])
             #d[self.id_key] = d['roi_label']
         return d
 
@@ -189,9 +197,9 @@ class CopyPathd(MapTransform):
         for key in self.keys:
             data[f"{key}_path"] = data[key]  # Copier le chemin du fichier dans une nouvelle clé
         return data
-
+centersrois = {'cyst1':  [324, 334, 158],'cyst2' :  [189, 278, 185],'hemangioma' :  [209, 315, 159],'metastasis' : [111, 271, 140],'normal1' : [161, 287, 149],'normal2' :  [154, 229, 169]}
 #./dataset_info_full_uncompressed_NAS.json
-def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
+def run_inference(model,jsonpath = "./expanded_registered_light_dataset_info.json",fname = ""):
     
     
     device_id = 0
@@ -204,7 +212,7 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
     transforms = Compose([
         LoadImaged(keys=["image"], ensure_channel_first=True),
         #DebugTransform(),
-        #cropOnROId(keys=["image"],roi_key="roi",size=target_size),
+        CropOnROId(keys=["image"],roi_key="roi_label",size=target_size,precomputed=True,centers=centersrois),
         # ScaleIntensityd(keys=["image"],minv=0.0, maxv=1.0),
         # Spacingd(
         #     keys=["image"],
@@ -270,9 +278,9 @@ def run_inference(model,jsonpath = "./dataset_info_cropped.json",fname = ""):
 
 
 def main():
-    fnames = ["random_contrast_5_6_lowLR_12batch_swin"]
+    fnames = ["model_swinvit"]
     for fname in fnames:
-        model = get_model(model_path=f"{fname}.pth")
+        model = get_model(model_path=f"{fname}.pt")
         #model = get_model_oscar(path=f"{fname}.pth")
         device_id = 0
         os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)

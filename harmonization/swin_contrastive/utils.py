@@ -273,8 +273,65 @@ def save_losses(train_losses, output_dir, to_compare=False):
         with open(f"{output_dir}_dice_losses.json", 'w') as f:
             json.dump({'dice_losses': serializable_dice_losses}, f)
     
-    
-  
+import os
+import glob
+import nibabel as nib
+import numpy as np
+from monai.transforms import Compose, LoadImaged, SpatialCropd, EnsureTyped, EnsureChannelFirstd
+from monai.data import DataLoader, Dataset
+
+def crop_and_save_batch(input_folder, output_folder, crop_box, output_prefix):
+    """
+    Load a batch of medical images, crop each image, and save the results with a prefixed name.
+
+    Args:
+        input_folder (str): Path to the folder containing input images.
+        output_folder (str): Path to the folder where cropped images will be saved.
+        crop_box (list): List specifying the bounding box to crop [x1, x2, y1, y2, z1, z2].
+        output_prefix (str): Prefix to add to the output file names.
+    """
+    # Find all .nii.gz files in the input folder
+    image_paths = glob.glob(os.path.join(input_folder, "*.nii.gz"))
+
+    # Define MONAI transforms to load and crop images
+    transforms = Compose([
+        LoadImaged(keys=["image"]),
+        EnsureChannelFirstd(keys=["image"]),  # Ensure the channel is first
+        EnsureTyped(keys=["image"]),  # Convert to tensor
+        SpatialCropd(keys=["image"], roi_start=[crop_box[0], crop_box[2], crop_box[4]], 
+                     roi_end=[crop_box[1], crop_box[3], crop_box[5]])
+    ])
+
+    # Create a dataset and dataloader
+    dataset = Dataset(data=[{"image": path} for path in image_paths], transform=transforms)
+    dataloader = DataLoader(dataset, batch_size=1, num_workers=4)
+
+    # Process each image
+    for idx, batch in enumerate(dataloader):
+        image_data = batch["image"][0]  # Access the first (and only) item in the batch
+        
+        # Convert to numpy array and save
+        cropped_image = image_data.numpy()  # Convert to numpy array
+
+        # Save using nibabel
+        cropped_image_nifti = nib.Nifti1Image(cropped_image, np.eye(4))
+        base_name = os.path.basename(image_paths[idx])  # Use the index to get the original filename
+        output_name = f"{output_prefix}_{base_name}"
+        output_path = os.path.join(output_folder, output_name)
+
+        nib.save(cropped_image_nifti, output_path)
+        print(f"Cropped image saved as: {output_path}")
+
+def maincrop():
+    input_folder = "/mnt/nas7/data/reza/registered_dataset_pad/"
+    output_folder = "cropped_liver/"
+    crop_box = [13, 323, 120, 395, 130, 200]  
+    output_prefix = "croppedliver"
+    os.makedirs(output_folder, exist_ok=True)
+
+    crop_and_save_batch(input_folder, output_folder, crop_box, output_prefix)
+
+
 def load_data(datalist_json_path):
         with open(datalist_json_path, 'r') as f:
                 datalist = json.load(f)
@@ -563,4 +620,4 @@ def get_oscar_for_training():
     return convert_tf_to_pytorch()
 
 if __name__ == "__main__":
-    main_box()
+    maincrop()
