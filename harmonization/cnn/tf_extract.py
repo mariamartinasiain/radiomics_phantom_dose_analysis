@@ -1,7 +1,7 @@
 import tensorflow.compat.v1 as tf
 
 from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_NAME_FIELD, SERIES_DESCRIPTION_FIELD, SERIES_NUMBER_FIELD, SLICE_THICKNESS_FIELD
-from harmonization.swin_contrastive.swinunetr import custom_collate_fn, load_data
+from harmonization.swin.extract import custom_collate_fn, load_data
 tf.disable_v2_behavior()
 import os
 import numpy as np
@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ToTensord,EnsureTyped
-from harmonization.swin_contrastive.swinunetr import CropOnROId
+from harmonization.swin.extract import CropOnROId
 from monai.data import SmartCacheDataset, DataLoader,ThreadDataLoader
 import torch
 import tensorflow as tf2
