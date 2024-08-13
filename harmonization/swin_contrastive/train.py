@@ -16,7 +16,7 @@ from pytorch_msssim import ssim
 from monai.data import DataLoader, Dataset,CacheDataset,PersistentDataset,SmartCacheDataset,ThreadDataLoader
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, AsDiscreted, ToTensord,EnsureTyped,RandCropd,RandSpatialCropd
 from harmonization.swin_contrastive.swinunetr import CropOnROId, custom_collate_fn,DebugTransform
-from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data,save_losses,get_model, load_subbox_positions
+from harmonization.swin_contrastive.utils import plot_multiple_losses, load_data,save_losses,get_model, load_subbox_positions, get_oscar_for_training
 from monai.networks.nets import SwinUNETR
 from pytorch_metric_learning.losses import NTXentLoss
 from monai.transforms import Transform
@@ -32,12 +32,27 @@ import threading
 from scipy.spatial import procrustes
 import imageio
 import nibabel as nib
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  
+
+import torch
+torch.cuda.set_device(0)
+
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+import tensorflow as tf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # N'utilise que le GPU 0
+        tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+        tf.config.experimental.set_memory_growth(gpus[0], True)
     except RuntimeError as e:
         print(e)
 
@@ -120,6 +135,7 @@ class OrthogonalityLoss:
 class Train:
     def __init__(self, model, data_loader, optimizer, lr_scheduler, num_epoch, dataset, classifier=None, acc_metric='total_mean', contrast_loss=NTXentLoss(temperature=0.20), contrastive_latentsize=768,savename='model.pth',ortho_reg=0.05,to_compare=False):
         self.model = model
+        self.model = self.model.double()
         self.in_channels = 1
         self.classifier = classifier
         self.data_loader = data_loader
@@ -281,7 +297,7 @@ class Train:
 
             epoch_iterator.refresh()
             if step % self.step_interval == 0:
-                self.save_losses(average_loss)
+                self.save_losses(average_loss,loss_file=f'{self.save_name}')
         self.total_progress_bar.update(1)
         self.epoch += 1
         
@@ -289,7 +305,6 @@ class Train:
     def train_step(self,batch):
         # update the learning rate of the optimizer
         self.optimizer.zero_grad()
-
         # prepare batch
         imgs_s = batch["image"].cuda()
         #ids = batch["uids"].cuda()
@@ -299,42 +314,38 @@ class Train:
         #ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
         print("imgs_s size 2",imgs_s.size())
         #print("ids size",ids.size())
-        if self.to_compare:
-            seglab = batch["label"].cuda()
-            print("seglab size",seglab.size())
-        
-
+    
         # encoder inference
-        if not self.to_compare:
-            all_labels = batch["roi_label"].cuda()
-            ids = all_labels
-            scanner_labels = batch["scanner_label"].cuda()
-            
-            latents = self.model.swinViT(imgs_s)
-            
-            
-            #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
-            nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
-            nlatents = [latents[0], latents[1], latents[2], latents[3],0]
-            nlatents[4] = nlatents4
-            #print("bottleneck size",bottleneck.size())
-            #print("nlatents[4] size",nlatents[4].size())
-            
-            #print("ids size",ids.size())
-            self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
-            #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
-            
-            features = torch.mean(bottleneck, dim=(2, 3, 4))
-            accu = self.classification_step(features, scanner_labels)
-            #print(f"Train Accuracy: {accu}%")
-            #accu = 0
-            #self.losses_dict['classification_loss'] = 0.0
-
-            # Orthogonality loss
-            self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
-            print(f"Orthogonality Loss: {self.losses_dict['orthogonality_loss']}")
-
-
+        #all_labels = batch["roi_label"].cuda()
+        #ids = all_labels
+        ids = batch["uids"].cuda()
+        print("ids size 1",ids.size())
+        ids = ids.view(imgs_s.shape[0] * imgs_s.shape[1])
+        print("ids size 2",ids.size())
+        scanner_labels = batch["scanner_label"].cuda()
+        
+        latents = self.model.swinViT(imgs_s)
+        
+        
+        #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
+        nlatents4, bottleneck = torch.split(latents[4], [self.contrastive_latentsize, latents[4].size(1) - self.contrastive_latentsize], dim=1)
+        nlatents = [latents[0], latents[1], latents[2], latents[3],0]
+        nlatents[4] = nlatents4
+        #print("bottleneck size",bottleneck.size())
+        #print("nlatents[4] size",nlatents[4].size())
+        
+        #print("ids size",ids.size())
+        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+        #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
+        
+        # features = torch.mean(bottleneck, dim=(2, 3, 4))
+        # accu = self.classification_step(features, scanner_labels)
+        #print(f"Train Accuracy: {accu}%")
+        accu = 0
+        self.losses_dict['classification_loss'] = 0.0
+        # Orthogonality loss
+        #self.losses_dict['orthogonality_loss'] =  self.orth_loss(latents[4])
+        print(f"Orthogonality Loss: {self.losses_dict['orthogonality_loss']}")
         #image reconstruction (either segmentation using the decoder or straight reconstruction using a deconvolution)
         # reconstructed_imgs = self.reconstruct_image(latents[4]) 
         
@@ -345,44 +356,27 @@ class Train:
         # nib.save(img, "reconstructed_image.nii")
         
         #saving original image to disk
-        img = imgs_s[0,:,:,:,:].detach().cpu().numpy()
-        img = np.squeeze(img)
-        img = nib.Nifti1Image(img, np.eye(4))
-        nib.save(img, "original_image.nii")
+        # img = imgs_s[0,:,:,:,:].detach().cpu().numpy()
+        # img = np.squeeze(img)
+        # img = nib.Nifti1Image(img, np.eye(4))
+        # nib.save(img, "original_image.nii")
         
         
         #self.reconstruction_step(reconstructed_imgs, imgs_s) 
         self.losses_dict['reconstruction_loss'] = 0.0
-
-        if not self.to_compare:
-            # if self.epoch >= 5:
-            #     self.losses_dict['total_loss'] = \
-            #     self.ortho_reg*self.losses_dict['orthogonality_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] +  self.losses_dict['classification_loss'] 
-            # 
-            # elif self.epoch >= 2:
-            #     self.losses_dict['total_loss'] = \
-            #     self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.losses_dict['classification_loss'] 
-            # else:
-            #     self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
-            self.losses_dict['total_loss'] = \
-            self.losses_dict['contrast_loss']
+        # if self.epoch >= 5:
+        #     self.losses_dict['total_loss'] = \
+        #     self.ortho_reg*self.losses_dict['orthogonality_loss'] + self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] +  self.losses_dict['classification_loss'] 
+        # 
+        # elif self.epoch >= 2:
+        #     self.losses_dict['total_loss'] = \
+        #     self.losses_dict['contrast_loss'] + self.losses_dict['reconstruction_loss'] + self.losses_dict['classification_loss'] 
+        # else:
+        #     self.losses_dict['total_loss'] = self.losses_dict['contrast_loss']
+        self.losses_dict['total_loss'] = \
+        self.losses_dict['contrast_loss']
             
             
-        else:
-            logit_map = self.model(imgs_s)
-            
-            print(f"logit map shape {logit_map.size()}")
-            print(f"seglab shape {seglab.size()}")
-            
-            lossdice = self.diceloss(logit_map, seglab)
-            self.losses_dict['dice_loss'] = lossdice.item()
-            self.losses_dict['total_loss'] = lossdice
-            accu = 0
-            self.losses_dict['classification_loss'] = 0.0
-            self.losses_dict['contrast_loss'] = 0.0
-            self.losses_dict['orthogonality_loss'] = 0.0
-            self.losses_dict['reconstruction_loss'] = 0.0
-
         self.losses_dict['total_loss'].backward()
         self.optimizer.step()
         return self.losses_dict, accu
@@ -675,14 +669,14 @@ class PrintDebug(Transform):
         return data
 
 class LazyPatchLoader(Transform):
-    def __init__(self, roi_size=(64, 64, 32), num_patches=4, variety_size=10,reader=None, positions_file="output/valid_positions_positions.json"):
+    def __init__(self, roi_size=(64, 64, 32), num_patches=5, variety_size=15,reader=None, positions_file="output/valid_positions2_positions.json"):
         self.position_file = positions_file
         self.roi_size = roi_size
         self.num_patches = num_patches  # Nombre de patches à extraire
         self.reader = reader or ITKReader()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.variety_size = variety_size
-        self.precomputed_positions = load_subbox_positions(positions_file,order='XYZ')
+        self.precomputed_positions = load_subbox_positions(positions_file,order='XYZ',num_positions=variety_size)
         self.current_position_index = 0
 
     def precompute_positions(self, shape):
@@ -706,7 +700,8 @@ class LazyPatchLoader(Transform):
             itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
             shape = itk_image.GetLargestPossibleRegion().GetSize()
             
-            print("shape",shape)
+            # print(f"Loading image from path: {image_path} with shape: {shape}")
+      
             
             #shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # XYZ order
             
@@ -727,9 +722,9 @@ class LazyPatchLoader(Transform):
                 # Use the current position from the shuffled list
                 start_x, start_y, start_z = self.precomputed_positions[self.current_position_index]
                 
-                print("start_x",start_x)
-                print("start_y",start_y)
-                print("start_z",start_z)
+                # print("start_x",start_x)
+                # print("start_y",start_y)
+                # print("start_z",start_z)
                 
                 self.current_position_index += 1
                 
@@ -738,7 +733,7 @@ class LazyPatchLoader(Transform):
                 
                 extract_index = [int(start_x), int(start_y), int(start_z)]  # ITK ZYX order
                 
-                print("extract_index",extract_index)
+                # print("extract_index",extract_index)
                 print("shape",shape)
                 
                 extract_size = [int(self.roi_size[0]), int(self.roi_size[1]), int(self.roi_size[2])]
@@ -798,9 +793,9 @@ def main():
         #LoadImaged(keys=["image"]),
         LazyPatchLoader(roi_size=[64, 64, 32]),
         #DebugTransform2(),
-        EnsureChannelFirstd(keys=["image"]),
+        #EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
-        EncodeLabels(encoder=encoder),
+        #EncodeLabels(encoder=encoder),
         ExtractScannerLabel(),
         EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
@@ -808,18 +803,22 @@ def main():
         
     ])
 
-    #PROBLEME DE REGISTRATION : resize ? as a qucik fix ?
 
-    jsonpath = "./resized_light_dataset_info_10.json"
+    jsonpath = "./registered_light_dataset_info_10.json"
+    #jsonpath = "./dataset_info_cropped.json"
+    
     data_list = load_data(jsonpath)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
+    #model = get_oscar_for_training()
+    #transfering model on device 
+    model.to(device)
     
     train_dataset = SmartCacheDataset(data=train_data, transform=transforms,cache_rate=1,progress=True,num_init_workers=8, num_replace_workers=8,replace_rate=0.1)
     test_dataset = SmartCacheDataset(data=test_data, transform=transforms,cache_rate=0.1,progress=True,num_init_workers=8, num_replace_workers=8)
     
-    train_loader = ThreadDataLoader(train_dataset, batch_size=32, shuffle=True,collate_fn=custom_collate_fn)
-    test_loader = ThreadDataLoader(test_dataset, batch_size=12, shuffle=False,collate_fn=custom_collate_fn)
+    train_loader = ThreadDataLoader(train_dataset, batch_size=10, shuffle=True,collate_fn=custom_collate_fn)
+    test_loader = ThreadDataLoader(test_dataset, batch_size=3, shuffle=False,collate_fn=custom_collate_fn)
     
     data_loader = {'train': train_loader, 'test': test_loader}
     dataset = {'train': train_dataset, 'test': test_dataset}
@@ -831,7 +830,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 40,dataset,contrastive_latentsize=700,savename="random_contrast.pth",ortho_reg=0.001)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=768,savename="liverrandom_contrast_5_15_10batch_swin.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):

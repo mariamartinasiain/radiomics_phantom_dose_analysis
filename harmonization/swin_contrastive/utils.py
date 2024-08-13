@@ -9,7 +9,10 @@ from monai.data import SmartCacheDataset, ThreadDataLoader
 from tqdm import tqdm
 import os
 import json
-import os
+import tensorflow as tf
+import subprocess
+from onnx2pytorch import ConvertModel
+import onnx
 import json
 import SimpleITK as sitk
 from multiprocessing import Pool
@@ -43,7 +46,8 @@ from tqdm import tqdm
 import json
 import random
 
-def load_subbox_positions(filename, order='XYZ'):
+def load_subbox_positions(filename, order='XYZ', num_positions=None, seed=42):
+    # Chargement des positions
     if filename.endswith('.npy'):
         positions = np.load(filename)
     elif filename.endswith('.json'):
@@ -51,6 +55,11 @@ def load_subbox_positions(filename, order='XYZ'):
             positions = json.load(f)
     else:
         raise ValueError("Format de fichier non supporté. Utilisez .npy ou .json")
+    
+    # Sélection aléatoire des positions si num_positions est spécifié
+    if num_positions is not None:
+        random.seed(seed)
+        positions = random.sample(list(positions), min(num_positions, len(positions)))
     
     if order.upper() == 'XYZ':
         return positions
@@ -67,7 +76,7 @@ def load_forbidden_boxes(filename):
             forbidden_boxes.append((pos, [64, 64, 32]))  # Ajout de la taille fixe
     return forbidden_boxes
 
-def sample_subboxes(box_list, big_box_size, subbox_size, num_samples):
+def sample_subboxes(box_list, big_box_size, subbox_size, num_samples, constraint_box):
     def overlaps(pos, size):
         for box in box_list:
             b_pos, b_size = box
@@ -75,14 +84,23 @@ def sample_subboxes(box_list, big_box_size, subbox_size, num_samples):
                 return True
         return False
 
+    def inside_constraint_box(pos):
+        return (constraint_box[0] <= pos[2] < constraint_box[1] and
+                constraint_box[2] <= pos[0] < constraint_box[3] and
+                constraint_box[4] <= pos[1] < constraint_box[5])
+
     valid_positions = []
     attempts = 0
     max_attempts = num_samples * 100
 
     while len(valid_positions) < num_samples and attempts < max_attempts:
-        pos = [random.randint(0, big - sub) for big, sub in zip(big_box_size, subbox_size)]
+        pos = [
+            random.randint(constraint_box[2], constraint_box[3] - subbox_size[0]),
+            random.randint(constraint_box[4], constraint_box[5] - subbox_size[1]),
+            random.randint(constraint_box[0], constraint_box[1] - subbox_size[2])
+        ]
         
-        if not overlaps(pos, subbox_size):
+        if not overlaps(pos, subbox_size) and inside_constraint_box(pos):
             valid_positions.append(pos)
         
         attempts += 1
@@ -241,22 +259,79 @@ def save_losses(train_losses, output_dir, to_compare=False):
     
     # with open(loss_file, 'w') as f:
     #     json.dump({'train_losses': serializable_train_losses, 'val_losses': serializable_val_losses}, f)
-    with open('contrast_losses.json', 'w') as f:
+    with open(f"{output_dir}_contrast_losses.json", 'w') as f:
         json.dump({'contrast_losses': serializable_contrast_losses}, f)
-    with open('classification_losses.json', 'w') as f:
+    with open(f"{output_dir}_classification_losses.json", 'w') as f:
         json.dump({'classification_losses': serializable_classification_losses}, f)
-    with open('total_losses.json', 'w') as f:
+    with open(f"{output_dir}_total_losses.json", 'w') as f:
         json.dump({'total_losses': serializable_total_losses}, f)
-    with open('reconstruction_losses.json', 'w') as f:
+    with open(f"{output_dir}_reconstruction_losses.json", 'w') as f:
         json.dump({'reconstruction_losses': serializable_recosntruction_losses}, f)
-    with open('orthogonality_losses.json', 'w') as f:
+    with open(f"{output_dir}_orthogonality_losses.json", 'w') as f:
         json.dump({'orthogonality_losses': serializable_orthogonality_losses}, f)
     if to_compare:
-        with open('dice_losses', 'w') as f:
+        with open(f"{output_dir}_dice_losses.json", 'w') as f:
             json.dump({'dice_losses': serializable_dice_losses}, f)
     
-    
-  
+import os
+import glob
+import nibabel as nib
+import numpy as np
+from monai.transforms import Compose, LoadImaged, SpatialCropd, EnsureTyped, EnsureChannelFirstd
+from monai.data import DataLoader, Dataset
+
+def crop_and_save_batch(input_folder, output_folder, crop_box, output_prefix):
+    """
+    Load a batch of medical images, crop each image, and save the results with a prefixed name.
+
+    Args:
+        input_folder (str): Path to the folder containing input images.
+        output_folder (str): Path to the folder where cropped images will be saved.
+        crop_box (list): List specifying the bounding box to crop [x1, x2, y1, y2, z1, z2].
+        output_prefix (str): Prefix to add to the output file names.
+    """
+    # Find all .nii.gz files in the input folder
+    image_paths = glob.glob(os.path.join(input_folder, "*.nii.gz"))
+
+    # Define MONAI transforms to load and crop images
+    transforms = Compose([
+        LoadImaged(keys=["image"]),
+        EnsureChannelFirstd(keys=["image"]),  # Ensure the channel is first
+        EnsureTyped(keys=["image"]),  # Convert to tensor
+        SpatialCropd(keys=["image"], roi_start=[crop_box[0], crop_box[2], crop_box[4]], 
+                     roi_end=[crop_box[1], crop_box[3], crop_box[5]])
+    ])
+
+    # Create a dataset and dataloader
+    dataset = Dataset(data=[{"image": path} for path in image_paths], transform=transforms)
+    dataloader = DataLoader(dataset, batch_size=1, num_workers=4)
+
+    # Process each image
+    for idx, batch in enumerate(dataloader):
+        image_data = batch["image"][0]  # Access the first (and only) item in the batch
+        
+        # Convert to numpy array and save
+        cropped_image = image_data.numpy()  # Convert to numpy array
+
+        # Save using nibabel
+        cropped_image_nifti = nib.Nifti1Image(cropped_image, np.eye(4))
+        base_name = os.path.basename(image_paths[idx])  # Use the index to get the original filename
+        output_name = f"{output_prefix}_{base_name}"
+        output_path = os.path.join(output_folder, output_name)
+
+        nib.save(cropped_image_nifti, output_path)
+        print(f"Cropped image saved as: {output_path}")
+
+def maincrop():
+    input_folder = "/mnt/nas7/data/reza/registered_dataset_pad/"
+    output_folder = "cropped_liver/"
+    crop_box = [13, 323, 120, 395, 130, 200]  
+    output_prefix = "croppedliver"
+    os.makedirs(output_folder, exist_ok=True)
+
+    crop_and_save_batch(input_folder, output_folder, crop_box, output_prefix)
+
+
 def load_data(datalist_json_path):
         with open(datalist_json_path, 'r') as f:
                 datalist = json.load(f)
@@ -398,12 +473,23 @@ def main_box():
     subbox_size = [64, 64, 32]  
     num_samples = 1000
     output_dir = "output"
-    filename_prefix = "valid_positions"
+    filename_prefix = "valid_positions2"
+    constraint_box = [13, 323, 120, 395, 130, 200]  # z_start, z_end, x_start, x_end, y_start, y_end
 
-    result_file = process_forbidden_boxes_and_sample(
-        forbidden_boxes_file, big_box_size, subbox_size, num_samples, output_dir, filename_prefix
-    )
-    print(f"Les positions valides ont été sauvegardées dans : {result_file}")
+    # Charger les boîtes interdites
+    #forbidden_boxes = load_forbidden_boxes(forbidden_boxes_file)
+    forbidden_boxes = []
+
+    # Échantillonner et sauvegarder les sous-boîtes valides
+    valid_positions = sample_subboxes(forbidden_boxes, big_box_size, subbox_size, num_samples, constraint_box)
+    
+    # Sauvegarder les positions valides
+    os.makedirs(output_dir, exist_ok=True)
+    json_filename = os.path.join(output_dir, f"{filename_prefix}_positions.json")
+    with open(json_filename, 'w') as f:
+        json.dump(valid_positions, f)
+    
+    print(f"Les positions valides ont été sauvegardées dans : {json_filename}")
   
 def resize_image(input_output):
     input_path, output_path, target_size = input_output
@@ -466,5 +552,72 @@ def resize_and_save_images(json_path, output_dir, target_size=(512, 512, 343)):
     successful = sum(results)
     print(f"Traitement terminé. {successful}/{len(data)} images ont été redimensionnées avec succès.")
 
+import torch
+import torch.nn as nn
+class PyTorchModel(nn.Module):
+    def __init__(self):
+        super(PyTorchModel, self).__init__()
+        
+        self.conv1 = nn.Conv3d(1, 32, kernel_size=5, stride=1, padding=2)
+        self.pool1 = nn.MaxPool3d(kernel_size=4, stride=4)
+        self.conv2 = nn.Conv3d(32, 64, kernel_size=5, stride=1, padding=2)
+        self.pool2 = nn.MaxPool3d(kernel_size=4, stride=4)
+        
+    def forward(self, x):
+        # Input reshape
+        x = x.view(-1, 64, 64, 32, 1)
+        x = x.permute(0, 4, 1, 2, 3)  # Change to (N, C, D, H, W) format for PyTorch
+        
+        x = self.pool1(torch.relu(self.conv1(x)))
+        x = self.pool2(torch.relu(self.conv2(x)))
+        x = x.reshape(x.size(0), -1)  # Flatten to 2048 features
+        return x
+
+def get_model_oscar(path):
+    model = PyTorchModel()
+    state_dict = torch.load(path)
+    model.load_state_dict(state_dict)
+    model.eval()
+    model = model.cuda()  # Ajoutez cette ligne
+    return model
+
+def convert_tf_to_pytorch():
+    device_id = 0
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    torch.cuda.set_device(device_id)
+    tf.compat.v1.disable_eager_execution()
+    sess = tf.compat.v1.Session()
+    saver = tf.compat.v1.train.import_meta_graph('organs-5c-30fs-acc92-121.meta')
+    saver.restore(sess, tf.train.latest_checkpoint('./'))
+    
+    graph = tf.compat.v1.get_default_graph()
+    
+    pytorch_model = PyTorchModel()
+    
+    conv1_kernel = graph.get_tensor_by_name('Variable/read:0')
+    conv1_bias = graph.get_tensor_by_name('Variable_1/read:0')
+    conv2_kernel = graph.get_tensor_by_name('Variable_2/read:0')
+    conv2_bias = graph.get_tensor_by_name('Variable_3/read:0')
+    
+    pytorch_model.conv1.weight.data = torch.DoubleTensor(sess.run(conv1_kernel).transpose(4, 3, 0, 1, 2))
+    pytorch_model.conv1.bias.data = torch.DoubleTensor(sess.run(conv1_bias))
+    pytorch_model.conv2.weight.data = torch.DoubleTensor(sess.run(conv2_kernel).transpose(4, 3, 0, 1, 2))
+    pytorch_model.conv2.bias.data = torch.DoubleTensor(sess.run(conv2_bias))
+    
+    # Convertir tous les paramètres en double précision
+    pytorch_model = pytorch_model.double()
+    
+    for param in pytorch_model.parameters():
+        param.requires_grad = True
+    
+    
+    return pytorch_model
+
+def get_pytorch_model_for_inference():
+    return convert_tf_to_pytorch()
+
+def get_oscar_for_training():
+    return convert_tf_to_pytorch()
+
 if __name__ == "__main__":
-    resize_and_save_images("light_dataset_info_10.json", "output")
+    maincrop()
