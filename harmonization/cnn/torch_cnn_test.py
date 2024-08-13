@@ -1,3 +1,5 @@
+#Code was used to test the tensorflow -> torch model transformation needed to use the shallow cnn with the contrastive training code.
+
 import tensorflow as tf
 import tf2onnx
 import torch
@@ -13,8 +15,8 @@ from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, EnsureTyp
 from monai.data import SmartCacheDataset, ThreadDataLoader
 
 from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_NAME_FIELD, SERIES_DESCRIPTION_FIELD, SERIES_NUMBER_FIELD, SLICE_THICKNESS_FIELD
-from harmonization.swin_contrastive.swinunetr import custom_collate_fn, load_data
-from harmonization.swin_contrastive.utils import get_pytorch_model_for_inference
+from harmonization.swin.extract import custom_collate_fn, load_data
+from harmonization.swin.utils import get_pytorch_model_for_inference
 import tensorflow as tf
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:

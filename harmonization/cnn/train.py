@@ -1,4 +1,5 @@
-from harmonization.swin_contrastive.train import Train
+#Adaptation to train the shallow cnn with contrastive loss
+from harmonization.swin.train import Train
 
 class TrainCNN(Train):
     def train_step(self,batch):
