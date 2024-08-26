@@ -426,12 +426,12 @@ class Train:
             #print("labels size",labels.size())           
             end_idx = start_idx + embeddings.shape[0]
             all_embeddings[start_idx:end_idx, :] = embeddings
-            all_labels[start_idx:end_idx] = labels
+            all_labels[start_idx:end_idx] = labels #it is the tensor that contains the info about positive and negative pairs, as i explained in the mail to rezza
             start_idx = end_idx
             
             offset += num_elements
         
-        llss = (self.contrast_loss(all_embeddings, all_labels))
+        llss = (self.contrast_loss(all_embeddings, all_labels)) #how is the loss computed ? see here : https://github.com/KevinMusgrave/pytorch-metric-learning/discussions/698#discussion-6811873 and the referenced doc
         self.losses_dict['contrast_loss'] = llss
         
     def reconstruction_step(self, reconstructed_imgs, original_imgs): 

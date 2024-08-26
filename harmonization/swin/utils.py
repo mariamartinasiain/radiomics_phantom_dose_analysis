@@ -431,9 +431,9 @@ def load_data(datalist_json_path):
     Returns:
         dict: A dictionary of the data list loaded from the JSON file.
     """
-        with open(datalist_json_path, 'r') as f:
-                datalist = json.load(f)
-        return datalist
+    with open(datalist_json_path, 'r') as f:
+            datalist = json.load(f)
+    return datalist
 
 
 def load_data2(datalist_json_path):
