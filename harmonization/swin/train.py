@@ -669,20 +669,66 @@ class PrintDebug(Transform):
         return data
 
 class LazyPatchLoader(Transform):
-    def __init__(self, roi_size=(64, 64, 32), num_patches=5, variety_size=15,reader=None, positions_file="output/valid_positions2_positions.json"):
+    """
+    A transformation class for lazy loading and extracting 3D patches from medical images.
+
+    This class extracts a specified number of 3D patches of a given size from medical images.
+    It uses precomputed random positions for patch extraction to introduce variability
+    during training. The patches are extracted using the ITK library, which allows efficient
+    handling of large medical images.
+
+    Attributes:
+        roi_size (tuple): The size of the region of interest (ROI) to be extracted, specified
+                          as (width, height, depth). Default is (64, 64, 32).
+        num_patches (int): The number of patches to extract from each image. Default is 5.
+        variety_size (int): The number of random positions to precompute for patch extraction,
+                            providing variability. Default is 15.
+        reader (object): The image reader object used to load images. If not provided, an
+                         ITKReader is used by default.
+        positions_file (str): Path to a JSON file containing precomputed valid positions for
+                              patch extraction. Default is "output/valid_positions2_positions.json".
+        precomputed_positions (list): A list of precomputed positions used for extracting patches.
+        current_position_index (int): The index of the current position being used for extraction.
+        logger (object): Logger instance for logging information and errors.
+
+    Methods:
+        precompute_positions(shape):
+            Precomputes and shuffles random positions for patch extraction based on the image shape.
+
+        __call__(data):
+            Main method for loading the image, extracting patches, and returning the modified data dictionary.
+
+    Example usage:
+        transforms = Compose([
+            LoadImaged(keys=["image"]),
+            LazyPatchLoader(roi_size=[64, 64, 32]),
+            EnsureTyped(keys=["image"], device=device, track_meta=False),
+        ])
+    """
+
+    def __init__(self, roi_size=(64, 64, 32), num_patches=5, variety_size=15, reader=None, positions_file="output/valid_positions2_positions.json"):
         self.position_file = positions_file
         self.roi_size = roi_size
-        self.num_patches = num_patches  # Nombre de patches à extraire
+        self.num_patches = num_patches  # Number of patches to extract
         self.reader = reader or ITKReader()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.variety_size = variety_size
-        self.precomputed_positions = load_subbox_positions(positions_file,order='XYZ',num_positions=variety_size)
+        self.precomputed_positions = load_subbox_positions(positions_file, order='XYZ', num_positions=variety_size)
         self.current_position_index = 0
 
     def precompute_positions(self, shape):
-        """ Precompute and shuffle random positions for patch extraction """
+        """
+        Precompute and shuffle random positions for patch extraction.
+
+        Args:
+            shape (tuple): The shape of the image from which patches are to be extracted.
+
+        This method generates a list of random positions within the image based on the
+        specified ROI size and the provided image shape. The positions are then shuffled
+        to introduce randomness during patch extraction.
+        """
         self.precomputed_positions = []
-        for _ in range(self.variety_size):  # Generate 10 random positions
+        for _ in range(self.variety_size):
             start_x = np.random.randint(50, 200)
             start_y = np.random.randint(50, shape[1] - self.roi_size[1] + 1)
             start_z = np.random.randint(50, shape[2] - self.roi_size[2] + 1)
@@ -690,6 +736,21 @@ class LazyPatchLoader(Transform):
         shuffle(self.precomputed_positions)
 
     def __call__(self, data):
+        """
+        Load the image, extract patches, and return the modified data dictionary.
+
+        Args:
+            data (dict): A dictionary containing image data. Expects a key 'image' with the image path.
+
+        Returns:
+            dict: A modified dictionary containing extracted patches and their unique identifiers.
+
+        This method performs the following steps:
+        1. Loads the image using the specified reader.
+        2. Validates the image size against the ROI size.
+        3. Extracts the specified number of patches from the image at precomputed positions.
+        4. Returns the patches and unique identifiers in the data dictionary.
+        """
         try:
             image_path = data['image']
             self.logger.info(f"Loading image from path: {image_path}")
@@ -699,11 +760,6 @@ class LazyPatchLoader(Transform):
             
             itk_image = img_obj[0] if isinstance(img_obj, tuple) else img_obj
             shape = itk_image.GetLargestPossibleRegion().GetSize()
-            
-            # print(f"Loading image from path: {image_path} with shape: {shape}")
-      
-            
-            #shape = [int(shape[2]), int(shape[1]), int(shape[0])]  # XYZ order
             
             if any(s < r for s, r in zip(shape, self.roi_size)):
                 raise ValueError(f"Image size {shape} is smaller than ROI size {self.roi_size}")
@@ -715,27 +771,16 @@ class LazyPatchLoader(Transform):
             uids = []
             for _ in range(self.num_patches):
                 if self.current_position_index >= len(self.precomputed_positions):
-                    # Reshuffle and reset index when all positions have been used
                     shuffle(self.precomputed_positions)
                     self.current_position_index = 0
 
-                # Use the current position from the shuffled list
                 start_x, start_y, start_z = self.precomputed_positions[self.current_position_index]
-                
-                # print("start_x",start_x)
-                # print("start_y",start_y)
-                # print("start_z",start_z)
-                
                 self.current_position_index += 1
                 
-                uid = start_y + start_x * shape[1] + start_z* shape[0] * shape[1]
+                uid = start_y + start_x * shape[1] + start_z * shape[0] * shape[1]
                 uids.append(uid)
                 
                 extract_index = [int(start_x), int(start_y), int(start_z)]  # ITK ZYX order
-                
-                # print("extract_index",extract_index)
-                print("shape",shape)
-                
                 extract_size = [int(self.roi_size[0]), int(self.roi_size[1]), int(self.roi_size[2])]
                 
                 self.logger.info(f"Extracting patch at index {extract_index} with size {extract_size}")
