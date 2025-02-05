@@ -1,5 +1,7 @@
 import os
 import logging
+import sys
+sys.path.append('/home/reza/radiomics_phantom/')
 
 from dotenv import load_dotenv
 
@@ -8,6 +10,7 @@ from qa4iqi_extraction.data.check_data import check_data
 from qa4iqi_extraction.data.download_data import offer_download_data
 from qa4iqi_extraction.utils.dicom import identify_images_rois
 from qa4iqi_extraction.features.feature_extraction import run_feature_extraction
+import sys
 
 load_dotenv()
 

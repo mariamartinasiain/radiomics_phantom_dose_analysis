@@ -1,4 +1,8 @@
-from analyze.analyze import extract_mg_value
+import sys
+sys.path.append('/home/reza/radiomics_phantom/')
+sys.path.append('/home/reza/radiomics_phantom/analyze')
+
+from analyze import extract_mg_value
 import re
 import tensorflow as tf
 from keras import layers
@@ -9,7 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from keras.utils import to_categorical
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.model_selection import GroupShuffleSplit, LeaveOneGroupOut,LeavePGroupsOut,GroupKFold
+from sklearn.model_selection import GroupShuffleSplit, LeaveOneGroupOut,LeavePGroupsOut,GroupKFold, KFold
 from sklearn import svm
 import numpy as np
 import os
@@ -87,6 +91,7 @@ def load_csv(file_path, label_type='roi_small',mg_filter=None):
     return features, labels,groups
 
 def load_data(file_path,one_hot=True, label_type='roi_small',mg_filter=None):
+    print
     scaler = StandardScaler()
     
     features, labels,groups = load_csv(file_path, label_type=label_type,mg_filter=mg_filter)
@@ -108,6 +113,34 @@ def load_data(file_path,one_hot=True, label_type='roi_small',mg_filter=None):
     
     return features, labels, groups, class_weights, classes_size
 
+
+def advanced_split(test_manufacuturer, train_size_ratio, X, y, groups, groups_manufacturer, random_state=42):
+    # Return the indices where the manufacturer is the same as the test manufacturer
+    same_manufacturer = np.where(groups_manufacturer == test_manufacuturer)[0]
+    other_manufacturers = np.where(groups_manufacturer != test_manufacuturer)[0]
+    number_of_scanners_in_testset = round(train_size_ratio/(1/12))
+    number_of_scanners_in_others = round(len(other_manufacturers)/len(groups_manufacturer)*12)
+    np.random.seed(random_state//2)
+    if number_of_scanners_in_testset <= number_of_scanners_in_others:
+        manufacturers = np.unique(groups_manufacturer)
+        other_manufacturers = manufacturers.tolist()
+        other_manufacturers.remove(test_manufacuturer)
+        valid_scanners = np.unique(groups[groups_manufacturer != test_manufacuturer])
+        # Randomly select scanners from the valid scanners
+        # selected_scanners = np.random.choice(valid_scanners, number_of_scanners_in_testset, replace=False)
+        shuffled_scanners = np.random.permutation(valid_scanners)
+        selected_scanners = shuffled_scanners[:number_of_scanners_in_testset]
+        train_indecies = np.where(np.isin(groups, selected_scanners))[0]
+    else:
+        valid_scanners = np.unique(groups[groups_manufacturer == test_manufacuturer])
+        shuffled_scanners = np.random.permutation(valid_scanners)
+        selected_scanners = shuffled_scanners[:number_of_scanners_in_testset-number_of_scanners_in_others]
+        # selected_scanners = np.random.choice(valid_scanners, number_of_scanners_in_testset-number_of_scanners_in_others, replace=False)
+        selected_scanners = np.concatenate((selected_scanners, np.unique(groups[groups_manufacturer != test_manufacuturer])))
+        train_indecies = np.where(np.isin(groups, selected_scanners))[0]
+
+    return [[train_indecies, None]]
+
 def define_classifier(input_size,classes_size):
     def mlp(x, dropout_rate, hidden_units):
         for units in hidden_units:
@@ -120,11 +153,11 @@ def define_classifier(input_size,classes_size):
     classif = layers.Dense(classes_size, activation='softmax')(ff)
 
     classifier = tf.keras.Model(inputs=input, outputs=classif)
-    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
+    optimizer = tf.keras.optimizers.AdamW(learning_rate=1e-4, weight_decay=1e-4)
     classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
     
-    classifier.summary()
-    print(classifier.summary())
+    # classifier.summary()
+    # print(classifier.summary())
     
     return classifier
 
@@ -138,116 +171,88 @@ def save_classifier_performance(history):
     plt.savefig('accuracy.png')
     plt.close()
 
-    
-    
 def train_mlp_svm(input_size, data_path, output_path='classifier.h5', classif_type='roi_small', mg_filter=None):
     features, labels, groups, cw, classes_size = load_data(data_path, label_type=classif_type, mg_filter=mg_filter)
     
-    mean_val_accuracy = 0
-    min_accuracy = 1
-    max_accuracy = 0
-    
-    
-
+    val_accuracies = []
+    min_accuracy, max_accuracy = 1, 0
     results = {}
-    results_svm = {}
 
     save_results_to_csv([])
 
-    #in the case we are in scanner classif, we need to do something like 10% of groups instead of logo, and then do for every 10%, 20%, ... 90% of data avaible for training
+    # Use GroupKFold for 'scanner' classification, otherwise LeaveOneGroupOut
     if classif_type == 'scanner':
-        splits = GroupKFold(n_splits=10)
-        it1 = enumerate(splits.split(features, labels, groups))
+        split_strategy = KFold(n_splits=10, shuffle=True, random_state=42).split(features, labels)
+        # split_strategy = GroupKFold(n_splits=10).split(features, labels, groups)
     else:
-        logo = LeaveOneGroupOut()
-        it1 = enumerate(logo.split(features, labels, groups))
-        
+         split_strategy = LeaveOneGroupOut().split(features, labels, groups)
+        #  split_strategy = KFold(n_splits=10, shuffle=True, random_state=42).split(features, labels) # For 10-fold ROI classification
 
-    # Iterate over each group to be used as the test set
-    for _, (train_index, test_index) in it1:
-        #print("Test group:", np.unique(groups[test_index]))
-        #print("Number of remaining groups:", len(np.unique(groups[train_index])))
-        X_train_all, X_test = features[train_index], features[test_index]
-        y_train_all, y_test = labels[train_index], labels[test_index]
-        print(f'X test : {X_test}, y test : {y_test}')
-        print(f'X test shape: {X_test.shape}, y test shape: {y_test.shape}')
-        groups_train_all = groups[train_index]
+    scanner_to_manufacturer = {0: 0, 1: 0, 2: 0, 3: 0, 9: 0, 10: 0,
+                                   4:1, 12:1, 5:2, 7:2, 8:2, 6:3, 11:3}
+    groups_manufacturer = np.array([scanner_to_manufacturer[scanner] for scanner in groups])
+
+    # Iterate over each train-test split
+    for scanner_id, (train_idx, test_idx) in enumerate(split_strategy):
+        if 'loso' in data_path and scanner_id != 0:
+            features, labels, groups, cw, classes_size = load_data(data_path.replace(f'00', f'{scanner_id :02d}'),
+                                                                    label_type=classif_type, mg_filter=mg_filter)
+            groups_manufacturer = np.array([scanner_to_manufacturer[scanner] for scanner in groups])
+    
+        X_train_all, X_test = features[train_idx], features[test_idx]
+        y_train_all, y_test = labels[train_idx], labels[test_idx]
+        groups_train_all = groups[train_idx]
         unique_train_groups = np.unique(groups_train_all)
+        groups_train_manufacturer_all = groups_manufacturer[train_idx]
+
         if classif_type == 'scanner':
             it2 = range(1, 10)
         else:
-            it2 = range(1, len(unique_train_groups)+1)
+            it2 = range(1, len(unique_train_groups) + 1)
+            # it2 = range(1, 10) # For 10-fold ROI classification
+
         for N in it2:
-            if classif_type == 'scanner':
-                N = N/10
+            train_size_ratio = N / (10 if classif_type == 'scanner' else len(unique_train_groups))
+            # train_size_ratio = N / 10 # For 10-fold ROI classification
+            if train_size_ratio == 1:
+                it3 = [(np.arange(len(X_train_all)), None)]
             else:
-                N = N/len(unique_train_groups)
-                
-            #print(f"Training with {N} of the data")
-            if N == 1:
-                full_indexes = np.arange(len(X_train_all))
-                it3 = [(full_indexes,None)]
-            else:
-                splits = GroupShuffleSplit(n_splits=1, train_size=N, random_state=42)
-                it3 = splits.split(X_train_all, y_train_all, groups_train_all)
-            
+                it3 = advanced_split(scanner_to_manufacturer[scanner_id], train_size_ratio, X_train_all, y_train_all, groups_train_all, groups_train_manufacturer_all, random_state=42)
+                # it3 = [(np.arange(len(X_train_all)), None)] # For 10-fold ROI classification
+                #it3 = GroupShuffleSplit(n_splits=1, train_size=train_size_ratio, random_state=42).split(X_train_all, y_train_all, groups_train_all)
+
             for train_indices, _ in it3:
-                #print("Groups Used:", np.unique(groups_train_all[train_indices]))
-                
-                
-                X_train = X_train_all[train_indices]
-                y_train = y_train_all[train_indices]
-                
+                X_train, y_train = X_train_all[train_indices], y_train_all[train_indices]
+                print("\033[94mData splits:\033[0m", scanner_to_manufacturer[scanner_id], np.unique(groups_train_manufacturer_all[train_indices]), np.unique(groups_train_all[train_indices]))
                 # Define and train the classifier
                 classifier = define_classifier(input_size, classes_size)
-                
                 history = classifier.fit(
                     X_train, y_train,
                     validation_data=(X_test, y_test),
-                    batch_size=64,
-                    epochs=60,
-                    verbose=2,
+                    batch_size=8,
+                    epochs=30,
+                    verbose=1,
                     class_weight=cw
                 )
                 
-                # y_train_svm = np.argmax(y_train, axis=1)
-                # y_test_svm = np.argmax(y_test, axis=1)
-                # clf = svm.LinearSVC()
-                # clf.fit(X_train, y_train_svm)
-                # svm_accuracy = clf.score(X_test, y_test_svm)
-                # if N not in results_svm:
-                #     results_svm[N] = []
-                # results_svm[N].append(svm_accuracy)
-                
-                # Save the classifier's performance
-                #save_classifier_performance(history)
-                #classifier.save(output_path)
-                
-                # Calculate max validation accuracy for the current split
-                max_val_accuracy = max(history.history['val_accuracy'])
-                mean_val_accuracy += max_val_accuracy
-                if max_accuracy < max_val_accuracy:
-                    max_accuracy = max_val_accuracy
-                if min_accuracy > max_val_accuracy:
-                    min_accuracy = max_val_accuracy
-                
-                # Store the performance
-                if N not in results:
-                    results[N] = []
-                results[N].append(max_val_accuracy)
-                
-                print(f"Test group: {test_index+1}, Training with N={N} scanners, Accuracy: {max_val_accuracy}")
-    # Average the mean validation accuracy
-    mean_val_accuracy /= len(results)
+                y_pred = classifier.predict(X_test)
+                val_accuracy = np.mean(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) 
+                val_accuracies.append(val_accuracy)
 
+                results.setdefault(N, []).append(val_accuracy)
+
+                print(f"Test group: {test_idx + 1}, Training with N={N}, Accuracy: {val_accuracy}")                
+
+    # Compute overall results
+    mean_val_accuracy = np.mean(val_accuracies)
+    min_accuracy = np.min(val_accuracies)
+    max_accuracy = np.max(val_accuracies)
+    print(f"list of accuracies: {val_accuracies}")
     print(f"Final results: Mean accuracy: {mean_val_accuracy}, Min accuracy: {min_accuracy}, Max accuracy: {max_accuracy}")
+    save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path, plus="9999")
+
+    return val_accuracies, max_accuracy, min_accuracy
     
-    save_results_to_csv(results, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="999")
-    #save_results_to_csv(results_svm, classif_type=classif_type, mg_filter=mg_filter, data_path=data_path,plus="svm")
-
-    return mean_val_accuracy, max_accuracy, min_accuracy
- 
-
 def save_results_to_csv(results,classif_type='roi_small',mg_filter=None,data_path="",plus=""):
     df = pd.DataFrame(results)
     
@@ -262,9 +267,14 @@ def save_results_to_csv(results,classif_type='roi_small',mg_filter=None,data_pat
     # directory = os.path.dirname(csv_filename)
     # if directory and not os.path.exists(directory):
     #     os.makedirs(directory)
-
-    df.to_csv(csv_filename, index=False)
+    print(f"Saved results to {csv_filename}")
     
+    os.makedirs("./results", exist_ok=True)
+    df.to_csv(os.path.join("./results",csv_filename), index=False)  
+    # os.makedirs("./results_combat", exist_ok=True)
+    # df.to_csv(os.path.join("./results_combat",csv_filename), index=False)
+    # os.makedirs("./results_10fold", exist_ok=True) # For 10-fold ROI classification
+    # df.to_csv(os.path.join("./results_10fold",csv_filename), index=False) # For 10-fold ROI classification 
  
 def train_mlp_with_data(x_train, y_train, x_val, y_val, input_size, output_path='classifier.h5'):
     classifier = define_classifier(input_size)

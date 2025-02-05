@@ -16,6 +16,8 @@ analyze is the code used to produce the tsne and pca plots with the features set
 
 batch_classif is used to run different classification experiments using the code from "classification"
 
+Order of executing the scripts: batch_classif.py + accuracies.py, compute_icc.py + cc_boxplot.py.
+
 # qa4iqi-extraction
 
 the code is coming from the original repository of the QA4IQI project. It is used to extract the radiomics features from the phantom scans. a few lines were modified so it might still be of use for the project.

@@ -6,6 +6,25 @@ __pycache__/
 # C extensions
 *.so
 
+# Results:
+results_06112024/
+results_07112024/
+results_10fold/
+results_combat/
+results_combat_06112024/
+results_combat_07112024/
+
+# Data and results
+*.png
+results/*
+results_paper/*
+results_org/*
+previous_results/*
+train_configurations/*
+final_features/*
+*.json
+*.yml
+checkpoints/*
 # Distribution / packaging
 .Python
 build/

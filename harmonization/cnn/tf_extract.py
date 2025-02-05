@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/home/reza/radiomics_phantom/')
 import tensorflow.compat.v1 as tf
 
 from qa4iqi_extraction.constants import MANUFACTURER_FIELD, MANUFACTURER_MODEL_NAME_FIELD, SERIES_DESCRIPTION_FIELD, SERIES_NUMBER_FIELD, SLICE_THICKNESS_FIELD
@@ -59,6 +61,7 @@ def test():
 def run_inference():
     
     jsonpath = "./dataset_info_cropped.json"
+    jsonpath = "./train_configurations/expanded_registered_light_dataset_info.json"
     # Define the path to your model files
     model_dir = './'
     model_file = model_dir + 'organs-5c-30fs-acc92-121.meta'

@@ -1,3 +1,6 @@
+import sys
+sys.path.append('/home/reza/radiomics_phantom/')
+
 import csv
 import os
 import shutil
@@ -11,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
-from harmonization.swin_contrastive.utils import load_data,get_model,get_model_oscar
+from utils import load_data,get_model,get_model_oscar
 from monai.data import Dataset, DataLoader,SmartCacheDataset
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
@@ -201,7 +204,6 @@ centersrois = {'cyst1':  [324, 334, 158],'cyst2' :  [189, 278, 185],'hemangioma'
 #./dataset_info_full_uncompressed_NAS.json
 def run_inference(model,jsonpath = "./expanded_registered_light_dataset_info.json",fname = ""):
     
-    
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
     torch.cuda.set_device(device_id)
@@ -231,7 +233,7 @@ def run_inference(model,jsonpath = "./expanded_registered_light_dataset_info.jso
     dataload = ThreadDataLoader(dataset, batch_size=1, collate_fn=custom_collate_fn)
     #qq chose comme testload = DataLoader(da.....
     slice_num = 15
-    with open(f"features_{fname}.csv", "w", newline="") as csvfile:
+    with open(f"features_{os.path.basename(fname)}.csv", "w", newline="") as csvfile:
         fieldnames = ["SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -278,16 +280,18 @@ def run_inference(model,jsonpath = "./expanded_registered_light_dataset_info.jso
 
 
 def main():
-    fnames = ["model_swinvit"]
+    fnames = ["./checkpoints/model_swinvit"]
+    fnames = ["./checkpoints/liverrandom_contrast_5_15_10batch_swin"]
     for fname in fnames:
-        model = get_model(model_path=f"{fname}.pt")
+        #model = get_model(model_path=f"{fname}.pt")
+        model = get_model(model_path=f"{fname}.pth")
         #model = get_model_oscar(path=f"{fname}.pth")
         device_id = 0
         os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
         torch.cuda.set_device(device_id)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
         model = model.to(device)
-        run_inference(model,fname = fname)
+        run_inference(model,fname = fname, jsonpath = "./train_configurations/expanded_registered_light_dataset_info.json")
 
 if __name__ == "__main__":
     main()

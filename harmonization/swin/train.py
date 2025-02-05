@@ -1,3 +1,6 @@
+import sys
+sys.path.append('/home/reza/radiomics_phantom/')
+
 import glob
 import json
 import os
@@ -307,6 +310,7 @@ class Train:
         self.optimizer.zero_grad()
         # prepare batch
         imgs_s = batch["image"].cuda()
+        imgs_s = imgs_s.squeeze()
         #ids = batch["uids"].cuda()
         print("imgs_s size 1",imgs_s.size())
         #print("ids size",ids.size())
@@ -324,7 +328,7 @@ class Train:
         print("ids size 2",ids.size())
         scanner_labels = batch["scanner_label"].cuda()
         
-        latents = self.model.swinViT(imgs_s)
+        latents = self.model.swinViT(imgs_s.double())
         
         
         #narrow the latents to use the contrastive latent space (maybe pass to encoder10 for latents[4] before contrastive loss ?)
@@ -335,7 +339,7 @@ class Train:
         #print("nlatents[4] size",nlatents[4].size())
         
         #print("ids size",ids.size())
-        self.contrastive_step(nlatents,ids,latentsize = self.contrastive_latentsize)
+        self.contrastive_step(nlatents,ids.flatten(),latentsize = self.contrastive_latentsize)
         #print(f"Contrastive Loss: {self.losses_dict['contrast_loss']}")
         
         # features = torch.mean(bottleneck, dim=(2, 3, 4))
@@ -713,7 +717,7 @@ class LazyPatchLoader(Transform):
         self.reader = reader or ITKReader()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.variety_size = variety_size
-        self.precomputed_positions = load_subbox_positions(positions_file, order='XYZ', num_positions=variety_size)
+        self.precomputed_positions = None#load_subbox_positions(positions_file, order='XYZ', num_positions=variety_size)
         self.current_position_index = 0
 
     def precompute_positions(self, shape):
@@ -729,9 +733,9 @@ class LazyPatchLoader(Transform):
         """
         self.precomputed_positions = []
         for _ in range(self.variety_size):
-            start_x = np.random.randint(50, 200)
-            start_y = np.random.randint(50, shape[1] - self.roi_size[1] + 1)
-            start_z = np.random.randint(50, shape[2] - self.roi_size[2] + 1)
+            start_x = np.random.randint(0, shape[0] - self.roi_size[0] + 1)
+            start_y = np.random.randint(0, shape[1] - self.roi_size[1] + 1)
+            start_z = np.random.randint(0, shape[2] - self.roi_size[2] + 1)
             self.precomputed_positions.append((start_x, start_y, start_z))
         shuffle(self.precomputed_positions)
 
@@ -765,6 +769,7 @@ class LazyPatchLoader(Transform):
                 raise ValueError(f"Image size {shape} is smaller than ROI size {self.roi_size}")
 
             if not self.precomputed_positions:
+                #shape = (shape[2], shape[1], shape[0])  # Convert to XYZ order
                 self.precompute_positions(shape)
             
             patches = []
@@ -784,21 +789,31 @@ class LazyPatchLoader(Transform):
                 extract_size = [int(self.roi_size[0]), int(self.roi_size[1]), int(self.roi_size[2])]
                 
                 self.logger.info(f"Extracting patch at index {extract_index} with size {extract_size}")
-                self.logger.info(f"Image shape: {shape}")
+                # self.logger.info(f"Image shape: {shape}")
                 
-                InputImageType = type(itk_image)
-                OutputImageType = type(itk_image)
-                extract_filter = itk.ExtractImageFilter[InputImageType, OutputImageType].New()
-                extract_filter.SetInput(itk_image)
-                extract_region = itk.ImageRegion[3]()
-                extract_region.SetIndex(extract_index)
-                extract_region.SetSize(extract_size)
-                extract_filter.SetExtractionRegion(extract_region)
-                extract_filter.SetDirectionCollapseToSubmatrix()
+                # InputImageType = type(itk_image)
+                # OutputImageType = type(itk_image)
+                # extract_filter = itk.ExtractImageFilter[InputImageType, OutputImageType].New()
+                # extract_filter.SetInput(itk_image)
+                # extract_region = itk.ImageRegion[3]()
+                # extract_region.SetIndex(extract_index)
+                # extract_region.SetSize(extract_size)
+                # extract_filter.SetExtractionRegion(extract_region)
+                # extract_filter.SetDirectionCollapseToSubmatrix()
                 
-                extract_filter.Update()
-                patch_itk = extract_filter.GetOutput()
-                patch = itk.array_from_image(patch_itk)
+                # extract_filter.Update()
+                # patch_itk = extract_filter.GetOutput()
+                # patch = itk.array_from_image(patch_itk)
+
+                # print the extract index and size
+                # print(f"Extract index: {extract_index}")
+                
+                numpy_image = itk.array_from_image(itk_image)
+                # Image in X,Y,Z order)
+                numpy_image = numpy_image.transpose(2, 1, 0)
+                patch = numpy_image[extract_index[0]:extract_index[0] + extract_size[0],
+                                    extract_index[1]:extract_index[1] + extract_size[1],
+                                    extract_index[2]:extract_index[2] + extract_size[2]]
                 
                 if patch.ndim == 3:
                     patch = patch[np.newaxis, ...]
@@ -835,10 +850,10 @@ def main():
     transforms = Compose([
         #PrintDebug(),
         #Resized(keys=["image"],spatial_size = (512,512,343)),
-        LoadImaged(keys=["image"]),
-        #LazyPatchLoader(roi_size=[64, 64, 32]),
-        DebugTransform2(),
-        #EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
+        #LoadImaged(keys=["image"]),
+        LazyPatchLoader(roi_size=[64, 64, 32]),
+        #DebugTransform2(),
+        EnsureChannelFirstd(keys=["image"], channel_dim="no_channel"),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
         #EncodeLabels(encoder=encoder),
         ExtractScannerLabel(),
@@ -849,10 +864,16 @@ def main():
     ])
 
 
-    jsonpath = "./liver_registered_light_dataset_info_10.json"
+    jsonpath = "./train_configurations/liver_registered_light_dataset_info_10.json"
     #jsonpath = "./dataset_info_cropped.json"
     
-    data_list = load_data(jsonpath)
+    data_list_org = load_data(jsonpath)
+    # Add a prefix to all elements in data_list_org
+    dataset_prefix = "/home/jeanfelix/radiomics_phantom"
+    data_list = []
+    for item in data_list_org:
+        item['image'] = os.path.join(dataset_prefix, item['image'].replace('./', ''))
+        data_list.append(item)
     train_data, test_data = create_datasets(data_list,test_size=0.00)
     model = get_model(target_size=(64, 64, 32))
     #model = get_oscar_for_training()
@@ -866,16 +887,15 @@ def main():
     test_loader = ThreadDataLoader(test_dataset, batch_size=3, shuffle=False,collate_fn=custom_collate_fn)
     
     data_loader = {'train': train_loader, 'test': test_loader}
-    dataset = {'train': train_dataset, 'test': test_dataset}
-    
-    
+    dataset = {'train': train_dataset, 'test': test_dataset}    
     
     print(f"Le nombre total de poids dans le modèle est : {count_parameters(model)}")
     
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.005) 
     lr_scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-6)
     
-    trainer = Train(model, data_loader, optimizer, lr_scheduler, 100,dataset,contrastive_latentsize=768,savename="liverrandom_contrast_5_15_10batch_swin.pth",ortho_reg=0.001)
+    trainer = Train(model, data_loader, optimizer, lr_scheduler, 20, dataset, contrastive_latentsize=768,
+                     savename="liverrandom_contrast_5_15_10batch_swin.pth",ortho_reg=0.001)
     trainer.train()
 
 def classify_cross_val(results, latents_t, labels_t, latents_v, labels_v, groups, lock):
@@ -944,12 +964,11 @@ def cross_val_training():
         #DebugTransform2(),
         EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], device=device, track_meta=False),
-        EncodeLabels(encoder=encoder),
+        #EncodeLabels(encoder=encoder),
         ExtractScannerLabel(),
         EncodeLabels(encoder=scanner_encoder, key='scanner_label'),
         #DebugTransform(),
-        #DebugTransform2(),
-        
+        #DebugTransform2(),  
     ])
 
     jsonpath = "./dataset_info_cropped.json"

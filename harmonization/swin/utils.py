@@ -250,10 +250,10 @@ def get_model(target_size=(64, 64, 32), model_path="model_swinvit.pt", to_compar
         ).to(device)
 
     if model_path == "model_swinvit.pt":
-        weight = torch.load("model_swinvit.pt")
+        weight = torch.load("./checkpoints/model_swinvit.pt")
         model.load_from(weight)
     else:
-        weight = torch.load(model_path)
+        weight = torch.load(model_path, weights_only=True)
         for key in weight.keys():
             print(key)
         weight = {k.replace("swinViT.","module."): v for k, v in weight.items()}

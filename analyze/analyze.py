@@ -10,6 +10,7 @@ from sklearn.metrics import silhouette_score
 from matplotlib.lines import Line2D
 from sklearn.preprocessing import LabelEncoder
 import os
+import umap.umap_ as umap
 
 markers = ['o', 's', 'D', '^', 'v', '>', '<', 'p', '*', '+', 'x']
 scanners = {'A1' : 'SOMATOM Definition Edge', 'A2':'SOMATOM Definition Flash', 'B1':'SOMATOM X.cite', 'B2':'SOMATOM Edge Plus', 'C1':'iCT 256', 'D1':'Revolution EVO', 'E1':'Aquilion Prime SP', 'E2':'GE MEDICAL SYSTEMS', 'F1':'BrightSpeed S', 'G1':'SOMATOM Definition Edge', 'G2':'SOMATOM Definition Flash', 'H1':'Aquilion', 'H2':'Brilliance 64'}
@@ -89,6 +90,10 @@ def generate_advanced_markers(num_required):
 
 def miniload_data(filepath,fsize=None):
     data = pd.read_csv(filepath)
+    try:
+        data['deepfeatures'] = data['deepfeatures'].apply(lambda x: np.fromstring(x.strip("[]"), sep=','))
+    except:
+        print('Deep features not fund trying with pyradiomics.')
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 'ROI','ManufacturerModelName','Manufacturer','SliceThickness','SpacingBetweenSlices'],errors='ignore')
     
     #verifier si features est plutot une liste ou un string d'une liste
@@ -112,7 +117,9 @@ def load_data(filepath, color_mode='roi', mg_filter=None,rep_filter=None,self_lo
     
     if color_mode == 'roi':
         labels = data['ROI']
-        supp_info = data['SeriesNumber']
+        # maping = lambda s: 'FBP' if 'fbp' in s.lower() else 'IR'
+        # labels = data['SeriesDescription'].map(maping)
+        supp_info = data['Manufacturer']#'SeriesNumber', 'Manufacturer']]
     elif color_mode == 'series_desc':
         # Extraction des deux premiers caractères de la SeriesDescription
         labels = data['SeriesDescription'].str[:2].map(scanners)
@@ -139,27 +146,53 @@ def load_data(filepath, color_mode='roi', mg_filter=None,rep_filter=None,self_lo
     if mg_filter is not None:
         print(f"feature length before filter: {len(features)}")
         features = features[data['mg_value'] == mg_filter]
+        labels = labels[data['mg_value'] == mg_filter]
+        supp_info = supp_info[data['mg_value'] == mg_filter]
         data = data[data['mg_value'] == mg_filter]
         print(f"feature length after filter: {len(features)}")
         
     data['SeriesNumber'] = data['SeriesDescription'].apply(extract_rep_number)
     if rep_filter is not None:
         features = features[data['SeriesNumber'] == rep_filter]
+        labels = labels[data['SeriesNumber'] == rep_filter]
+        supp_info = supp_info[data['SeriesNumber'] == rep_filter]
         data = data[data['SeriesNumber'] == rep_filter]
     #print(f"Features: {features}")
+    print(f"Loaded {len(features)} features with a size of {len(features.columns)}")
+    print(f"Loaded {len(labels)} labels")
+    print(f"Loaded {len(supp_info)} supp_info")
     return features, labels, supp_info
 
+def features_to_numpy(features):
+    try:
+        features_array = np.zeros([len(features), len(features['deepfeatures'].iloc[0])])
+    except:
+        return np.array(features)
+    for i, row in enumerate(features['deepfeatures']):
+        features_array[i] = row
+    return features_array
+
 def perform_pca(features):
-    features_scaled = StandardScaler().fit_transform(features)
+    features_array = features_to_numpy(features)
+    features_scaled = StandardScaler().fit_transform(features_array)
     pca = PCA(n_components=2)
     principal_components = pca.fit_transform(features_scaled)
     explained_variance = pca.explained_variance_ratio_ * 100  # Convertir en pourcentage
     return principal_components, explained_variance
 
 def perform_tsne(features):
-    features_scaled = StandardScaler().fit_transform(features)
+    features_array = features_to_numpy(features)
+    features_scaled = StandardScaler().fit_transform(features_array)
     perplexity = min(40, len(features_scaled) - 1)
     tsne_results = TSNE(n_components=2, verbose=1, perplexity=perplexity, n_iter=300).fit_transform(features_scaled)
+    return tsne_results
+
+def perform_umap(features):
+    features_array = features_to_numpy(features)
+    features_scaled = features_array
+    # features_scaled = StandardScaler().fit_transform(features_array)
+    umap_reducer = umap.UMAP(n_neighbors=25, min_dist=0.5, n_components=2, random_state=42)
+    tsne_results = umap_reducer.fit_transform(features_scaled)
     return tsne_results
 
 def save_silhouette_score(scores_filename, datasetname, color_mode, mg_filter, silhouette_avg):
@@ -171,12 +204,13 @@ def save_silhouette_score(scores_filename, datasetname, color_mode, mg_filter, s
             f.write(f"{datasetname},{color_mode},{mg_filter},{silhouette_avg}\n")
         else:
             f.write(f"{datasetname},{color_mode},{mg_filter},{silhouette_avg:.4f}\n")
-from umap import UMAP
-def perform_umap(features):
-    print("Performing UMAP")
-    umap = UMAP(n_components=2)
-    umap_results = umap.fit_transform(features)
-    return umap_results
+
+# from umap import UMAP
+# def perform_umap(features):
+#     print("Performing UMAP")
+#     umap = UMAP(n_components=2)
+#     umap_results = umap.fit_transform(features)
+#     return umap_results
 
 def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_dataset_features/averaged_swin_deepfeatures.csv',datasetname='averaged_swin_deepfeatures',rep_filter=None,data=None,features=None):
     print("Analyzing data...")
@@ -185,6 +219,11 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
         features, labels, supp_info = load_data(filepath, color_mode, mg_filter=mg_filter,rep_filter=rep_filter,self_load=False,data=data,features=features)
     else:
         features, labels, supp_info = load_data(filepath, color_mode, mg_filter=mg_filter,rep_filter=rep_filter)
+    
+    labels = labels.replace('metastatsis', 'metastasis')
+    labels = labels.replace('Siemens Healthineers', 'SIEMENS')
+    labels = labels.replace('Philips', 'PHILIPS')
+
     #silhouette_avg = silhouette_score(features, labels)
     #print(f'Silhouette Score on the whole feature space: {silhouette_avg:.4f}')
 
@@ -194,7 +233,7 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
     
     unique_labels = labels.unique()
     
-    colors = plt.cm.get_cmap('viridis', len(unique_labels))
+    colors = plt.get_cmap('viridis', len(unique_labels))
     unique_supp_info = np.unique(supp_info)
     markers = generate_advanced_markers(len(unique_supp_info)+1)
         
@@ -204,60 +243,74 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     base_filename = f"{filepath.rsplit('/', 1)[0]}/results_{timestamp}"
 
-    print("Performing PCA")
+    # print("Performing PCA")
 
-    pca_results, explained_variance = perform_pca(features)
+    # pca_results, explained_variance = perform_pca(features)
     
-    plt.figure(figsize=(8, 6))
-    for i, label in enumerate(unique_labels):
-        for j, info in enumerate(unique_supp_info):
-            mask = (labels == label) & (supp_info == info)
-            marker_props = marker_map[info]
-            plt.scatter(pca_results[mask, 0], pca_results[mask, 1], 
-                        color=colors(i),
-                        marker=marker_props['marker'], s=marker_props['size'],
-                        linewidths=2,  # Adjust line width for visibility
-                        linestyle=marker_props['linestyle'],
-                        facecolors='none' if not marker_props['filled'] else colors(i))
+    # plt.figure(figsize=(8, 6))
+    # for i, label in enumerate(unique_labels):
+    #     for j, info in enumerate(unique_supp_info):
+    #         mask = (labels == label) & (supp_info == info)
+    #         marker_props = marker_map[info]
+    #         plt.scatter(pca_results[mask, 0], pca_results[mask, 1], 
+    #                     color=colors(i),
+    #                     marker=marker_props['marker'], s=marker_props['size'],
+    #                     linewidths=2,  # Adjust line width for visibility
+    #                     linestyle=marker_props['linestyle'],
+    #                     facecolors='none' if not marker_props['filled'] else colors(i))
             
-    for i, label in enumerate(unique_labels):
-        plt.scatter([], [], color=colors(i), label=label)
+    # for i, label in enumerate(unique_labels):
+    #     plt.scatter([], [], color=colors(i), label=label)
     
-    plt.title('PCA Results')
-    plt.xlabel(f'Principal Component 1 ({explained_variance[0]:.2f}%)')
-    plt.ylabel(f'Principal Component 2 ({explained_variance[1]:.2f}%)')
-    plt.grid(True)
-    #plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-    plt.tight_layout()
-    plt.savefig(f"{datasetname}_{color_mode}_{mg_filter}_{rep_filter}_PCA.png")
-    #plt.show()
+    # plt.title('PCA Results')
+    # plt.xlabel(f'Principal Component 1 ({explained_variance[0]:.2f}%)')
+    # plt.ylabel(f'Principal Component 2 ({explained_variance[1]:.2f}%)')
+    # plt.grid(True)
+    # plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    # plt.tight_layout()
+    # plt.savefig(f"{datasetname}_{color_mode}_{mg_filter}_{rep_filter}_PCA.png")
+    # #plt.show()
 
-    print("Performing umap")
+    # print("Performing umap")
 
-    tsne_results = perform_tsne(features)
-
-
-    plt.figure(figsize=(8, 6))
+    # tsne_results = perform_tsne(features)
+    tsne_results = perform_umap(features)
+    #marker_dict = {'Siemens Healthineers': 'SIEMENS', 'Philips': 'PHILIPS'}
+    
+    plt.figure(figsize=(10, 8))
     for i, label in enumerate(unique_labels):
         for j, info in enumerate(unique_supp_info):
             mask = (labels == label) & (supp_info == info)
             marker_props = marker_map[info]
             plt.scatter(tsne_results[mask, 0], tsne_results[mask, 1], 
                         color=colors(i), 
-                        marker=marker_props['marker'], s=marker_props['size'],
+                        facecolors=colors(i),
+                        #marker = marker_dict[]
+                        #marker=marker_props['marker'], s=marker_props['size'],
+                        marker='o', s=5*marker_props['size'],
                         linewidths=2,  # Adjust line width for visibility
                         linestyle=marker_props['linestyle'],
-                        facecolors='none' if not marker_props['filled'] else colors(i))
+                        #facecolors='none' if not marker_props['filled'] else colors(i)
+                        )
             
     for i, label in enumerate(unique_labels):
-        plt.scatter([], [], color=colors(i), label=label)
-    plt.title('t-SNE Results')
-    plt.xlabel('t-SNE 1')
-    plt.ylabel('t-SNE 2')
+        plt.scatter([], [], color=colors(i), label=label, s=50)
+    plt.title(datasetname, fontsize=32)
+    #plt.title('t-SNE Results', fontsize=18)
+    #plt.xlabel('t-SNE 1')
+    #plt.ylabel('t-SNE 2')
+    
+    plt.xticks(fontsize=22)
+    plt.yticks(fontsize=22)
     plt.grid(True)
-    #plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    if len(unique_labels) > 4:
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=3, fontsize=16)
+    else:
+        print('Legend Skipeed for the paper!')
+        # plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=len(unique_labels), fontsize=16)
     plt.tight_layout()
-    plt.savefig(f"{datasetname}_{color_mode}_{mg_filter}_{rep_filter}_tSNE.png")
+    plt.savefig(f"{datasetname}_{color_mode}_{mg_filter}_{rep_filter}_umap.png")
+    
     #plt.show()
     
 #only doing the silhouette score analysis
@@ -312,7 +365,7 @@ def plot_combined_tsne(features_list, labels_list):
     
     # Define a colormap using the updated method
     #colors = plt.cm.get_cmap('viridis', len(unique_labels))
-    colors = plt.cm.get_cmap('viridis', len(unique_labels))
+    colors = plt.get_cmap('viridis', len(unique_labels))
 
     scatter1 = plot_tsne(axs[0, 0], tsne_results_list[0], encoder_labels[0], 'Radiomics', colors, markersize=3)
     scatter2 = plot_tsne(axs[0, 1], tsne_results_list[1], encoder_labels[1], 'SwinUNETR Features', colors, markersize=3)
@@ -322,7 +375,7 @@ def plot_combined_tsne(features_list, labels_list):
     # Create a legend below the plots
     handles = [Line2D([0], [0], marker='o', color='w', markerfacecolor=colors(i), markersize=5, label=unique_labels[i]) for i in range(len(unique_labels))]
     fig.legend(handles=handles, loc='upper center', title="Labels", ncol=3, fontsize='x-large')
-
+    # plt.title('')
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.2, wspace=0.3, hspace=0.3)
     plt.show()
 
@@ -332,12 +385,19 @@ def batch_analysis():
     color_modes = ['roi','manufacturer']
     mg_filters = [10]
     fsizes = [None]#, -68,700]
-    #features_files = ['../../all_dataset_features/pyradiomics_features_full.csv','../../all_dataset_features/features_swinunetr_full.csv','../../all_dataset_features/features_ocar_full.csv']
-    #datasetnames = ['pyradiomics_features','swin_deepfeatures','features_oscar']
-    #features_files = ['../../all_dataset_features/averaged_FT_contrastive_classification_swin_features.csv','../../all_dataset_features/averaged_FT_contrastive_reconstruction_swin_features.csv','../../all_dataset_features/averaged_FT_contrastive_swin_features.csv',
-    features_files = ['../../all_dataset_features/features_swinunetr_full.csv']
-    #datasetnames = ['averaged_FT_contrastive_classification_swin_features','averaged_FT_contrastive_reconstruction_swin_features','averaged_FT_contrastive_swin_features','
-    datasetnames = ['features_swinunetr_full']
+
+    files_dir = '/home/reza/radiomics_phantom/final_features/small_roi'
+    # files_dir = '/home/reza/radiomics_phantom/final_features/small_roi_combat'
+    features_files = [
+                      f'{files_dir}/features_pyradiomics_full.csv',
+                      f'{files_dir}/features_oscar_full.csv',
+                      f'{files_dir}/features_swinunetr_full.csv',
+                    #   f'{files_dir}/features_swinunetr_contrastive_full.csv',
+                      f'{files_dir}/features_swinunetr_contrastive_full_loso.csv'
+                      ]
+
+    datasetnames = ['Radiomics Features', 'Shallow CNN Features', 'SwinUNETR Features', 'Contrastive SwinUNETR Features']
+
     for features_file in features_files:
         for fs in fsizes:
             print(f'Loading data from {features_file}')
@@ -347,7 +407,7 @@ def batch_analysis():
                 for color_mode in color_modes:
                     print(f'Analyzing {features_file} with color mode {color_mode} and mg filter {mg_filter}')
                     datasetname = datasetnames[features_files.index(features_file)]
-                    datasetname = f"{datasetname}@{fs}@"
+                    # datasetname = f"{datasetname}@{fs}@"
                     analysis(color_mode, mg_filter, features_file, datasetname,rep_filter=None,data=data,features=features)
 
 def plots_paper():
@@ -387,7 +447,8 @@ def plots_paper():
         supp_info_list.append(supp_info)
     
     # Example titles for the four plots
-    titles = ['Radiomics', 'SwinUNETR Features', 'Shallow CNN Features', 'Contrastive SwinUNETR Features']
+    titles = ['', '', '', '']
+    # titles = ['Radiomics', 'SwinUNETR Features', 'Shallow CNN Features', 'Contrastive SwinUNETR Features']
 
     # Output path for the final plot
     output_path_final_adjusted_margin = "/mnt/data/combined_tsne_plots_final_adjusted_margin_tight.png"
@@ -398,3 +459,4 @@ def plots_paper():
 
 if __name__ == "__main__":
     batch_analysis()
+    #plots_paper()
