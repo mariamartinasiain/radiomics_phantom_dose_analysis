@@ -18,7 +18,6 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
     feature_columns = [col for col in feature_columns if col not in [roi_column, series_column]]
     
 
-
     # Import data to Matlab:
 
     def rename_duplicates(cols):
@@ -36,8 +35,11 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
     from scipy.io import savemat
     roi_mapping = {roi: i for i, roi in enumerate(data["ROI"].unique(), start=1)}
     data["ROI_numerical"] = data["ROI"].map(roi_mapping)
-    data.columns = [col[:28] for col in data.columns]
-    data = data.drop(columns=['Unnamed: 0'])
+    data.columns = [col[:28] for col in data.columns]  # to be able to save in .mat file format
+    try:
+        data = data.drop(columns=['Unnamed: 0'])
+    except:
+        print('Unammed: 0 not found!')
     data.columns = rename_duplicates(data.columns)
     # data.columns = [
     # f'feature_{i:03d}' if len(col) > 30 else col
@@ -46,7 +48,8 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
     #
 
     results = []
-    for feature in feature_columns:
+    #for feature in feature_columns:
+    for feature in data.columns:
         icc_data = data[[series_column,roi_column, feature]].dropna()
         icc_data.columns = ['raters', 'targets', 'ratings']
         try:
@@ -57,9 +60,11 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
     # Remove the elements with ICC nan or inf
     results_filtered = [result for result in results if not np.isnan(result['ICC']) and not np.isinf(result['ICC'])]
     results_garbage = [result for result in results if np.isnan(result['ICC']) or np.isinf(result['ICC'])]
+
+    # ICC is nan for SpacingBetweenSlices, SliceThickness, SeriesNumber
+    # Warnings of division by zero are for ManufacturerModelName, Manufacturer, StudyInstanceUID, SeriesDescription, ROI
+
     return pd.DataFrame(results_filtered)
-
-
 
 
 
@@ -69,14 +74,16 @@ def main():
                 'features_icc_cb_swinunetr.csv',
                 'features_liverrandom_contrast_5_15_10batch_swin.csv']
     # files_dir = '/home/reza/radiomics_phantom/final_features/small_roi_combat'
-    files_dir = '/home/reza/radiomics_phantom/final_features/small_roi'
+    files_dir = '/mnt/nas7/data/maria/final_features'
     csv_path = [
         f'{files_dir}/features_pyradiomics_full.csv',
         # f'{files_dir}/features_oscar_full.csv',
         # f'{files_dir}/features_swinunetr_full.csv',
         # f'{files_dir}/features_swinunetr_contrastive_full.csv',
-        f'{files_dir}/features_swinunetr_contrastive_full_loso.csv'
+         # f'{files_dir}/features_swinunetr_contrastive_full_loso.csv'
         ]
+
+
     for path in csv_path:
         icc_results = auto_detect_and_calculate_icc(path)
         icc_results_sorted = icc_results.sort_values(by='ICC', ascending=False)

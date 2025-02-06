@@ -48,16 +48,16 @@ def main():
     # randomcrop_swin_data = load_data('icc_features_random_contrast_5_6_lowLR_12batch_swin.csv', ' randomcrop Swin')
     # livercrops_swin_data = load_data('nicc_features_liverrandom_contrast_5_15_10batch_swin.csv', ' livercrops Swin')
     
-    files_dir = '/home/reza/radiomics_phantom/final_features/small_roi_combat'
-    suffix = '\nCombat'
+    #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    #suffix = '\nCombat'
     
-    # files_dir = '/home/reza/radiomics_phantom/final_features/small_roi'
-    # suffix = ''
+    files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    suffix = ''
 
-    swin_data = load_data(f'{files_dir}/nicc_features_pyradiomics_full.csv', f'Pyradiomics{suffix}')
-    finetuneswin_data = load_data(f'{files_dir}/nicc_features_oscar_full.csv', f'Shallow CNN{suffix}') 
-    randomcrop_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_full.csv', f'SwinUNETR{suffix}')
-    livercrops_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_contrastive_full.csv', f'SwinUNETR\nContrastive{suffix}')
+    radiomics_data = load_data(f'{files_dir}/nicc_features_pyradiomics_full.csv', f'Pyradiomics{suffix}')
+    #finetuneswin_data = load_data(f'{files_dir}/nicc_features_oscar_full.csv', f'Shallow CNN{suffix}') 
+    #randomcrop_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_full.csv', f'SwinUNETR{suffix}')
+    #livercrops_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_contrastive_full.csv', f'SwinUNETR\nContrastive{suffix}')
     # livercrops_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_contrastive_full_loso.csv', 'SwinUNETR\nContrastive')
     
     # combat_swin_data = load_data('icc_combat_features_swinunetr_full.csv', 'combat Swin')
@@ -67,7 +67,8 @@ def main():
     # combat_pyradiomics_data = load_data('icc_combat_features_pyradiomics_full.csv', ' combat Radiomics')
     
     # Combine data into a single DataFrame
-    data_list = [swin_data, finetuneswin_data, randomcrop_swin_data, livercrops_swin_data]
+    #data_list = [swin_data, finetuneswin_data, randomcrop_swin_data, livercrops_swin_data]
+    data_list = [radiomics_data]
     combined_data = pd.concat(data_list, ignore_index=True)
     #combined_data = swin_data
     # print the average ICC of all combined data:
@@ -76,7 +77,10 @@ def main():
         print(f'Std ICC: {data_list[i]["ICC"].std()}')
     # Create and save the ICC boxplot
     #create_boxplot(combined_data, 'ICC', 'Distribution of ICC by Method', 'ICC', 'icc_boxplot.png')
-    create_boxplot(combined_data, 'ICC', '', 'ICC', 'icc_boxplot.png')
+    
+    #create_boxplot(combined_data, 'ICC', '', 'ICC', 'icc_boxplot.png')
+    create_boxplot(combined_data, 'ICC', '', 'ICC', f'{files_dir}/icc_boxplot.png')
+
 
     # Create and save the CCC boxplot
     #create_boxplot(combined_data, 'CCC', 'Distribution of CCC by Method', 'CCC', 'ccc_boxplot.png')
