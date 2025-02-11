@@ -51,14 +51,15 @@ def main():
     #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
     #suffix = '\nCombat'
     
-    files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    files_dir = '/mnt/nas7/data/maria/final_features/icc_results'
     suffix = ''
 
     radiomics_data = load_data(f'{files_dir}/nicc_features_pyradiomics_full.csv', f'Pyradiomics{suffix}')
-    #finetuneswin_data = load_data(f'{files_dir}/nicc_features_oscar_full.csv', f'Shallow CNN{suffix}') 
-    #randomcrop_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_full.csv', f'SwinUNETR{suffix}')
-    #livercrops_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_contrastive_full.csv', f'SwinUNETR\nContrastive{suffix}')
-    # livercrops_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_contrastive_full_loso.csv', 'SwinUNETR\nContrastive')
+    cnn_data = load_data(f'{files_dir}/nicc_features_cnn_full.csv', f'Shallow CNN{suffix}') 
+    randomcrop_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_full.csv', f'SwinUNETR{suffix}')
+    livercrops_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_contrastive_full.csv', f'SwinUNETR\nContrastive{suffix}')
+    livercrops_swin_data = load_data(f'{files_dir}/nicc_features_swinunetr_contrastive_full_loso.csv', 'SwinUNETR\nContrastive')
     
     # combat_swin_data = load_data('icc_combat_features_swinunetr_full.csv', 'combat Swin')
     # pyradiomics_data = load_data('icc_features_pyradiomics_full.csv', 'Radiomics')
@@ -67,8 +68,7 @@ def main():
     # combat_pyradiomics_data = load_data('icc_combat_features_pyradiomics_full.csv', ' combat Radiomics')
     
     # Combine data into a single DataFrame
-    #data_list = [swin_data, finetuneswin_data, randomcrop_swin_data, livercrops_swin_data]
-    data_list = [radiomics_data]
+    data_list = [radiomics_data, cnn_data, randomcrop_swin_data, livercrops_swin_data]
     combined_data = pd.concat(data_list, ignore_index=True)
     #combined_data = swin_data
     # print the average ICC of all combined data:

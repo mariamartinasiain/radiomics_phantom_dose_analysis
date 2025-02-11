@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from pingouin import intraclass_corr
 
-def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription' ,feature_column='deepfeatures'):
+def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription', feature_column='deepfeatures'):
     data = pd.read_csv(csv_path)
     data['SeriesDescription'] = data['SeriesDescription'].apply(lambda x: x.split('_')[0])
     
@@ -19,7 +19,6 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
     
 
     # Import data to Matlab:
-
     def rename_duplicates(cols):
         seen = {}
         new_cols = []
@@ -45,8 +44,7 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
     # f'feature_{i:03d}' if len(col) > 30 else col
     # for i, col in enumerate(data.columns)]
     savemat("data.mat", {"dataframe": data.to_dict("list")})
-    #
-
+    
     results = []
     #for feature in feature_columns:
     for feature in data.columns:
@@ -63,32 +61,29 @@ def auto_detect_and_calculate_icc(csv_path, roi_column='ROI', series_column='Ser
 
     # ICC is nan for SpacingBetweenSlices, SliceThickness, SeriesNumber
     # Warnings of division by zero are for ManufacturerModelName, Manufacturer, StudyInstanceUID, SeriesDescription, ROI
-
     return pd.DataFrame(results_filtered)
 
 
 
 def main():
-    csv_path = ['features_icc_cb_oscar.csv',
-                'features_icc_cb_pyradiomics.csv',
-                'features_icc_cb_swinunetr.csv',
-                'features_liverrandom_contrast_5_15_10batch_swin.csv']
     # files_dir = '/home/reza/radiomics_phantom/final_features/small_roi_combat'
-    files_dir = '/mnt/nas7/data/maria/final_features'
+    files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    output_dir = '/mnt/nas7/data/maria/final_features/icc_results'
+
     csv_path = [
         f'{files_dir}/features_pyradiomics_full.csv',
-        # f'{files_dir}/features_oscar_full.csv',
-        # f'{files_dir}/features_swinunetr_full.csv',
-        # f'{files_dir}/features_swinunetr_contrastive_full.csv',
-         # f'{files_dir}/features_swinunetr_contrastive_full_loso.csv'
+        f'{files_dir}/features_cnn_full.csv',
+        f'{files_dir}/features_swinunetr_full.csv',
+        f'{files_dir}/features_swinunetr_contrastive_full.csv',
+        f'{files_dir}/features_swinunetr_contrastive_full_loso.csv'
         ]
-
 
     for path in csv_path:
         icc_results = auto_detect_and_calculate_icc(path)
+    
         icc_results_sorted = icc_results.sort_values(by='ICC', ascending=False)
         print(icc_results_sorted)
-        icc_results_sorted.to_csv(f'{files_dir}/nicc_{os.path.basename(path)}', index=False)
+        icc_results_sorted.to_csv(f'{output_dir}/nicc_{os.path.basename(path)}', index=False)
 
 if __name__ == '__main__':
     main()

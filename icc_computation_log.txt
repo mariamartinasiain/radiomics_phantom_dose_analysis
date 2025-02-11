@@ -1,0 +1,91 @@
+Processing /mnt/nas7/data/maria/final_features/small_roi/features_pyradiomics_full.csv
+==================================================
+Processing /mnt/nas7/data/maria/final_features/small_roi/features_cnn_full.csv
+==================================================
+Processing /mnt/nas7/data/maria/final_features/small_roi/features_swinunetr_full.csv
+==================================================
+Scanner: A1, Feature: feature_675, ICC: -226.13598320719896
+ICC Calculation details for feature_675:
+     raters     targets   ratings
+1194   1mGy      normal  0.045234
+1195   1mGy      normal  0.033912
+1196   1mGy        cyst  1.360399
+1197   1mGy        cyst -0.026158
+1198   1mGy  hemangioma  0.039618
+--------------------------------------------------
+Scanner: A1, Feature: feature_1686, ICC: -42.61283293004548
+ICC Calculation details for feature_1686:
+     raters     targets   ratings
+1194   1mGy      normal -0.093086
+1195   1mGy      normal -0.085237
+1196   1mGy        cyst -0.546848
+1197   1mGy        cyst -0.089811
+1198   1mGy  hemangioma -0.096480
+--------------------------------------------------
+Scanner: A1, Feature: feature_1757, ICC: -48.144962060828846
+ICC Calculation details for feature_1757:
+     raters     targets   ratings
+1194   1mGy      normal  0.090251
+1195   1mGy      normal  0.094377
+1196   1mGy        cyst -0.151487
+1197   1mGy        cyst  0.152609
+1198   1mGy  hemangioma  0.137292
+--------------------------------------------------
+Scanner: A1, Feature: feature_1759, ICC: -210.7295059864823
+ICC Calculation details for feature_1759:
+     raters     targets   ratings
+1194   1mGy      normal  0.031180
+1195   1mGy      normal  0.074254
+1196   1mGy        cyst -0.361943
+1197   1mGy        cyst  0.113203
+1198   1mGy  hemangioma  0.035384
+--------------------------------------------------
+Scanner: A2, Feature: feature_563, ICC: -46.13910477421466
+ICC Calculation details for feature_563:
+     raters     targets   ratings
+1794   1mGy      normal -0.131353
+1795   1mGy      normal -0.117220
+1796   1mGy        cyst -0.485934
+1797   1mGy        cyst -0.116828
+1798   1mGy  hemangioma -0.128566
+--------------------------------------------------
+Scanner: B1, Feature: feature_2538, ICC: -30.307442223556972
+ICC Calculation details for feature_2538:
+  raters      targets   ratings
+3   1mGy   hemangioma  0.475090
+4   1mGy         cyst  0.758980
+6   1mGy         cyst  0.517543
+7   1mGy  metastatsis  0.485646
+9   3mGy   hemangioma  0.464892
+--------------------------------------------------
+Scanner: B2, Feature: feature_1686, ICC: -42.32524798087905
+ICC Calculation details for feature_1686:
+     raters     targets   ratings
+2394   1mGy      normal -0.088280
+2395   1mGy      normal -0.079161
+2396   1mGy        cyst -1.194651
+2397   1mGy        cyst -0.066299
+2398   1mGy  hemangioma -0.104178
+--------------------------------------------------
+Scanner: B2, Feature: feature_2185, ICC: -61.797820008878965
+ICC Calculation details for feature_2185:
+     raters     targets   ratings
+2394   1mGy      normal  0.232594
+2395   1mGy      normal  0.232497
+2396   1mGy        cyst -0.001516
+2397   1mGy        cyst  0.219582
+2398   1mGy  hemangioma  0.214021
+--------------------------------------------------
+Scanner: B2, Feature: feature_2393, ICC: -67.95834377872482
+ICC Calculation details for feature_2393:
+     raters     targets   ratings
+2394   1mGy      normal  0.160062
+2395   1mGy      normal  0.160199
+2396   1mGy        cyst  0.564153
+2397   1mGy        cyst  0.126016
+2398   1mGy  hemangioma  0.163448
+--------------------------------------------------
+test
+test
+test test
+test test test
