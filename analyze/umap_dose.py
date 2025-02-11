@@ -53,19 +53,11 @@ def apply_umap(csv_path, roi_column='ROI', series_column='SeriesDescription', fe
                     new_cols.append(col)
             return new_cols
 
-        # Obtener los ROIs únicos y ordenarlos alfabéticamente
         unique_labels = sorted(filtered_data[roi_column].unique())
 
-        # Obtener la paleta de colores 'viridis' para el número de ROIs
         colors = plt.get_cmap('viridis', len(unique_labels))
-
-        # Crear un diccionario para mapear cada ROI a su color correspondiente
         roi_color_mapping = {label: colors(i) for i, label in enumerate(unique_labels)}
-
-        # Mapear los valores de ROI a índices numéricos
         filtered_data["ROI_numeric"] = filtered_data["ROI"].map({label: i for i, label in enumerate(unique_labels)})
-
-        # Asignar los colores a los ROIs basados en los índices numéricos
         filtered_data["ROI_color"] = filtered_data["ROI_numeric"].map(roi_color_mapping)
 
 
@@ -87,21 +79,16 @@ def apply_umap(csv_path, roi_column='ROI', series_column='SeriesDescription', fe
         reducer = umap.UMAP(n_components=2, random_state=42)
         umap_results = reducer.fit_transform(features)
         
-        # Add UMAP results to the dataframe
         filtered_data['UMAP_1'] = umap_results[:, 0]
         filtered_data['UMAP_2'] = umap_results[:, 1]
         
-        # Extract method name from the file path
         method_key = os.path.basename(csv_path).split('_')[1].lower()
-
-        # Get the custom label for the method
         method = method_labels.get(method_key, 'Unknown Method')
         
         # Plot UMAP results
         plt.figure(figsize=(10, 8))
-
         scatter = plt.scatter(umap_results[:, 0], umap_results[:, 1], c=filtered_data["ROI_numeric"], cmap='viridis')
-        labels = list(roi_color_mapping.keys())  # Los nombres originales de los ROIs
+        labels = list(roi_color_mapping.keys())  
         handles, _ = scatter.legend_elements()
 
         plt.legend(handles, labels, title="ROI", loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=4, frameon=False)

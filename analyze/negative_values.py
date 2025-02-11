@@ -81,7 +81,6 @@ def generate_report(files_dir, methods, scanners):
         # Generate the bar plot for the number of negative ICCs for each method in the scanner
         plot_negative_iccs_bar(methods, scanner, negative_values_per_scanner[scanner], method_labels, ax)
 
-    # Save the 2x2 bar plots for all scanners
     plt.tight_layout()
     plt.savefig(f"/mnt/nas7/data/maria/final_features/icc_results_dose/icc_report/iccs_negative_values.png")
     plt.close()
