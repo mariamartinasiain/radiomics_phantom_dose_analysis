@@ -48,7 +48,7 @@ def main():
 
     # Create a figure and generate boxplots for each scanner
     output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/icc_boxplot'
-    os.makedirs(output_dir, exist_ok=True)  # Ensure the output directory exists
+    os.makedirs(output_dir, exist_ok=True) 
 
     for scanner in scanners:
         fig, ax = plt.subplots(figsize=(10, 8))

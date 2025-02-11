@@ -89,7 +89,6 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
                 icc_data.columns = ['raters', 'targets', 'ratings']  # Raters: doses, Targets: ROI, Features: features
                 
                 try:
-                    # Compute ICC using pingouin
                     icc_result = intraclass_corr(data=icc_data, raters='raters', targets='targets', ratings='ratings')
                     icc = icc_result.set_index('Type').at['ICC3k', 'ICC']
 
@@ -126,7 +125,7 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
                 except Exception as e:
                     results.append({'Feature': feature, 'ICC': np.nan, 'MSB': np.nan, 'MSE': np.nan})
                     log.write(f"Error processing {feature} | Feature Type: {feature_type}: {e}\n")
-                    
+
             icc_results_sorted = pd.DataFrame(results).sort_values(by='ICC', ascending=False)
             icc_results_per_scanner[(csv_path, scanner)] = icc_results_sorted
             summary.append({'Scanner': scanner, 'Num_Cases': num_cases, 'Num_Features': len(icc_results_sorted)})
@@ -153,7 +152,7 @@ def main():
 
         # Save ICC results 
         for (csv_path, scanner), icc_results_sorted in icc_results_per_scanner.items():
-            base_filename = os.path.basename(csv_path).replace('.csv', '')  # Remove ".csv" from the name
+            base_filename = os.path.basename(csv_path).replace('.csv', '') 
             icc_results_sorted.to_csv(f'{output_dir}/icc_dose_{base_filename}_{scanner}.csv', index=False)
 
 if __name__ == '__main__':

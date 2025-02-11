@@ -11,17 +11,14 @@ def check_nan_and_negative_icc(report_file_path, output_dir):
     for i, line in enumerate(report_lines):
         # Check if the line contains ICC value and it's either nan or negative
         if "ICC: nan" in line or "ICC: -" in line:
-            # Collect the 3 lines as required (current line + two previous lines)
+            # Collect current line + two previous lines
             paragraph = []
-            
-            # Add the previous two lines if available
             if i > 1:
-                paragraph.append(report_lines[i-2].strip())  # Second previous line
+                paragraph.append(report_lines[i-2].strip())  
             if i > 0:
-                paragraph.append(report_lines[i-1].strip())  # First previous line
-            paragraph.append(line.strip())  # Current line
+                paragraph.append(report_lines[i-1].strip())  
+            paragraph.append(line.strip())  
 
-            # Add the paragraph to the respective list based on the ICC value
             if "ICC: nan" in line:
                 nan_icc_entries.append('\n'.join(paragraph))
             else:
@@ -48,9 +45,8 @@ def save_results_to_file(nan_icc_entries, negative_icc_entries, output_dir, outp
     
     print(f"Results saved to {output_path}")
 
-# Example usage
 report_file_path = '/mnt/nas7/data/maria/final_features/icc_results_dose/icc_computation_log.txt'
-output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose'  # Change this as needed
+output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose'  
 
 nan_icc_entries, negative_icc_entries = check_nan_and_negative_icc(report_file_path, output_dir)
 save_results_to_file(nan_icc_entries, negative_icc_entries, output_dir)
