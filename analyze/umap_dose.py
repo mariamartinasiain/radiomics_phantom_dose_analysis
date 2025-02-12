@@ -19,11 +19,14 @@ def apply_umap(csv_path, roi_column='ROI', series_column='SeriesDescription', fe
     
     data[['Pos0', 'Pos2']] = data['SeriesDescription'].str.split('_', expand=True)[[0, 2]]  # Get scanner and dose
     
-    # Get the first four scanners (alphabetically sorted)
-    scanners = sorted(data['Pos0'].unique())[:4]
+    scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
 
     for scanner in scanners:
         print(f'Processing scanner: {scanner}')
+
+        # Create a directory for each scanner
+        scanner_dir = os.path.join(output_dir, f'umap_scanner_{scanner}')
+        os.makedirs(scanner_dir, exist_ok=True)
         
         filtered_data = data[data['Pos0'] == scanner].copy()
         filtered_data['SeriesDescription'] = filtered_data['Pos2']  # Keep just the doses
@@ -68,8 +71,6 @@ def apply_umap(csv_path, roi_column='ROI', series_column='SeriesDescription', fe
             print('Unammed: 0 not found!')
         filtered_data.columns = rename_duplicates(filtered_data.columns)
 
-        print(filtered_data.head)
-
         if 'SpacingBetweenSlices' in filtered_data.columns:
             filtered_data = filtered_data.drop(columns=['SpacingBetweenSlices'])
 
@@ -98,7 +99,7 @@ def apply_umap(csv_path, roi_column='ROI', series_column='SeriesDescription', fe
         plt.show()
 
         # Save plot to output directory
-        output_file = os.path.join(output_dir, f"{os.path.splitext(os.path.basename(csv_path))[0]}_umap_plot_{scanner}.png")
+        output_file = os.path.join(scanner_dir, f"{os.path.splitext(os.path.basename(csv_path))[0]}_umap_plot_{scanner}.png")
         plt.savefig(output_file, bbox_inches='tight')
         print(f"UMAP plot saved to: {output_file}")
         plt.close()
@@ -119,4 +120,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

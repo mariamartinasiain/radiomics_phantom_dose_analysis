@@ -18,7 +18,7 @@ def create_boxplots(ax, method_data, scanners, title):
 
     # Add N above each box (but below the title)
     for i, method in enumerate(method_data.keys()):
-        n = len(method_data[method]['ICC']) - 1     # Without taking into account "ROI_numerical"
+        n = len(method_data[method]['ICC'])
         max_val = max(method_data[method]['ICC'])  # Get the max ICC value in the boxplot
         ax.text(i + 1, max_val + 0.01, f'N={n}', ha='center', va='bottom', fontsize=12)
 
@@ -33,18 +33,17 @@ def create_boxplots(ax, method_data, scanners, title):
 def main():
     files_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose'
     methods = ['pyradiomics', 'cnn', 'swinunetr']
-    scanners = ['A1', 'A2', 'B1', 'B2']
+    scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
 
     all_data = {scanner: {} for scanner in scanners}
 
     # Load data for each method and scanner
     for method in methods:
         for scanner in scanners:
-            file_path = f'{files_dir}/icc_dose_features_{method}_full_{scanner}.csv'
+            file_path = f'{files_dir}/icc_scanner_{scanner}/icc_dose_features_{method}_full_{scanner}.csv'
             icc_data = load_data(file_path)
+            icc_data = icc_data[icc_data['Feature'] != 'ROI_numerical']
             all_data[scanner][method] = icc_data
-
-    print(all_data)
 
     # Create a figure and generate boxplots for each scanner
     output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/icc_boxplot'

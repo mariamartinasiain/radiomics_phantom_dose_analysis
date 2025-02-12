@@ -6,6 +6,9 @@ import warnings
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
+# Define all scanners
+scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
+
 def extract_feature_type(csv_path):
     """Extracts feature type from the filename (Radiomics, CNN, or SwinUNETR)."""
     if "pyradiomics" in csv_path.lower():
@@ -22,116 +25,117 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
 
     # Extract scanner and dose from SeriesDescription
     data[['Pos0', 'Pos2']] = data['SeriesDescription'].str.split('_', expand=True)[[0, 2]]
-    
-    # Get the first four scanners (alphabetically sorted)
-    scanners = sorted(data['Pos0'].unique())[:4]
+
     summary = []
     icc_results_per_scanner = {}
 
     output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose'
-    log_file = os.path.join(output_dir, 'icc_computation_log.txt')
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
-    with open(log_file, 'a') as log:
-        log.write(f"Processing {csv_path} | Feature Type: {feature_type}\n")
-        log.write("="*60 + "\n")
+    for scanner in scanners:
+        # Create a directory for each scanner
+        scanner_dir = os.path.join(output_dir, f'icc_scanner_{scanner}')
+        os.makedirs(scanner_dir, exist_ok=True)
 
-        for scanner in scanners:
-            # Process each scanner
-            print(f'Processing scanner: {scanner}')
-            filtered_data = data[data['Pos0'] == scanner].copy()
-            filtered_data['SeriesDescription'] = filtered_data['Pos2']  # Keep just the doses
-            filtered_data.drop(columns=['Pos0', 'Pos2'], inplace=True)
-            num_cases = len(filtered_data)
-            print(f"Number of cases: {num_cases}")
-            
-            # Convert deep features if necessary
-            if feature_column in filtered_data.columns and filtered_data[feature_column].dtype == 'object':
-                filtered_data[feature_column] = filtered_data[feature_column].apply(lambda x: np.fromstring(x.strip("[]"), sep=','))
-                max_len = filtered_data[feature_column].apply(len).max()
-                feature_df = pd.DataFrame(filtered_data[feature_column].tolist(), index=filtered_data.index)
-                feature_df.columns = [f"feature_{i}" for i in range(max_len)]
-                filtered_data = pd.concat([filtered_data.drop(columns=[feature_column]), feature_df], axis=1)
-            
-            feature_columns = filtered_data.select_dtypes(include=[np.number]).columns.tolist()
-            feature_columns = [col for col in feature_columns if col not in [roi_column, series_column]]
+        print(f'Processing scanner: {scanner}')
+        filtered_data = data[data['Pos0'] == scanner].copy()
+        filtered_data['SeriesDescription'] = filtered_data['Pos2']  # Keep just the doses
+        filtered_data.drop(columns=['Pos0', 'Pos2'], inplace=True)
+        num_cases = len(filtered_data)
+        print(f"Number of cases: {num_cases}")
 
-            # Rename duplicates for .mat file export
-            def rename_duplicates(cols):
-                seen = {}
-                new_cols = []
-                for col in cols:
-                    if col in seen:
-                        seen[col] += 1
-                        new_cols.append(f"{col}_{seen[col]}")  # Append number if duplicate
-                    else:
-                        seen[col] = 0
-                        new_cols.append(col)
-                return new_cols
+        # Convert deep features if necessary
+        if feature_column in filtered_data.columns and filtered_data[feature_column].dtype == 'object':
 
-            roi_mapping = {roi: i for i, roi in enumerate(filtered_data["ROI"].unique(), start=1)}
-            filtered_data["ROI_numerical"] = filtered_data["ROI"].map(roi_mapping)
-            filtered_data.columns = [col[:28] for col in filtered_data.columns]  # Truncate for .mat file format
-            
+            filtered_data[feature_column] = filtered_data[feature_column].apply(lambda x: np.fromstring(x.strip("[]"), sep=','))
+            max_len = filtered_data[feature_column].apply(len).max()
+            feature_df = pd.DataFrame(filtered_data[feature_column].tolist(), index=filtered_data.index)
+            feature_df.columns = [f"feature_{i}" for i in range(max_len)]
+            filtered_data = pd.concat([filtered_data.drop(columns=[feature_column]), feature_df], axis=1)
+
+        feature_columns = filtered_data.select_dtypes(include=[np.number]).columns.tolist()
+        feature_columns = [col for col in feature_columns if col not in [roi_column, series_column]]
+
+        # Rename duplicates for .mat file export
+        def rename_duplicates(cols):
+            seen = {}
+            new_cols = []
+            for col in cols:
+                if col in seen:
+                    seen[col] += 1
+                    new_cols.append(f"{col}_{seen[col]}")
+                else:
+                    seen[col] = 0
+                    new_cols.append(col)
+            return new_cols
+
+        roi_mapping = {roi: i for i, roi in enumerate(filtered_data["ROI"].unique(), start=1)}
+        filtered_data["ROI_numerical"] = filtered_data["ROI"].map(roi_mapping)
+        filtered_data.columns = [col[:28] for col in filtered_data.columns]  # Truncate for .mat file format
+
+        try:
+            filtered_data = filtered_data.drop(columns=['Unnamed: 0'])
+        except KeyError:
+            pass
+
+        filtered_data.columns = rename_duplicates(filtered_data.columns)
+
+        # Compute ICC
+        results = []
+        for feature in filtered_data.columns:
+            icc_data = filtered_data[[series_column, roi_column, feature]].dropna()
+            icc_data.columns = ['raters', 'targets', 'ratings']
+
             try:
-                filtered_data = filtered_data.drop(columns=['Unnamed: 0'])
-            except KeyError:
-                pass  # No need to handle the error if the column doesn't exist
-
-            filtered_data.columns = rename_duplicates(filtered_data.columns)
-
-            # Compute ICC
-            results = []
-            for feature in filtered_data.columns:
-                icc_data = filtered_data[[series_column, roi_column, feature]].dropna()
-                icc_data.columns = ['raters', 'targets', 'ratings']  # Raters: doses, Targets: ROI, Features: features
+                icc_result = intraclass_corr(data=icc_data, raters='raters', targets='targets', ratings='ratings')
+                icc = icc_result.set_index('Type').at['ICC3k', 'ICC']
                 
-                try:
-                    icc_result = intraclass_corr(data=icc_data, raters='raters', targets='targets', ratings='ratings')
-                    icc = icc_result.set_index('Type').at['ICC3k', 'ICC']
+                results.append({'Feature': feature, 'ICC': icc})
+                
+                '''
+                # Log statistics
+                feature_values = icc_data['ratings']
+                feature_min = feature_values.min()
+                feature_max = feature_values.max()
+                feature_mean = feature_values.mean()
+                feature_std = feature_values.std()
+                feature_range = feature_max - feature_min
 
-                    # Compute MSB and MSE manually
-                    grand_mean = icc_data['ratings'].mean()
-                    mean_per_target = icc_data.groupby('targets')['ratings'].mean()
-                    mean_per_rater = icc_data.groupby('raters')['ratings'].mean()
+                log.write(f"Scanner: {scanner} | Feature: {feature} | Feature Type: {feature_type}\n")
+                log.write(f"Min: {feature_min}, Max: {feature_max}, Mean: {feature_mean}, Std: {feature_std}, Range: {feature_range}\n")
+                log.write(f"ICC: {icc}\n")
+                log.write("-" * 60 + "\n")
+                '''
+            except Exception as e:
+                results.append({'Feature': feature, 'ICC': np.nan})
+                # log.write(f"Error processing {feature} | Feature Type: {feature_type}: {e}\n")
 
-                    SS_total = ((icc_data['ratings'] - grand_mean) ** 2).sum()
-                    SS_between = ((mean_per_target - grand_mean) ** 2).sum() * len(icc_data['raters'].unique())
-                    SS_error = SS_total - SS_between
+        icc_results_sorted = pd.DataFrame(results).sort_values(by='ICC', ascending=False)
 
-                    df_between = len(icc_data['targets'].unique()) - 1
-                    df_error = len(icc_data) - len(icc_data['targets'].unique())
+        # Define a list of values to be removed
+        unwanted_values = [
+            "SpacingBetweenSlices", "SliceThickness", "ManufacturerModelName", 
+            "Manufacturer", "StudyInstanceUID", "SeriesNumber", 
+            "SeriesDescription", "ROI"
+        ]
 
-                    MSB = SS_between / df_between if df_between > 0 else np.nan
-                    MSE = SS_error / df_error if df_error > 0 else np.nan
+        # Filter out rows that contain unwanted values
+        icc_results_sorted = icc_results_sorted[~icc_results_sorted['Feature'].isin(unwanted_values)]
 
-                    results.append({'Feature': feature, 'ICC': icc, 'MSB': MSB, 'MSE': MSE})
+        # Drop rows that contain NaN values
+        icc_results_sorted = icc_results_sorted.dropna()
 
-                    # Log the statistical summary for each feature
-                    feature_values = icc_data['ratings']
-                    feature_min = feature_values.min()
-                    feature_max = feature_values.max()
-                    feature_mean = feature_values.mean()
-                    feature_std = feature_values.std()
-                    feature_range = feature_max - feature_min
+        # Save the results
+        base_filename = os.path.basename(csv_path).replace('.csv', '')
+        icc_results_sorted.to_csv(os.path.join(scanner_dir, f'icc_dose_{base_filename}_{scanner}.csv'), index=False)
 
-                    log.write(f"Scanner: {scanner} | Feature: {feature} | Feature Type: {feature_type}\n")
-                    log.write(f"Min: {feature_min}, Max: {feature_max}, Mean: {feature_mean}, Std: {feature_std}, Range: {feature_range}\n")
-                    log.write(f"ICC: {icc}, MSB: {MSB}, MSE: {MSE}\n")
-                    log.write("-" * 60 + "\n")
+        icc_results_per_scanner[(csv_path, scanner)] = icc_results_sorted
+        summary.append({'Scanner': scanner, 'Num_Cases': num_cases, 'Num_Features': len(icc_results_sorted)})
 
-                except Exception as e:
-                    results.append({'Feature': feature, 'ICC': np.nan, 'MSB': np.nan, 'MSE': np.nan})
-                    log.write(f"Error processing {feature} | Feature Type: {feature_type}: {e}\n")
-
-            icc_results_sorted = pd.DataFrame(results).sort_values(by='ICC', ascending=False)
-            icc_results_per_scanner[(csv_path, scanner)] = icc_results_sorted
-            summary.append({'Scanner': scanner, 'Num_Cases': num_cases, 'Num_Features': len(icc_results_sorted)})
 
     return summary, icc_results_per_scanner
-
 
 def main():
     files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
@@ -145,15 +149,12 @@ def main():
 
     for path in csv_paths:
         summaries, icc_results_per_scanner = calculate_icc(path)
-        
+
         # Save final summary
         summary_df = pd.DataFrame(summaries)
         summary_df.to_csv(f'{output_dir}/icc_summary_{os.path.basename(path)}', index=False)
 
-        # Save ICC results 
-        for (csv_path, scanner), icc_results_sorted in icc_results_per_scanner.items():
-            base_filename = os.path.basename(csv_path).replace('.csv', '') 
-            icc_results_sorted.to_csv(f'{output_dir}/icc_dose_{base_filename}_{scanner}.csv', index=False)
-
 if __name__ == '__main__':
     main()
+
+
