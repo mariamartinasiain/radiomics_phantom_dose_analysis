@@ -52,5 +52,3 @@ nan_icc_entries, negative_icc_entries = check_nan_and_negative_icc(report_file_p
 save_results_to_file(nan_icc_entries, negative_icc_entries, output_dir)
 
 
-
-
