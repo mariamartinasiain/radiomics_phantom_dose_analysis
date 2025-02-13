@@ -1,7 +1,6 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 from datetime import datetime
 import numpy as np
@@ -180,20 +179,13 @@ def perform_pca(features):
     explained_variance = pca.explained_variance_ratio_ * 100  # Convertir en pourcentage
     return principal_components, explained_variance
 
-def perform_tsne(features):
-    features_array = features_to_numpy(features)
-    features_scaled = StandardScaler().fit_transform(features_array)
-    perplexity = min(40, len(features_scaled) - 1)
-    tsne_results = TSNE(n_components=2, verbose=1, perplexity=perplexity, n_iter=300).fit_transform(features_scaled)
-    return tsne_results
-
 def perform_umap(features):
     features_array = features_to_numpy(features)
     features_scaled = features_array
     # features_scaled = StandardScaler().fit_transform(features_array)
     umap_reducer = umap.UMAP(n_neighbors=25, min_dist=0.5, n_components=2, random_state=42)
-    tsne_results = umap_reducer.fit_transform(features_scaled)
-    return tsne_results
+    umap_results = umap_reducer.fit_transform(features_scaled)
+    return umap_results
 
 def save_silhouette_score(scores_filename, datasetname, color_mode, mg_filter, silhouette_avg):
     if not os.path.exists(scores_filename):
@@ -223,6 +215,10 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
     labels = labels.replace('metastatsis', 'metastasis')
     labels = labels.replace('Siemens Healthineers', 'SIEMENS')
     labels = labels.replace('Philips', 'PHILIPS')
+    # labels = labels.replace('TOSHIBA', 'Canon')
+    
+    # For all labels only capitalize the first letter
+    labels = labels.str.capitalize() 
 
     #silhouette_avg = silhouette_score(features, labels)
     #print(f'Silhouette Score on the whole feature space: {silhouette_avg:.4f}')
@@ -231,9 +227,17 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
     scores_filename = f"{filepath.rsplit('/', 1)[0]}/silhouette_scores_{timestamp}.csv"
     #save_silhouette_score(scores_filename, timestamp, datasetname, color_mode, mg_filter, silhouette_avg)
     
-    unique_labels = labels.unique()
+    if 'roi' in color_mode.lower():
+        unique_labels = sorted(labels.unique())
+    else:
+        unique_labels = sorted(labels.unique())
+        unique_labels = ['Siemens', 'Philips', 'GE Medical Systems', 'Toshiba']
     
-    colors = plt.get_cmap('viridis', len(unique_labels))
+    if 'manufacturer' in color_mode.lower():
+        colors = plt.get_cmap('viridis', len(unique_labels))
+    else:
+        colors = plt.get_cmap('tab10', len(unique_labels))
+
     unique_supp_info = np.unique(supp_info)
     markers = generate_advanced_markers(len(unique_supp_info)+1)
         
@@ -273,8 +277,7 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
 
     # print("Performing umap")
 
-    # tsne_results = perform_tsne(features)
-    tsne_results = perform_umap(features)
+    umap_results = perform_umap(features)
     #marker_dict = {'Siemens Healthineers': 'SIEMENS', 'Philips': 'PHILIPS'}
     
     plt.figure(figsize=(10, 8))
@@ -282,7 +285,7 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
         for j, info in enumerate(unique_supp_info):
             mask = (labels == label) & (supp_info == info)
             marker_props = marker_map[info]
-            plt.scatter(tsne_results[mask, 0], tsne_results[mask, 1], 
+            plt.scatter(umap_results[mask, 0], umap_results[mask, 1], 
                         color=colors(i), 
                         facecolors=colors(i),
                         #marker = marker_dict[]
@@ -296,9 +299,6 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
     for i, label in enumerate(unique_labels):
         plt.scatter([], [], color=colors(i), label=label, s=50)
     plt.title(datasetname, fontsize=32)
-    #plt.title('t-SNE Results', fontsize=18)
-    #plt.xlabel('t-SNE 1')
-    #plt.ylabel('t-SNE 2')
     
     plt.xticks(fontsize=22)
     plt.yticks(fontsize=22)
@@ -307,7 +307,7 @@ def analysis(color_mode='series_desc', mg_filter=None, filepath='../../all_datas
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=3, fontsize=16)
     else:
         print('Legend Skipeed for the paper!')
-        # plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=len(unique_labels), fontsize=16)
+        # plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), ncol=len(unique_labels), fontsize=16)
     plt.tight_layout()
     plt.savefig(f"{datasetname}_{color_mode}_{mg_filter}_{rep_filter}_umap.png")
     
@@ -332,22 +332,21 @@ def silhouette_score_analysis(color_mode='series_desc', mg_filter=None, filepath
     scores_filename = "silhouette_scores.csv"
     save_silhouette_score(scores_filename, datasetname, color_mode, mg_filter, silhouette_avg)
 
-def plot_tsne(ax, X, y, title, colors, markersize=2):
+def plot_umap(ax, X, y, title, colors, markersize=2):
     scatter = ax.scatter(X[:, 0], X[:, 1], c=y, cmap=colors, s=markersize)
     #augmenting title font size
     ax.set_title(title, fontsize=20)
     ax.grid(True, linestyle='--', linewidth=0.5)
     
-    
     return scatter
 
 # Function to plot combined t-SNE results
-def plot_combined_tsne(features_list, labels_list):
+def plot_combined_umap(features_list, labels_list):
     print("Performing t-SNE for all feature sets")
     
     le = LabelEncoder()
     
-    tsne_results_list = [perform_tsne(features) for features in features_list]
+    umap_results_list = [perform_umap(features) for features in features_list]
     #tsne_results_list = [np.random.rand(100,2) for i in range(4)]
     
     encoder_labels = [le.fit_transform(labels) for labels in labels_list]
@@ -367,15 +366,15 @@ def plot_combined_tsne(features_list, labels_list):
     #colors = plt.cm.get_cmap('viridis', len(unique_labels))
     colors = plt.get_cmap('viridis', len(unique_labels))
 
-    scatter1 = plot_tsne(axs[0, 0], tsne_results_list[0], encoder_labels[0], 'Radiomics', colors, markersize=3)
-    scatter2 = plot_tsne(axs[0, 1], tsne_results_list[1], encoder_labels[1], 'SwinUNETR Features', colors, markersize=3)
-    scatter3 = plot_tsne(axs[1, 0], tsne_results_list[2], encoder_labels[2], 'Shallow CNN Features', colors, markersize=3)
-    scatter4 = plot_tsne(axs[1, 1], tsne_results_list[3], encoder_labels[3], 'Contrastive SwinUNETR Features', colors, markersize=3)
+    scatter1 = plot_umap(axs[0, 0], umap_results_list[0], encoder_labels[0], 'Radiomics', colors, markersize=3)
+    scatter2 = plot_umap(axs[0, 1], umap_results_list[1], encoder_labels[1], 'SwinUNETR Features', colors, markersize=3)
+    scatter3 = plot_umap(axs[1, 0], umap_results_list[2], encoder_labels[2], 'Shallow CNN Features', colors, markersize=3)
+    scatter4 = plot_umap(axs[1, 1], umap_results_list[3], encoder_labels[3], 'Contrastive SwinUNETR Features', colors, markersize=3)
     
     # Create a legend below the plots
     handles = [Line2D([0], [0], marker='o', color='w', markerfacecolor=colors(i), markersize=5, label=unique_labels[i]) for i in range(len(unique_labels))]
     fig.legend(handles=handles, loc='upper center', title="Labels", ncol=3, fontsize='x-large')
-    # plt.title('')
+    plt.title('')
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.2, wspace=0.3, hspace=0.3)
     plt.show()
 
@@ -387,7 +386,7 @@ def batch_analysis():
     fsizes = [None]#, -68,700]
 
     files_dir = '/home/reza/radiomics_phantom/final_features/small_roi'
-    # files_dir = '/home/reza/radiomics_phantom/final_features/small_roi_combat'
+    files_dir = '/home/reza/radiomics_phantom/final_features/small_roi_combat'
     features_files = [
                       f'{files_dir}/features_pyradiomics_full.csv',
                       f'{files_dir}/features_oscar_full.csv',
@@ -410,53 +409,5 @@ def batch_analysis():
                     # datasetname = f"{datasetname}@{fs}@"
                     analysis(color_mode, mg_filter, features_file, datasetname,rep_filter=None,data=data,features=features)
 
-def plots_paper():
-    color_mode = 'manufacturer'
-    mg_filter = 10
-    fs = None
-    
-    features_files = ['../../all_dataset_features/pyradiomics_features_full.csv',
-                      '../../all_dataset_features/features_swinunetr_full.csv',
-                      '../../all_dataset_features/features_ocar_full.csv',
-                      '../../all_dataset_features/paper_contrastive_F1_features2.csv']
-                      
-    datasetnames = ['pyradiomics_features', 'swin_deepfeatures', 'features_oscar', 'paper_contrastive__features']
-    
-    features_list = []
-    labels_list = []
-    supp_info_list = []
-    
-    for features_file in features_files:
-        print(f'Loading data from {features_file}')
-        data, features = miniload_data(features_file, fsize=fs)
-        print(f'Loaded {len(features)} features with a size of {len(features.columns)}')
-        
-        print(f'Analyzing {features_file} with color mode {color_mode} and mg filter {mg_filter}')
-        datasetname = datasetnames[features_files.index(features_file)]
-        
-        features, labels, supp_info = load_data(features_file, color_mode, mg_filter=mg_filter, rep_filter=None, self_load=False, data=data, features=features)
-        
-        print(f"Labels head: {labels.head()}")
-        
-        labels = labels.copy()
-        labels = labels.replace('metastatsis', 'metastasis')
-        labels = labels.replace('Siemens Healthineers', 'SIEMENS')
-        
-        features_list.append(features)
-        labels_list.append(labels)
-        supp_info_list.append(supp_info)
-    
-    # Example titles for the four plots
-    titles = ['', '', '', '']
-    # titles = ['Radiomics', 'SwinUNETR Features', 'Shallow CNN Features', 'Contrastive SwinUNETR Features']
-
-    # Output path for the final plot
-    output_path_final_adjusted_margin = "/mnt/data/combined_tsne_plots_final_adjusted_margin_tight.png"
-
-    # Call the function with your data
-    plot_combined_tsne(features_list, labels_list)
-
-
 if __name__ == "__main__":
     batch_analysis()
-    #plots_paper()
