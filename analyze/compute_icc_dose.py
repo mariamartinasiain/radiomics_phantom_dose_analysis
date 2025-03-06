@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from pingouin import intraclass_corr
+from sklearn.preprocessing import StandardScaler
 import warnings
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -29,8 +30,8 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
     summary = []
     icc_results_per_scanner = {}
 
-    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose'
-
+    #output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose'
+    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/six_rois'
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
@@ -58,6 +59,10 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
         feature_columns = filtered_data.select_dtypes(include=[np.number]).columns.tolist()
         feature_columns = [col for col in feature_columns if col not in [roi_column, series_column]]
 
+        # Normalize the features (Z-score normalization)
+        scaler = StandardScaler()
+        filtered_data[feature_columns] = scaler.fit_transform(filtered_data[feature_columns])
+
         # Rename duplicates for .mat file export
         def rename_duplicates(cols):
             seen = {}
@@ -72,7 +77,7 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
             return new_cols
 
         roi_mapping = {roi: i for i, roi in enumerate(filtered_data["ROI"].unique(), start=1)}
-        filtered_data["ROI_numerical"] = filtered_data["ROI"].map(roi_mapping)
+        filtered_data = pd.concat([filtered_data, filtered_data["ROI"].map(roi_mapping).rename("ROI_numerical")], axis=1)
         filtered_data.columns = [col[:28] for col in filtered_data.columns]  # Truncate for .mat file format
 
         try:
@@ -90,27 +95,11 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
 
             try:
                 icc_result = intraclass_corr(data=icc_data, raters='raters', targets='targets', ratings='ratings')
-                icc = icc_result.set_index('Type').at['ICC3k', 'ICC']
-                
+                icc = max(0, icc_result.set_index('Type').at['ICC3k', 'ICC'])  # Clip negative ICC values to zero
                 results.append({'Feature': feature, 'ICC': icc})
-                
-                '''
-                # Log statistics
-                feature_values = icc_data['ratings']
-                feature_min = feature_values.min()
-                feature_max = feature_values.max()
-                feature_mean = feature_values.mean()
-                feature_std = feature_values.std()
-                feature_range = feature_max - feature_min
 
-                log.write(f"Scanner: {scanner} | Feature: {feature} | Feature Type: {feature_type}\n")
-                log.write(f"Min: {feature_min}, Max: {feature_max}, Mean: {feature_mean}, Std: {feature_std}, Range: {feature_range}\n")
-                log.write(f"ICC: {icc}\n")
-                log.write("-" * 60 + "\n")
-                '''
             except Exception as e:
                 results.append({'Feature': feature, 'ICC': np.nan})
-                # log.write(f"Error processing {feature} | Feature Type: {feature_type}: {e}\n")
 
         icc_results_sorted = pd.DataFrame(results).sort_values(by='ICC', ascending=False)
 
@@ -134,17 +123,19 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
         icc_results_per_scanner[(csv_path, scanner)] = icc_results_sorted
         summary.append({'Scanner': scanner, 'Num_Cases': num_cases, 'Num_Features': len(icc_results_sorted)})
 
-
     return summary, icc_results_per_scanner
 
 def main():
-    files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
-    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose'
+    #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    files_dir = '/mnt/nas7/data/maria/final_features'
+    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/six_rois'
+    os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        f'{files_dir}/features_pyradiomics_full.csv',
-        f'{files_dir}/features_cnn_full.csv',
-        f'{files_dir}/features_swinunetr_full.csv',
+        #f'{files_dir}/features_pyradiomics_full.csv',
+        #f'{files_dir}/features_cnn_full.csv',
+        #f'{files_dir}/features_swinunetr_full.csv',
+        f'{files_dir}/features_swinunetr_reversed.csv'
     ]
 
     for path in csv_paths:
@@ -156,5 +147,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
