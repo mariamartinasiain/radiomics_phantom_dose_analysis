@@ -10,6 +10,9 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 # Define all scanners
 scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
 
+# Define all scanners
+scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
+
 def extract_feature_type(csv_path):
     """Extracts feature type from the filename (Radiomics, CNN, or SwinUNETR)."""
     if "pyradiomics" in csv_path.lower():
@@ -26,6 +29,7 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
 
     # Extract scanner and dose from SeriesDescription
     data[['Pos0', 'Pos2']] = data['SeriesDescription'].str.split('_', expand=True)[[0, 2]]
+
 
     summary = []
     icc_results_per_scanner = {}
@@ -75,6 +79,18 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
                     seen[col] = 0
                     new_cols.append(col)
             return new_cols
+        # Rename duplicates for .mat file export
+        def rename_duplicates(cols):
+            seen = {}
+            new_cols = []
+            for col in cols:
+                if col in seen:
+                    seen[col] += 1
+                    new_cols.append(f"{col}_{seen[col]}")
+                else:
+                    seen[col] = 0
+                    new_cols.append(col)
+            return new_cols
 
         roi_mapping = {roi: i for i, roi in enumerate(filtered_data["ROI"].unique(), start=1)}
         filtered_data = pd.concat([filtered_data, filtered_data["ROI"].map(roi_mapping).rename("ROI_numerical")], axis=1)
@@ -85,6 +101,7 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
         except KeyError:
             pass
 
+        filtered_data.columns = rename_duplicates(filtered_data.columns)
         filtered_data.columns = rename_duplicates(filtered_data.columns)
 
         # Compute ICC
@@ -123,6 +140,7 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
         icc_results_per_scanner[(csv_path, scanner)] = icc_results_sorted
         summary.append({'Scanner': scanner, 'Num_Cases': num_cases, 'Num_Features': len(icc_results_sorted)})
 
+
     return summary, icc_results_per_scanner
 
 def main():
@@ -140,6 +158,7 @@ def main():
 
     for path in csv_paths:
         summaries, icc_results_per_scanner = calculate_icc(path)
+
 
         # Save final summary
         summary_df = pd.DataFrame(summaries)

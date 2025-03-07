@@ -162,6 +162,7 @@ def main():
             
             icc_data = load_data(file_path)
             icc_data = icc_data[icc_data['Feature'] != 'ROI_numerical']
+            icc_data = icc_data[icc_data['Feature'] != 'ROI_numerical']
             all_data[scanner][method] = icc_data
 
     for scanner in scanners:
