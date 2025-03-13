@@ -38,7 +38,7 @@ def load_data(filepath, one_hot=True):
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription',
                                   'ROI', 'ManufacturerModelName', 'Manufacturer',
                                   'SliceThickness', 'SpacingBetweenSlices', 'Scanners', 
-                                  'ROI_Scanner_Pair', 'Dose'], errors='ignore')
+                                  'ROI_Scanner_Pair', 'Dose','FileName'], errors='ignore')
 
     if 'deepfeatures' in data.columns:
         features = features['deepfeatures'].apply(eval).apply(pd.Series)
@@ -258,19 +258,19 @@ def plot_accuracy_loss(history):
 def main():
     files_dir = '/mnt/nas7/data/maria/final_features'
     #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
-    output_dir = '/mnt/nas7/data/maria/final_features/dose_classification'
-    #output_dir = '/mnt/nas7/data/maria/final_features/dose_classification/small_roi'
+    output_dir = '/mnt/nas7/data/maria/final_features/dose_classification/six_rois'
+    #output_dir = '/mnt/nas7/data/maria/final_features/dose_classification/four_rois'
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        f'{files_dir}/features_pyradiomics_full.csv',
-        f'{files_dir}/features_cnn_full.csv',
-        f'{files_dir}/features_swinunetr_full.csv',
-        f'{files_dir}/features_swinunetr2_reversed.csv'
+        #f'{files_dir}/features_pyradiomics_full.csv',
+        #f'{files_dir}/features_cnn_full.csv',
+        #f'{files_dir}/features_swinunetr_full.csv',
+        f'{files_dir}/features_ct-fm_full.csv'
     ]
 
     for path in csv_paths:
-        run_cross_validation(path, classifier_type='knn', output_dir=output_dir) 
+        run_cross_validation(path, classifier_type='mlp', output_dir=output_dir) 
 
 
 if __name__ == '__main__':

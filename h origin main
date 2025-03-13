@@ -1,0 +1,31 @@
+[33mcommit 8ff2bae8a60e2e523448ddc88e18edeffb45969f[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: Maria Martin <mariamartinasiain@gmail.com>
+Date:   Thu Mar 6 18:01:37 2025 +0000
+
+    Remove large file and update .gitignore
+
+ .gitignore            |   1 [32m+[m
+ reversed_features.csv | Bin [31m631960150[m -> [32m0[m bytes
+ 2 files changed, 1 insertion(+)
+
+[33mcommit fb03f1ca11bdb51f125ade076c74c1d86324c2db[m
+Author: Maria Martin <mariamartinasiain@gmail.com>
+Date:   Thu Mar 6 17:57:57 2025 +0000
+
+    dose impact analysis
+
+ analyze/CT-FM.py                 | 155 [32m++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ analyze/analyze_images.py        |  29 [32m+++++++++++[m
+ analyze/cc_boxplot_dose.py       | 169 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++[m[31m---------[m
+ analyze/compute_icc_dose.py      |  46 [32m+++++++[m[31m----------[m
+ analyze/dose_classification.py   | 277 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ analyze/dose_regression.py       | 206 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ analyze/negative_values.py       |  49 [32m+++++++++++[m[31m-------[m
+ analyze/report_invalid_values.py |  90 [32m+++++++++++++++++++++++[m[31m----------[m
+ analyze/reverse_flatten.py       |  27 [32m++++++++++[m
+ analyze/roi_classification.py    | 222 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ analyze/umap_complete.py         | 203 [32m++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ analyze/umap_dose.py             |  91 [32m+++++++++++++++++++++++[m[31m----------[m
+ analyze/umap_metrics.py          | 163 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ reversed_features.csv            | Bin [31m0[m -> [32m631960150[m bytes
+ 14 files changed, 1605 insertions(+), 122 deletions(-)

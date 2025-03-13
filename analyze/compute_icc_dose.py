@@ -10,9 +10,6 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 # Define all scanners
 scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
 
-# Define all scanners
-scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
-
 def extract_feature_type(csv_path):
     """Extracts feature type from the filename (Radiomics, CNN, or SwinUNETR)."""
     if "pyradiomics" in csv_path.lower():
@@ -34,8 +31,8 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
     summary = []
     icc_results_per_scanner = {}
 
-    #output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose'
-    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/six_rois'
+    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/four_rois'
+    #output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/six_rois'
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
@@ -102,7 +99,6 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
             pass
 
         filtered_data.columns = rename_duplicates(filtered_data.columns)
-        filtered_data.columns = rename_duplicates(filtered_data.columns)
 
         # Compute ICC
         results = []
@@ -144,16 +140,17 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
     return summary, icc_results_per_scanner
 
 def main():
-    #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
-    files_dir = '/mnt/nas7/data/maria/final_features'
-    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/six_rois'
+    files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    #files_dir = '/mnt/nas7/data/maria/final_features'
+    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/four_rois'
+    #output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/six_rois'
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
         #f'{files_dir}/features_pyradiomics_full.csv',
         #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
-        f'{files_dir}/features_swinunetr_reversed.csv'
+        f'{files_dir}/features_swinunetr_full.csv',
+        #f'{files_dir}/features_ct-fm_full.csv'
     ]
 
     for path in csv_paths:
@@ -166,6 +163,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-

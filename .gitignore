@@ -24,6 +24,7 @@ train_configurations/*
 final_features/*
 *.json
 *.yml
+*.csv
 checkpoints/*
 # Distribution / packaging
 .Python

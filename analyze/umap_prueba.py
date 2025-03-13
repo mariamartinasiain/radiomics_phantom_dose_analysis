@@ -75,56 +75,38 @@ def features_to_numpy(features):
         features_array[i] = row
     return features_array
 
-def perform_umap(features):
+def perform_umap(features, n_neighbors=15, min_dist=0.5):
     """Performs UMAP dimensionality reduction."""
     features_array = features_to_numpy(features)  # Assuming you have a function that converts features to numpy
     features_scaled = StandardScaler().fit_transform(features_array)
-    umap_reducer = umap.UMAP(n_neighbors=20, min_dist=0.5, n_components=2, random_state=24)
+    umap_reducer = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, n_components=2, random_state=24)
     umap_results = umap_reducer.fit_transform(features_scaled)
     print(f'Number of samples being plotted: {umap_results.shape[0]}')
     return umap_results
 
-def plot_results(features, labels, color_mode, output_dir, filename_suffix=""):
+def plot_results(features, labels, color_mode, output_dir, n_neighbors, min_dist, filename_suffix=""):
     """Plots the UMAP results with color coding based on ROI, Manufacturer, and Dose."""
     base_filename = f"{output_dir}/{filename_suffix}"
 
     # Perform UMAP
-    umap_results = perform_umap(features)
+    umap_results = perform_umap(features, n_neighbors, min_dist)
 
     # Determine unique labels and assign colors
     unique_labels = sorted(labels.unique())
     
-    if 'roi' in color_mode.lower():
-        colors = plt.get_cmap('viridis', len(unique_labels))
-    elif 'manufacturer' in color_mode.lower():
-        colors = plt.get_cmap('tab10', len(unique_labels))
-    else:
-        colors = plt.get_cmap('coolwarm', len(unique_labels))
 
-    marker_size = 10
-    if 'dose' in color_mode.lower():  # If 'Dose' is the color mode, we use continuous color mapping
-        plt.figure(figsize=(10, 6))
-        norm = plt.Normalize(vmin=labels.min(), vmax=labels.max())  
-        scatter = plt.scatter(umap_results[:, 0], umap_results[:, 1], c=labels, cmap='coolwarm', s=marker_size, alpha=0.5, norm=norm)
-        cbar = plt.colorbar(scatter)  # Add colorbar
-        cbar.set_label("Dose (mGy)")  
-    else:
-        plt.figure(figsize=(8, 6))
-        for i, label in enumerate(unique_labels):
-            mask = labels == label
-            plt.scatter(umap_results[mask, 0], umap_results[mask, 1], 
-                        color=colors(i), s=marker_size, label=label, alpha=0.5)
+    colors = plt.get_cmap('viridis', len(unique_labels))
+    marker_size = 15
+    plt.figure(figsize=(8, 6))
+    for i, label in enumerate(unique_labels):
+        mask = labels == label
+        plt.scatter(umap_results[mask, 0], umap_results[mask, 1], 
+                    color=colors(i), s=marker_size, label=label, alpha=0.5)
 
     # Capitalization logic for title:
-    if 'roi' in color_mode.lower():
-        formatted_color_mode = color_mode.upper()  # All capital letters for ROI
-        plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=4)
-    elif 'manufacturer' in color_mode.lower():
-        formatted_color_mode = color_mode.capitalize()  # Capitalize the first letter for Manufacturer
-        plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=4)
-    else:
-        formatted_color_mode = color_mode.capitalize()  # Keep it as is (Dose)
-        plt.legend()
+    formatted_color_mode = color_mode.upper()  # All capital letters for ROI
+    plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=4)
+
 
     if filename_suffix == 'pyradiomics':
         formatted_suffix = filename_suffix.capitalize()
@@ -139,13 +121,16 @@ def plot_results(features, labels, color_mode, output_dir, filename_suffix=""):
 
     plt.grid(True)
 
-    # Save the figure with color_mode and filename_suffix in the filename
-    plt.savefig(f"{base_filename}_{color_mode}_umap.png")
-
+    # Save the figure with color_mode, filename_suffix, n_neighbors, and min_dist in the filename
+    plt.savefig(f"{base_filename}_{n_neighbors}_{min_dist}_umap.png")
 
 def analysis(csv_paths, output_dir):
     """Main analysis function that loads data, processes it, and generates plots."""
     print("Analyzing data...")
+
+    # Define the values for n_neighbors and min_dist
+    neighbor_values = [20]
+    dist_values = [0.5]
 
     for csv_path in csv_paths:
         print(f"Processing {csv_path}...")
@@ -166,27 +151,22 @@ def analysis(csv_paths, output_dir):
         # Extract method name from the file name (e.g., 'features_pyradiomics_full.csv' -> 'pyradiomics')
         method_name = os.path.basename(csv_path).split('_')[1]
 
-        # Generate plots for ROI, Manufacturer, and Dose
-        for color_mode in ['ROI', 'Manufacturer', 'Dose']:
-            plot_results(features, data[color_mode], color_mode, output_dir, filename_suffix=method_name)
+        # Generate plots for ROI, Manufacturer, and Dose with different combinations of n_neighbors and min_dist
+        for n_neighbors in neighbor_values:
+            for min_dist in dist_values:
+                for color_mode in ['ROI']:
+                    plot_results(features, data[color_mode], color_mode, output_dir, n_neighbors, min_dist, filename_suffix=method_name)
 
 if __name__ == "__main__":
     # Define file paths
     files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
-    #files_dir = '/mnt/nas7/data/maria/final_features'
-    output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/four_rois'
-    #output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/six_rois'
+    output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/four_rois/prueba'
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
+        f'{files_dir}/features_swinunetr_full.csv',
         #f'{files_dir}/features_ct-fm_full.csv'
     ]
     
     # Run the analysis
     analysis(csv_paths, output_dir)
-
-
-

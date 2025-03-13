@@ -196,7 +196,7 @@ def main():
         #f'{files_dir}/features_pyradiomics_full.csv',
         #f'{files_dir}/features_cnn_full.csv',
         #f'{files_dir}/features_swinunetr_full.csv',
-        f'{files_dir}/features_swinunetr2_reversed.csv'
+        f'{files_dir}/features_ct-fm_full.csv'
     ]
 
     for path in csv_paths:

@@ -165,13 +165,6 @@ def run_cross_validation(data_path, output_dir, classifier_type='mlp'):
         train_duration = time.time() - start_train_time  # Tiempo total de entrenamiento
         print(f"Training time for Dose {train_dose}: {train_duration:.2f}s")
     
-
-    # Save the results matrix to a CSV file
-    results_matrix_df = pd.DataFrame(results_matrix, index=doses, columns=doses)
-    results_matrix_path = os.path.join(output_dir, f'results_matrix_{method_name}_{classifier_type}.csv')
-    results_matrix_df.to_csv(results_matrix_path)
-    print(f'Results matrix saved to: {results_matrix_path}')
-    
     # Save detailed results to a CSV file
     detailed_results_df = pd.DataFrame(detailed_results)
     detailed_results_path = os.path.join(output_dir, f'detailed_results_{method_name}_{classifier_type}.csv')
@@ -202,17 +195,17 @@ def plot_heatmap(matrix, doses, output_dir, method_name, classifier_type='mlp'):
 
 
 def main():
-    files_dir = '/mnt/nas7/data/maria/final_features'
-    #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
-    output_dir = '/mnt/nas7/data/maria/final_features/roi_classification'
-    #output_dir = '/mnt/nas7/data/maria/final_features/roi_classification/small_roi'
+    #files_dir = '/mnt/nas7/data/maria/final_features'
+    files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    #output_dir = '/mnt/nas7/data/maria/final_features/roi_classification'
+    output_dir = '/mnt/nas7/data/maria/final_features/roi_classification/four_rois'
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
         #f'{files_dir}/features_pyradiomics_full.csv',
         #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
-        f'{files_dir}/features_swinunetr2_reversed.csv'
+        f'{files_dir}/features_swinunetr_full.csv',
+        #f'{files_dir}/features_ct-fm_full.csv'
     ]
 
     for path in csv_paths:

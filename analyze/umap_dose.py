@@ -147,9 +147,10 @@ def main():
     output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose'
 
     csv_path = [
-        f'{files_dir}/features_pyradiomics_full.csv',
-        f'{files_dir}/features_cnn_full.csv',
-        f'{files_dir}/features_swinunetr_full.csv',
+        #f'{files_dir}/features_pyradiomics_full.csv',
+        #f'{files_dir}/features_cnn_full.csv',
+        #f'{files_dir}/features_swinunetr_full.csv',
+        f'{files_dir}/features_ct-fm_full.csv'
     ]
 
     for path in csv_path:

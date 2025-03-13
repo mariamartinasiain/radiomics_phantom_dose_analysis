@@ -8,34 +8,18 @@ from collections import defaultdict
 from monai.transforms import Compose, LoadImage, EnsureType, Orientation, ScaleIntensityRange, CropForeground
 from lighter_zoo import SegResEncoder
 
-
 # ROI centers (fixed after registration)
 centersrois = {
     # Adjusted coordinates (after crop)
-    'cyst1': [260, 214, 145],  # (324 - 13, 334 - 120, 158 - 64)
-    'cyst2': [125, 158, 172],  # (189 - 13, 278 - 120, 185 - 64)
-    'hemangioma': [145, 195, 146],  # (209 - 13, 315 - 120, 159 - 64)
-    'metastasis': [47, 151, 127],  # (111 - 13, 271 - 120, 140 - 64)
-    'normal1': [97, 167, 136],  # (161 - 13, 287 - 120, 149 - 64)
-    'normal2': [90, 109, 156]  # (154 - 13, 229 - 120, 169 - 64)
+    'cyst1': [260, 214, 145],  
+    'cyst2': [125, 158, 172], 
+    'hemangioma': [145, 195, 146],  
+    'metastasis': [47, 151, 127],  
+    'normal1': [97, 167, 136],  
+    'normal2': [90, 109, 156] 
 }
 
 patch_size = np.array([64, 64, 32])  # Patch dimensions
-
-# Dictionary to map ManufacturerModelName to Manufacturer
-manufacturer_map = {
-    "SOMATOM X cite": "Siemens Healthineers",
-    "iCT 256": "Philips",
-    "Aquilion Prime SP": "TOSHIBA",
-    "SOMATOM Definition Flash": "SIEMENS",
-    "SOMATOM Definition Edge": "SIEMENS",
-    "Revolution EVO": "GE MEDICAL SYSTEMS",
-    "Revolution Apex": "GE MEDICAL SYSTEMS",
-    "BrightSpeed S": "GE MEDICAL SYSTEMS",
-    "Brilliance 64": "Philips",
-    "SOMATOM Edge Plus": "SIEMENS",
-    "Aquilion": "TOSHIBA"
-}
 
 # Pre-trained feature extraction model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,8 +49,6 @@ def extract_patch(image, center, patch_size=(64, 64, 32)):
     """Extracts a 3D patch centered at 'center' with 'patch_size'."""
     # Ensure patch_size is a tuple of three dimensions (depth, height, width)
     assert len(patch_size) == 3
-    
-    # Calculate half size of the patch in each dimension
     half_size = [size // 2 for size in patch_size]
 
     # Create slices for each dimension
@@ -75,7 +57,7 @@ def extract_patch(image, center, patch_size=(64, 64, 32)):
         for i in range(3)
     )
 
-    # Extract the patch using the calculated slices
+    # Extract the patch
     patch = image[:, slices[0], slices[1], slices[2]]
 
     # If the patch dimensions are smaller than expected (due to the image boundary), 
@@ -89,39 +71,50 @@ def extract_patch(image, center, patch_size=(64, 64, 32)):
 
     return patch
 
-def extract_metadata(filename):
-    """Extracts SeriesDescription and ManufacturerModelName from filename."""
-    parts = filename.split("_")
-    scanner_id = parts[0]  # A1
-    manufacturer_model_name = " ".join(parts[3:6])  # SOMATOM_Definition_Edge
-    dose_info = "_".join(parts[-4:-2])  # Harmonized_14mGy_IR
-    key = f"{scanner_id}_{dose_info}"
-    scanner_count[key] += 1
-    series_description = f"{scanner_id}_{dose_info} - #{scanner_count[key]}"
+def load_metadata(csv_filename):
+    """Loads the metadata CSV and returns a dictionary of folder names to metadata."""
+    metadata_dict = {}
+    with open(csv_filename, mode='r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            folder_name = row["Folder"]
+            metadata_dict[folder_name] = {
+                "SeriesDescription": row["SeriesDescription"],
+                "ManufacturerModelName": row["ManufacturerModelName"],
+                "Manufacturer": row["Manufacturer"],
+                "SliceThickness": row["SliceThickness"]
+            }
+    return metadata_dict
 
-    return {"SeriesDescription": series_description, "ManufacturerModelName": manufacturer_model_name}
-
-def run_inference(nifti_dir, output_dir):
+def run_inference(nifti_dir, output_dir, metadata_dict):
     nifti_files = [f for f in os.listdir(nifti_dir) if f.endswith(".nii.gz")]
     os.makedirs(output_dir, exist_ok=True)
     patches_dir = os.path.join(output_dir, "patches")
     os.makedirs(patches_dir, exist_ok=True)
-    output_csv = os.path.join(output_dir, "features_ct_fm_full.csv")
+    output_csv = os.path.join(output_dir, "features_ct-fm_full.csv")
     
     with open(output_csv, "w", newline="") as csvfile:
-        fieldnames = ["FileName", "ROI", "deepfeatures", "SeriesDescription", "ManufacturerModelName", "Manufacturer"]
+        fieldnames = ["FileName", "ROI", "deepfeatures", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         
         for file in tqdm(nifti_files, desc="Processing CT scans"):
             file_path = os.path.join(nifti_dir, file)
             image = preprocess(file_path)
-       
-            metadata = extract_metadata(file)
-            series_description = metadata["SeriesDescription"]
-            manufacturer_model_name = metadata["ManufacturerModelName"]
-            # Get manufacturer from the model name (using the mapping)
-            manufacturer = manufacturer_map.get(manufacturer_model_name, "Unknown")  # Default to "Unknown" if not found
+            
+            file_name = file.replace(".nii.gz", "")
+
+            if file_name in metadata_dict:
+                metadata = metadata_dict[file_name]
+                series_description = metadata["SeriesDescription"]
+                manufacturer_model_name = metadata["ManufacturerModelName"]
+                manufacturer = metadata["Manufacturer"]
+                slicethickness = metadata["SliceThickness"]
+            else:
+                series_description = "Unknown"
+                manufacturer_model_name = "Unknown"
+                manufacturer = "Unknown"
+                slicethickness = "Unknown"
 
             for roi_label, center in centersrois.items():
                 patch_center = np.array(center)  # Original ROI center
@@ -129,13 +122,10 @@ def run_inference(nifti_dir, output_dir):
                 patch = extract_patch(image, patch_center)
 
                 with torch.no_grad():
-
                     patch = patch.to('cuda')    # Move the tensor to the default GPU
-
                     output = model(patch.unsqueeze(0))[-1]
                     feature_vector = torch.nn.functional.adaptive_avg_pool3d(output, 1).squeeze()
                     feature_vector = feature_vector.cpu().numpy()  # Convert tensor to numpy array
-                    #formatted_feature_vector = "[" + ", ".join([f"{x:.4f}" for x in feature_vector]) + "]"
                     formatted_feature_vector = "[" + ", ".join([str(x) for x in feature_vector]) + "]"
                 
                 writer.writerow({
@@ -144,7 +134,8 @@ def run_inference(nifti_dir, output_dir):
                     "deepfeatures": formatted_feature_vector,
                     "SeriesDescription": series_description,
                     "ManufacturerModelName": manufacturer_model_name,
-                    "Manufacturer": manufacturer
+                    "Manufacturer": manufacturer,
+                    "SliceThickness": slicethickness
                 })
 
     print("✅ Feature extraction and patch saving completed!")
@@ -152,4 +143,8 @@ def run_inference(nifti_dir, output_dir):
 if __name__ == "__main__":
     nifti_dir = "/mnt/nas7/data/reza/registered_dataset_all_doses"
     output_dir = "/mnt/nas7/data/maria/final_features/ct-fm"
-    run_inference(nifti_dir, output_dir)
+    metadata_csv = "/mnt/nas7/data/maria/final_features/ct-fm/dicom_metadata/dicom_metadata.csv"
+    
+    metadata_dict = load_metadata(metadata_csv)
+    run_inference(nifti_dir, output_dir, metadata_dict)
+
