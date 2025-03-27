@@ -8,6 +8,7 @@ from collections import defaultdict
 from monai.transforms import Compose, LoadImage, EnsureType, Orientation, ScaleIntensityRange, CropForeground
 from lighter_zoo import SegResEncoder
 
+
 # ROI centers (fixed after registration)
 centersrois = {
     # Adjusted coordinates (after crop)

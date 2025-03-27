@@ -7,6 +7,7 @@ import dcmstack
 import pydicom
 import pydicom_seg
 import traceback
+import logging
 
 
 from qa4iqi_extraction.constants import (
@@ -22,11 +23,13 @@ from qa4iqi_extraction.constants import (
     SLICE_SPACING_FIELD,
 )
 
+logger = logging.getLogger()
 
 def convert_to_nifti(dicom_image_mask, nifti_dir):
     print("Convert to nifti DEUX")
     output_folder_image = os.path.join(nifti_dir, FOLDER_NAME_IMAGE)
     output_folder_rois = os.path.join(nifti_dir, FOLDER_NAME_ROIS)
+
     output_file_seg_prefix = "segmentation"
     output_file_seg_suffix = ".nii.gz"
 
@@ -35,6 +38,9 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
     os.makedirs(output_folder_rois, exist_ok=True)
     print("output_folder_rois", output_folder_rois)
     print("output folder image", output_folder_image)
+
+    logger.debug(f"dicom_image_mask structure: {dicom_image_mask}")
+
 
     dicom_image_folder = dicom_image_mask[FIELD_NAME_IMAGE]
     dicom_seg_file = dicom_image_mask[FIELD_NAME_SEG]
@@ -151,6 +157,7 @@ def convert_to_nifti(dicom_image_mask, nifti_dir):
 
     # JSON update
     json_filename = os.path.join(nifti_dir, "dataset_info2.json")
+
     if os.path.exists(json_filename):
         with open(json_filename, 'r') as json_file:
             json_data = json.load(json_file)

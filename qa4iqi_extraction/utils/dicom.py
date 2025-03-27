@@ -20,7 +20,9 @@ def identify_images_rois(folder):
     logger.info("Identifying Image & ROI pairs...")
 
     # Check if map is already available
-    map_file_path = f"{folder}/fstudies_map.json"
+    #map_file_path = f"{folder}/fstudies_map.json"
+    map_file_path = '/mnt/nas7/data/maria/final_features/pyradiomics_extraction/fstudies_map.json'
+
 
     if os.path.exists(map_file_path):
         logger.info("Existing mapping found!")
@@ -30,8 +32,6 @@ def identify_images_rois(folder):
 
     series_folders = [root for root, _, _ in os.walk(folder)]
     
-
-
     study_folders_map = {}
 
     # Read one file from each folder to identify Image -> ROI pairs
@@ -51,7 +51,8 @@ def identify_images_rois(folder):
         # Check if it's the image or the ROIs
         study_uid = ds.StudyInstanceUID
         modality = ds.Modality
-        #print("modality", modality)
+        print("modality", modality)
+        logger.debug(f"Modality: {modality}")
 
         if study_uid not in study_folders_map:
             study_folders_map[study_uid] = {}
@@ -67,5 +68,8 @@ def identify_images_rois(folder):
 
     with open(map_file_path, "w") as map_file:
         json.dump(study_folders_map, map_file)
+
+    logger.debug(f"dicom_folders_map structure: {study_folders_map}")
+
 
     return study_folders_map

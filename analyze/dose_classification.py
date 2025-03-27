@@ -263,9 +263,9 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        #f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
+        f'{files_dir}/features_pyradiomics_full.csv',
+        f'{files_dir}/features_cnn_full.csv',
+        f'{files_dir}/features_swinunetr_full.csv',
         f'{files_dir}/features_ct-fm_full.csv'
     ]
 

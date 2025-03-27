@@ -34,6 +34,7 @@ def run_feature_extraction(dicom_folders_map):
     for study_uid, dicom_image_mask in tqdm(
         dicom_folders_map.items(), desc="Processing all DICOM studies"
     ):
+        logger.debug(f"dicom_image_mask structure: {dicom_image_mask}")
         with tempfile.TemporaryDirectory(prefix=study_uid) as tmp_dir:
             dirr = "./"
             try : 

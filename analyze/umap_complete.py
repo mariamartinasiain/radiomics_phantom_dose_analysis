@@ -40,6 +40,39 @@ def load_data(filepath):
     """Loads data and converts deep features into numerical format."""
     data = pd.read_csv(filepath)
 
+    '''
+    data['Dose'] = data['SeriesDescription'].apply(extract_mg_value)
+
+    # Filter the data for Dose = 10 mGy
+    data_filtered = data[data['Dose'] == 10]
+
+    feature_column='deepfeatures'
+
+    if feature_column in data_filtered.columns and data_filtered[feature_column].dtype == 'object':
+        data_filtered[feature_column] = data_filtered[feature_column].apply(lambda x: np.fromstring(x.strip("[]"), sep=','))
+        max_len = data_filtered[feature_column].apply(len).max()
+        feature_df = pd.DataFrame(data_filtered[feature_column].tolist(), index=data_filtered.index)
+        feature_df.columns = [f"feature_{i}" for i in range(max_len)]
+        data_filtered = pd.concat([data_filtered.drop(columns=[feature_column]), feature_df], axis=1)
+
+    features = data_filtered.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 
+                                'ROI', 'ManufacturerModelName', 'Manufacturer', 
+                                'SliceThickness', 'SpacingBetweenSlices', 'FileName',
+                                'StudyID', 'StudyDescription'], errors='ignore')
+
+    # Convert string representation of lists into actual lists
+    if features.columns[0] == 'deepfeatures':
+        # Clean null bytes before eval
+        features['deepfeatures'] = features['deepfeatures'].astype(str).str.replace('\x00', '', regex=False)
+        try:
+            features = features['deepfeatures'].apply(eval).apply(pd.Series)
+        except SyntaxError as e:
+            print(f"Error processing {filepath}: {e}")
+            raise
+
+    return data_filtered, features
+    '''
+
     feature_column='deepfeatures'
 
     if feature_column in data.columns and data[feature_column].dtype == 'object':
@@ -51,7 +84,8 @@ def load_data(filepath):
 
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 
                                 'ROI', 'ManufacturerModelName', 'Manufacturer', 
-                                'SliceThickness', 'SpacingBetweenSlices', 'FileName'], errors='ignore')
+                                'SliceThickness', 'SpacingBetweenSlices', 'FileName',
+                                'StudyID', 'StudyDescription'], errors='ignore')
 
     # Convert string representation of lists into actual lists
     if features.columns[0] == 'deepfeatures':
@@ -64,6 +98,7 @@ def load_data(filepath):
             raise
 
     return data, features
+
 
 def features_to_numpy(features):
     """Converts features into a NumPy array for UMAP."""
@@ -140,7 +175,7 @@ def plot_results(features, labels, color_mode, output_dir, filename_suffix=""):
     plt.grid(True)
 
     # Save the figure with color_mode and filename_suffix in the filename
-    plt.savefig(f"{base_filename}_{color_mode}_umap.png")
+    plt.savefig(f"{base_filename}_{color_mode}_umap_complete.png")
 
 
 def analysis(csv_paths, output_dir):
@@ -170,19 +205,25 @@ def analysis(csv_paths, output_dir):
         for color_mode in ['ROI', 'Manufacturer', 'Dose']:
             plot_results(features, data[color_mode], color_mode, output_dir, filename_suffix=method_name)
 
+
 if __name__ == "__main__":
     # Define file paths
-    files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
-    #files_dir = '/mnt/nas7/data/maria/final_features'
-    output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/four_rois'
-    #output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/six_rois'
+    #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
+    files_dir = '/mnt/nas7/data/maria/final_features'
+    #output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/four_rois'
+    output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/six_rois'
+    #output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/prueba'
+
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
         f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
-        #f'{files_dir}/features_ct-fm_full.csv'
+        f'{files_dir}/features_cnn_full.csv',
+        f'{files_dir}/features_swinunetr_full.csv',
+        #f'{files_dir}/features_ct-fm_full.csv',
+        #f'{files_dir}/features_cnn_complete_updated.csv',
+        #'/home/reza/radiomics_phantom/final_features_doses/features_swin.csv',
+        #'/home/reza/radiomics_phantom/final_features_doses/features_pyradiomics.csv'
     ]
     
     # Run the analysis

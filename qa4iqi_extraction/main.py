@@ -1,7 +1,7 @@
 import os
 import logging
 import sys
-sys.path.append('/home/reza/radiomics_phantom/')
+sys.path.append('/home/maria/radiomics_phantom_copy/')
 
 from dotenv import load_dotenv
 
