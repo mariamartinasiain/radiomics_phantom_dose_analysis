@@ -1,9 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime
 import numpy as np
-from tqdm import tqdm
-from matplotlib.lines import Line2D
 import umap.umap_ as umap
 import os
 from sklearn.preprocessing import StandardScaler
@@ -40,12 +37,13 @@ def load_data(filepath):
     """Loads data and converts deep features into numerical format."""
     data = pd.read_csv(filepath)
 
-    '''
+    data['Scanner'] = data['SeriesDescription'].str.split('_', expand=True)[[0]]
+
     data['Dose'] = data['SeriesDescription'].apply(extract_mg_value)
-
+    '''
     # Filter the data for Dose = 10 mGy
-    data_filtered = data[data['Dose'] == 10]
-
+    data_filtered = data[data['Dose'] == 14]
+    
     feature_column='deepfeatures'
 
     if feature_column in data_filtered.columns and data_filtered[feature_column].dtype == 'object':
@@ -58,7 +56,7 @@ def load_data(filepath):
     features = data_filtered.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 
                                 'ROI', 'ManufacturerModelName', 'Manufacturer', 
                                 'SliceThickness', 'SpacingBetweenSlices', 'FileName',
-                                'StudyID', 'StudyDescription'], errors='ignore')
+                                'StudyID', 'StudyDescription', 'Scanner'], errors='ignore')
 
     # Convert string representation of lists into actual lists
     if features.columns[0] == 'deepfeatures':
@@ -85,7 +83,7 @@ def load_data(filepath):
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription', 
                                 'ROI', 'ManufacturerModelName', 'Manufacturer', 
                                 'SliceThickness', 'SpacingBetweenSlices', 'FileName',
-                                'StudyID', 'StudyDescription'], errors='ignore')
+                                'StudyID', 'StudyDescription', 'Scanner', 'Dose'], errors='ignore')
 
     # Convert string representation of lists into actual lists
     if features.columns[0] == 'deepfeatures':
@@ -98,7 +96,7 @@ def load_data(filepath):
             raise
 
     return data, features
-
+    
 
 def features_to_numpy(features):
     """Converts features into a NumPy array for UMAP."""
@@ -119,7 +117,7 @@ def perform_umap(features):
     print(f'Number of samples being plotted: {umap_results.shape[0]}')
     return umap_results
 
-def plot_results(features, labels, color_mode, output_dir, filename_suffix=""):
+def plot_results(features, labels, data, color_mode, output_dir, filename_suffix=""):
     """Plots the UMAP results with color coding based on ROI, Manufacturer, and Dose."""
     base_filename = f"{output_dir}/{filename_suffix}"
 
@@ -153,7 +151,7 @@ def plot_results(features, labels, color_mode, output_dir, filename_suffix=""):
     # Capitalization logic for title:
     if 'roi' in color_mode.lower():
         formatted_color_mode = color_mode.upper()  # All capital letters for ROI
-        plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=4)
+        plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=6)
     elif 'manufacturer' in color_mode.lower():
         formatted_color_mode = color_mode.capitalize()  # Capitalize the first letter for Manufacturer
         plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=4)
@@ -162,20 +160,48 @@ def plot_results(features, labels, color_mode, output_dir, filename_suffix=""):
         plt.legend()
 
     if filename_suffix == 'pyradiomics':
-        formatted_suffix = filename_suffix.capitalize()
+        formatted_suffix = 'PyRadiomics'
     elif filename_suffix == 'cnn' or filename_suffix == 'ct-fm':
         formatted_suffix = filename_suffix.upper()
     else:
         formatted_suffix = 'SwinUNETR'
 
     # Customize the title based on color_mode and filename_suffix
-    title = f"UMAP Projection {formatted_suffix} - Colored by {formatted_color_mode} (N={umap_results.shape[0]})"
+    #title = f"UMAP Projection {formatted_suffix} - Colored by {formatted_color_mode} (N={umap_results.shape[0]})"
+    title = f"UMAP Projection {formatted_suffix} - Colored by {formatted_color_mode}"
     plt.title(title)
 
     plt.grid(True)
 
     # Save the figure with color_mode and filename_suffix in the filename
-    plt.savefig(f"{base_filename}_{color_mode}_umap_complete.png")
+    plt.savefig(f"{base_filename}_{color_mode}_umap_not_registered_v2.png")
+    
+    umap_df = pd.DataFrame({
+    'UMAP1': umap_results[:, 0],
+    'UMAP2': umap_results[:, 1],
+    'label': labels,
+    'index': features.index
+    })
+    #umap_df.to_csv(f"{output_dir}/umap_resultados.csv", index=False)
+
+    x_min, x_max = 10, 15 
+    y_min, y_max = 5, 10
+
+    sospechosos = umap_df[
+        (umap_df['UMAP1'] > x_min) & (umap_df['UMAP1'] < x_max) &
+        (umap_df['UMAP2'] > y_min) & (umap_df['UMAP2'] < y_max)
+    ]
+
+    #sospechosos.to_csv(f"{output_dir}/umap_sospechosos.csv", index=False)
+
+    # Use index to get corresponding rows from original dataset
+    sospechosos_data = data.loc[sospechosos['index']]
+    sospechosos_filtrados = sospechosos_data[sospechosos_data['ROI'] != 'normal1']
+    #print(sospechosos_filtrados)
+
+    # Save results if needed
+    #sospechosos_data.to_csv(f"{output_dir}/{filename_suffix}_{color_mode}_sospechosos.csv")
+    
 
 
 def analysis(csv_paths, output_dir):
@@ -187,7 +213,7 @@ def analysis(csv_paths, output_dir):
         data, features = load_data(csv_path)
 
         # Extract additional information for coloring
-        data['Dose'] = data['SeriesDescription'].apply(extract_mg_value)
+        #data['Dose'] = data['SeriesDescription'].apply(extract_mg_value)
         data['reconstruction'] = data['SeriesDescription'].apply(extract_reconstruction)
 
         # Normalize label names
@@ -199,31 +225,46 @@ def analysis(csv_paths, output_dir):
                                                              'Ge medical systems': 'GE MEDICAL SYSTEMS'}).astype(str)
 
         # Extract method name from the file name (e.g., 'features_pyradiomics_full.csv' -> 'pyradiomics')
-        method_name = os.path.basename(csv_path).split('_')[1]
+        method_name = os.path.basename(csv_path).split('_')[0]
 
         # Generate plots for ROI, Manufacturer, and Dose
         for color_mode in ['ROI', 'Manufacturer', 'Dose']:
-            plot_results(features, data[color_mode], color_mode, output_dir, filename_suffix=method_name)
+            plot_results(features, data[color_mode], data, color_mode, output_dir, filename_suffix=method_name)
 
 
 if __name__ == "__main__":
     # Define file paths
     #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
     files_dir = '/mnt/nas7/data/maria/final_features'
-    #output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/four_rois'
-    output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/six_rois'
-    #output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose/prueba'
+    output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/umap/four_rois'
+    #output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/umap/six_rois'
 
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        f'{files_dir}/features_pyradiomics_full.csv',
-        f'{files_dir}/features_cnn_full.csv',
-        f'{files_dir}/features_swinunetr_full.csv',
+        #f'{files_dir}/features_pyradiomics_full.csv',
+        #f'{files_dir}/features_cnn_full.csv',
+        #f'{files_dir}/features_swinunetr_full.csv',
         #f'{files_dir}/features_ct-fm_full.csv',
         #f'{files_dir}/features_cnn_complete_updated.csv',
         #'/home/reza/radiomics_phantom/final_features_doses/features_swin.csv',
-        #'/home/reza/radiomics_phantom/final_features_doses/features_pyradiomics.csv'
+        #'/home/reza/radiomics_phantom/final_features_doses/features_pyradiomics.csv',
+        #f'{files_dir}/ct-fm/dicom/features_ct-fm_full.csv',
+        #f'{files_dir}/pyradiomics_features_prueba.csv',
+        #'/mnt/nas7/data/maria/final_features/features_swinunetr_reversed.csv',
+
+        #f'{files_dir}/final_features_complete/features_pyradiomics_4rois.csv',
+        #f'{files_dir}/final_features_complete/features_cnn_4rois.csv',
+        #f'{files_dir}/final_features_complete/features_swinunetr_4rois.csv',
+        #f'{files_dir}/final_features_complete/features_ct-fm_4rois.csv',
+
+        #f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
+        #f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
+        #f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',
+        #f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'        
+
+        #f'{files_dir}/cnn_features_not_registered.csv',
+        f'{files_dir}/swinunetr_features_not_registered_v2.csv'  
     ]
     
     # Run the analysis

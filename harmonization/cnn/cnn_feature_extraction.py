@@ -7,16 +7,10 @@ from harmonization.swin.extract import custom_collate_fn, load_data, CropOnROId
 tf.disable_v2_behavior()
 import os
 import numpy as np
-import nibabel as nib
-import os
 import csv
-import numpy as np
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ToTensord,EnsureTyped
+import nibabel as nib
 from monai.transforms import Compose, LoadImage, EnsureType
-from harmonization.swin.extract import CropOnROId
-from monai.data import SmartCacheDataset, DataLoader,ThreadDataLoader
 import torch
 import tensorflow as tf2
 gpus = tf2.config.experimental.list_physical_devices('GPU')
@@ -27,7 +21,12 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-centersrois = {'cyst1': [324, 334, 158], 'cyst2' : [189, 278, 185], 'hemangioma': [209, 315, 159], 'metastasis': [111, 271, 140], 'normal1': [161, 287, 149], 'normal2': [154, 229, 169]}
+#centersrois = {'cyst1': [324, 334, 158], 'cyst2' : [189, 278, 185], 'hemangioma': [209, 315, 159], 'metastasis': [111, 271, 140], 'normal1': [161, 287, 149], 'normal2': [154, 229, 169]}
+#centersrois = {'cyst1': [322, 180, 157], 'cyst2' : [189, 233, 186], 'hemangioma': [212, 193, 159], 
+             #  'metastasis': [111, 240, 140], 'normal1': [161, 226, 149], 'normal2': [159, 275, 170]}
+
+centersrois = {'cyst1': [180, 322, 157], 'cyst2' : [233, 189, 186], 'hemangioma': [193, 212, 159], 'metastasis': [240, 111, 140], 'normal1': [226, 161, 149], 'normal2': [275, 159, 170]}
+
 
 def extract_patch(image, center, patch_size=(64, 64, 32)):
     """Extracts a 3D patch centered at 'center' with 'patch_size'."""
@@ -55,6 +54,7 @@ def extract_patch(image, center, patch_size=(64, 64, 32)):
 
     return patch
 
+
 def load_metadata(csv_filename):
     """Loads the metadata CSV and returns a dictionary of folder names to metadata."""
     metadata_dict = {}
@@ -66,74 +66,79 @@ def load_metadata(csv_filename):
                 "SeriesDescription": row["SeriesDescription"],
                 "ManufacturerModelName": row["ManufacturerModelName"],
                 "Manufacturer": row["Manufacturer"],
-                "SliceThickness": row["SliceThickness"]
+                "SliceThickness": row["SliceThickness"],
+                "StudyDescription": row["StudyDescription"],
+                "StudyID": row["StudyID"]
             }
     return metadata_dict
 
 def run_inference():
-
     jsonpath = "/mnt/nas7/data/maria/final_features/expanded_registered_light_dataset_info.json"
     model_dir = '/mnt/nas7/data/maria/final_features/QA4IQI/QA4IQI/'
     model_file = model_dir + 'organs-5c-30fs-acc92-121.meta'
 
-    # Start a new session
     sess = tf.Session()
-
-    # Load the graph
     saver = tf.train.import_meta_graph(model_file)
     saver.restore(sess, tf.train.latest_checkpoint(model_dir))
-
-    # Access the graph
     graph = tf.get_default_graph()
     feature_tensor = graph.get_tensor_by_name('MaxPool3D_1:0')
-
-    #names for input data and dropout:
     x = graph.get_tensor_by_name('x_start:0') 
     keepProb = graph.get_tensor_by_name('keepProb:0')  
-    
-    
-    try:
-        variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
-        # Calculer le nombre total de poids
-        total_params = sum([sess.run(tf.size(var)) for var in variables])
-        print(f"Le nombre total de poids dans le modèle est : {total_params}")
-    except:
-        print("Error while calculating the number of parameters in the model")
     device_id = 0
     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
     torch.cuda.set_device(device_id)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 
     transforms = Compose([
-    LoadImage(ensure_channel_first=True),  # Load image and ensure channel dimension
-    EnsureType(),                         # Ensure correct data type
+        LoadImage(ensure_channel_first=True),
+        EnsureType(),
     ])
 
-
-    datafiles = load_data(jsonpath)
-    nifti_dir = "/mnt/nas7/data/reza/registered_dataset_all_doses_pad/"
-    datafiles = [f for f in os.listdir(nifti_dir) if f.endswith(".nii.gz")]
-
+    nifti_dir = "/mnt/nas7/data/reza/registered_dataset_all_doses_pad_updated_NotRegistered/"
+    datafiles = sorted([f for f in os.listdir(nifti_dir) if f.endswith(".nii.gz")])
 
     output_dir = "/mnt/nas7/data/maria/final_features/"
-    output_file = os.path.join(output_dir, "cnn_features_prueba_full2.csv")
+    output_file = os.path.join(output_dir, "cnn_features_not_registered.csv")
 
     metadata_csv = "/mnt/nas7/data/maria/final_features/ct-fm/dicom_metadata/dicom_metadata.csv"
     metadata_dict = load_metadata(metadata_csv)
 
-    # Open CSV file once
-    with open(output_file, "w", newline="") as csvfile:
-        fieldnames = ["FileName", "SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness"]
+    # Step 1: Read already processed files + ROIs
+    processed = set()
+    if os.path.exists(output_file):
+        with open(output_file, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                processed.add((row["FileName"], row["ROI"]))
+
+    # Step 2: Open CSV in append mode
+    with open(output_file, "a", newline="") as csvfile:
+        fieldnames = ["FileName", "SeriesNumber", "deepfeatures", "ROI", "SeriesDescription", "ManufacturerModelName", "Manufacturer", "SliceThickness", "StudyDescription", "StudyID"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        
+
+        # Write header only if file was empty
+        if os.stat(output_file).st_size == 0:
+            writer.writeheader()
+
         for file in tqdm(datafiles, desc="Processing CT scans"):
+            file_name = file.replace(".nii.gz", "")
+
+            # Check which ROIs still need to be processed for this file
+            missing_rois = [roi_label for roi_label in centersrois if (file, roi_label) not in processed]
+
+            if not missing_rois:
+                print(file, "already fully processed, skipping loading")
+                continue
+
+            print('Processing file', file_name)
+            # Only now load the NIfTI file!
             file_path = os.path.join(nifti_dir, file)
             image = transforms(file_path)
-
-            file_name = file.replace(".nii.gz", "")
-            print(file_name)
+            image = image.squeeze(0)  
+            image = image.permute(1, 0, 2) 
+            image = torch.flip(image, dims=[0])  
+            image = image.unsqueeze(0)
 
             if file_name in metadata_dict:
                 metadata = metadata_dict[file_name]
@@ -141,47 +146,46 @@ def run_inference():
                 manufacturer_model_name = metadata["ManufacturerModelName"]
                 manufacturer = metadata["Manufacturer"]
                 slicethickness = metadata["SliceThickness"]
+                study_description = metadata["StudyDescription"]
+                study_id = metadata["StudyID"]
             else:
                 series_description = "Unknown"
                 manufacturer_model_name = "Unknown"
                 manufacturer = "Unknown"
                 slicethickness = "Unknown"
+                study_description = "Unknown"
+                study_id = "Unknown"
 
-
-            for roi_label, center in centersrois.items():
-                patch_center = np.array(center)  # Original ROI center
-                # Adjust ROI center based on the crop region
+            for roi_label in missing_rois:
+                patch_center = np.array(centersrois[roi_label])
                 patch = extract_patch(image, patch_center)
 
-                #patch = patch.to(device)    # Move tensor to the GPU
                 flattened_image = patch.flatten()
-                flattened_image = np.array(flattened_image)  # Ensure it's a NumPy array
-                flattened_image = flattened_image.reshape(1, -1)  # Reshape to (1, 131072)
+                flattened_image = np.array(flattened_image)
+                flattened_image = flattened_image.reshape(1, -1)
 
                 features = sess.run(feature_tensor, feed_dict={x: flattened_image, keepProb: 1.0})
-
                 latentrep = sess.run(tf.reshape(features, [-1])).tolist()
 
-                # Write to CSV
                 writer.writerow({
                     "FileName": file,
-                    "ROI": roi_label,
+                    "SeriesNumber": "Unknown",
                     "deepfeatures": latentrep,
+                    "ROI": roi_label,
                     "SeriesDescription": series_description,
                     "ManufacturerModelName": manufacturer_model_name,
                     "Manufacturer": manufacturer,
-                    "SliceThickness": slicethickness
+                    "SliceThickness": slicethickness,
+                    "StudyDescription": study_description,
+                    "StudyID": study_id
                 })
+                processed.add((file, roi_label))
 
-            #writer.writerow(record)
-                 
     print("Done!")
 
 
 if __name__ == "__main__":
-    #test()
     run_inference()
-
    
 '''
 
@@ -227,67 +231,5 @@ print(len(metadata_series_numbers))
 print("Missing SeriesNumber values:", missing_series_numbers)  
 print(f"Total missing: {len(missing_series_numbers)}")
 
-
-
-import os
-import numpy as np
-import nibabel as nib
-from monai.transforms import Compose, LoadImage, EnsureType
-
-# Directorios de entrada y salida
-nifti_dir = "/mnt/nas7/data/reza/registered_dataset_all_doses_pad/"
-output_dir = "/mnt/nas7/data/maria/final_features/patches/"
-os.makedirs(output_dir, exist_ok=True)
-
-# Definir los centros de los ROIs
-centersrois = {
-    'cyst1': [324, 334, 158], 'cyst2': [189, 278, 185], 'hemangioma': [209, 315, 159],
-    'metastasis': [111, 271, 140], 'normal1': [161, 287, 149], 'normal2': [154, 229, 169]
-}
-
-# Función para extraer un parche de una imagen
-def extract_patch(image, center, patch_size=(64, 64, 32)):
-    """Extracts a 3D patch centered at 'center' with 'patch_size'."""
-    # Ensure patch_size is a tuple of three dimensions (depth, height, width)
-    assert len(patch_size) == 3
-    half_size = [size // 2 for size in patch_size]
-
-    # Create slices for each dimension
-    slices = tuple(
-        slice(max(0, center[i] - half_size[i]), min(image.shape[i+1], center[i] + half_size[i])) 
-        for i in range(3)
-    )
-
-    # Extract the patch
-    patch = image[:, slices[0], slices[1], slices[2]]
-
-    return patch
-
-# Cargar solo las dos primeras imágenes
-datafiles = [f for f in os.listdir(nifti_dir) if f.endswith(".nii.gz")][:2]
-
-# Transformaciones para cargar las imágenes
-transforms = Compose([
-    LoadImage(ensure_channel_first=True),
-    EnsureType()
-])
-
-# Procesar las imágenes
-for file in datafiles:
-    file_path = os.path.join(nifti_dir, file)
-    image = transforms(file_path)
-    file_name = file.replace(".nii.gz", "")
-    
-    # Extraer y guardar los 6 parches
-    for roi_label, center in centersrois.items():
-        patch = extract_patch(image, np.array(center))
-        patch = patch.squeeze()
-        patch_nifti = nib.Nifti1Image(patch.numpy(), affine=np.eye(4))
-        print(patch_nifti.shape)
-        patch_filename = os.path.join(output_dir, f"{file_name}_{roi_label}.nii.gz")
-        nib.save(patch_nifti, patch_filename)
-        print(f"Guardado: {patch_filename}")
-
-print("Proceso completado.")
 
 '''

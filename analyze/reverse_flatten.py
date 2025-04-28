@@ -7,7 +7,9 @@ output_dir = '/mnt/nas7/data/maria/final_features/'
 os.makedirs(output_dir, exist_ok=True)
 
 # Load the CSV containing the flattened features
-csv_file = '/mnt/nas7/data/maria/final_features/features_swinunetr_full.csv'  # Replace with your actual CSV file
+#csv_file = '/mnt/nas7/data/maria/final_features/features_swinunetr_full.csv'  # Replace with your actual CSV file
+csv_file = '/home/reza/radiomics_phantom/final_features_doses/features_swin.csv'
+
 df = pd.read_csv(csv_file)
 
 # Function to reverse the flattening

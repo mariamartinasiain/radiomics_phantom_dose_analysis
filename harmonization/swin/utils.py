@@ -248,7 +248,7 @@ def get_model(target_size=(64, 64, 32), model_path="model_swinvit.pt", to_compar
             feature_size=48,
             use_checkpoint=True,
         ).to(device)
-
+    '''
     if model_path == "model_swinvit.pt":
         weight = torch.load("./checkpoints/model_swinvit.pt")
         model.load_from(weight)
@@ -263,13 +263,39 @@ def get_model(target_size=(64, 64, 32), model_path="model_swinvit.pt", to_compar
             print("new : " + str(key))
         weight = {"state_dict" : weight}
         model.load_from(weight)
+    '''
+
+    # Cargar pesos
+    print(f"Loading weights from: {model_path}")
+    checkpoint = torch.load(model_path, map_location=device)
+
+    # Extraer el state_dict correcto
+    if "state_dict" in checkpoint:
+        state_dict = checkpoint["state_dict"]
+    else:
+        state_dict = checkpoint
         
-        
-    
+        # Quitar "module." si es necesario
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        new_key = k.replace("module.", "") if k.startswith("module.") else k
+        new_state_dict[new_key] = v
+
+    # Cargar pesos sin error aunque falten algunas claves
+    missing, unexpected = model.load_state_dict(new_state_dict, strict=False)
+    print("Loaded model with missing keys:", missing)
+    print("Unexpected keys:", unexpected)
+
+    model = model.to(device)
+    print("Model ready and loaded with pretrained weights.")
+    return model
+
+    '''
     print("Loaded weight keys:", weight.keys())
     model = model.to('cuda')
     print("Using pretrained self-supervied Swin UNETR backbone weights !")
     return model
+    '''
 
 def plot_multiple_losses(train_losses, step_interval):
     """

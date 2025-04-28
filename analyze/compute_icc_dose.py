@@ -34,7 +34,7 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
     icc_results_per_scanner = {}
 
     #output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/four_rois'
-    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/six_rois/prueba'
+    output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/icc/six_rois'
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
@@ -145,7 +145,7 @@ def main():
     #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
     files_dir = '/mnt/nas7/data/maria/final_features'
     #output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/four_rois'
-    output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/six_rois/prueba'
+    output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/icc/six_rois'
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
@@ -153,9 +153,21 @@ def main():
         #f'{files_dir}/features_cnn_full.csv',
         #f'{files_dir}/features_swinunetr_full.csv',
         #f'{files_dir}/features_ct-fm_full.csv',
-       '/home/reza/radiomics_phantom/final_features_doses/features_pyradiomics.csv',
-        f'{files_dir}/features_cnn_complete_updated.csv',
-        '/home/reza/radiomics_phantom/final_features_doses/features_swin.csv'
+        #'/home/reza/radiomics_phantom/final_features_doses/features_pyradiomics.csv',
+        #f'{files_dir}/features_cnn_complete_updated.csv',
+        #'/home/reza/radiomics_phantom/final_features_doses/features_swin.csv',
+        #f'{files_dir}/pyradiomics_features_prueba.csv',
+        #'/mnt/nas7/data/maria/final_features/features_swinunetr_reversed.csv'
+
+        #f'{files_dir}/final_features_complete/features_pyradiomics_4rois.csv',
+        #f'{files_dir}/final_features_complete/features_cnn_4rois.csv',
+        #f'{files_dir}/final_features_complete/features_swinunetr_4rois.csv',
+        #f'{files_dir}/final_features_complete/features_ct-fm_4rois.csv'
+
+        f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
+        f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
+        f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',
+        f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'   
     ]
 
     for path in csv_paths:

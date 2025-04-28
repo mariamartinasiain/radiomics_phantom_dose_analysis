@@ -143,7 +143,8 @@ def run_inference(nifti_dir, output_dir, metadata_dict):
 
 if __name__ == "__main__":
     nifti_dir = "/mnt/nas7/data/reza/registered_dataset_all_doses"
-    output_dir = "/mnt/nas7/data/maria/final_features/ct-fm"
+    output_dir = "/mnt/nas7/data/maria/final_features/ct-fm/prueba"
+    os.makedirs(output_dir, exist_ok=True)
     metadata_csv = "/mnt/nas7/data/maria/final_features/ct-fm/dicom_metadata/dicom_metadata.csv"
     
     metadata_dict = load_metadata(metadata_csv)

@@ -23,21 +23,36 @@ roi_masks_paths = generate_nifti_masks(dicom_mask, reference_nifti, output_path,
 print("Generated masks:", roi_masks_paths)
 
 # Extract Pyradiomics features
-nifti_dataset = "/mnt/nas7/data/reza/registered_dataset_all_doses_pad/"
+#nifti_dataset = "/mnt/nas7/data/reza/registered_dataset_all_doses_pad/"
+nifti_dataset = "/mnt/nas7/data/maria/final_features/registered_niftis_new/"
+
 all_features_df = []
 
 json_file = "/mnt/nas7/data/maria/final_features/dicom_metadata.json"
 
+
+output_dir = "/mnt/nas7/data/maria/final_features/"
+output_file = os.path.join(output_dir, "pyradiomics_features_prueba.csv")
+
+if os.path.exists(output_file):
+    existing_df = pd.read_csv(output_file, usecols=["FileName"])  # Read only the "FileName" column
+    processed_files = set(existing_df["FileName"].astype(str))  # Convert to a set for quick lookup
+else:
+    processed_files = set()  # If no file exists, start with an empty set
+
 # Iterate over images
-for image_file in sorted(os.listdir(nifti_dataset))[:200]:
+for image_file in sorted(os.listdir(nifti_dataset)):
     if image_file.endswith(".nii") or image_file.endswith(".nii.gz"):  # Check for medical image formats
+        file_name = image_file.replace(".nii.gz", "").replace(".nii", "")  # Normalize filename
+        
+        if file_name in processed_files:
+            print(f"Skipping {image_file} (already processed)")
+            continue  # Skip feature extraction for this file
+
         image_path = os.path.join(nifti_dataset, image_file)
         
         # Extract features
         features_df = extract_features(image_path, roi_masks_paths, json_file)
-
-        output_dir = "/mnt/nas7/data/maria/final_features/"
-        output_file = os.path.join(output_dir, "pyradiomics_features_prueba.csv")
 
         # Append to CSV after each image processing
         if not features_df.empty:

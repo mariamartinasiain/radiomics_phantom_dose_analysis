@@ -38,7 +38,8 @@ def load_data(filepath, one_hot=True):
     features = data.drop(columns=['StudyInstanceUID', 'SeriesNumber', 'SeriesDescription',
                                   'ROI', 'ManufacturerModelName', 'Manufacturer',
                                   'SliceThickness', 'SpacingBetweenSlices', 'Scanners', 
-                                  'ROI_Scanner_Pair', 'Dose','FileName'], errors='ignore')
+                                  'ROI_Scanner_Pair', 'Dose','FileName', 'StudyID', 'StudyDescription'], errors='ignore')
+    
 
     if 'deepfeatures' in data.columns:
         features = features['deepfeatures'].apply(eval).apply(pd.Series)
@@ -258,15 +259,19 @@ def plot_accuracy_loss(history):
 def main():
     files_dir = '/mnt/nas7/data/maria/final_features'
     #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
-    output_dir = '/mnt/nas7/data/maria/final_features/dose_classification/six_rois'
-    #output_dir = '/mnt/nas7/data/maria/final_features/dose_classification/four_rois'
+    output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/dose_classification'
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        f'{files_dir}/features_pyradiomics_full.csv',
-        f'{files_dir}/features_cnn_full.csv',
-        f'{files_dir}/features_swinunetr_full.csv',
-        f'{files_dir}/features_ct-fm_full.csv'
+        #f'{files_dir}/features_pyradiomics_full.csv',
+        #f'{files_dir}/features_cnn_full.csv',
+        #f'{files_dir}/features_swinunetr_full.csv',
+        #f'{files_dir}/features_ct-fm_full.csv',
+
+        #f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
+        #f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
+        #f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',
+        f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'   
     ]
 
     for path in csv_paths:

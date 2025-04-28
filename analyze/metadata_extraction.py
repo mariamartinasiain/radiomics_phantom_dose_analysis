@@ -87,8 +87,8 @@ with open(csv_filename, mode="w", newline="") as file:
             writer.writerow([subfile] + [metadata_values[key] for key in metadata_keys])
 
 print(f"\nMetadata extraction complete. Data saved in: {csv_filename}")
-'''
 
+'''
 
 import pandas as pd
 import re
@@ -197,4 +197,30 @@ missing_in_swinunetr = metadata_series - swinunetr_series
 print("SeriesNumbers missing in SwinUNETR features file:", sorted(missing_in_swinunetr))
 print(len(missing_in_swinunetr))
 
+
+
+import pandas as pd
+import os
+import glob
+
+# Directorio donde están los archivos
+path = "/mnt/nas7/data/maria/final_features/final_features_complete"
+
+# Buscar archivos que terminan en '6rois.csv'
+csv_files = glob.glob(os.path.join(path, "*6rois.csv"))
+
+for file in csv_files:
+    df = pd.read_csv(file)
+
+    # Reemplazar valores en la columna 'ROI'
+    df["ROI"] = df["ROI"].replace({"normal1": "normal", "normal2": "normal",
+                                   "cyst1": "cyst", "cyst2": "cyst"})
+
+    # Crear nuevo nombre de archivo
+    new_file = file.replace("6rois.csv", "4rois.csv")
+
+    # Guardar el nuevo archivo
+    df.to_csv(new_file, index=False)
+
+    print(f"Archivo guardado: {new_file}")
 '''
