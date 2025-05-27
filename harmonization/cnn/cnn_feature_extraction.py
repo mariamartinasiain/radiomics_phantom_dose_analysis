@@ -22,13 +22,12 @@ if gpus:
         print(e)
 
 #centersrois = {'cyst1': [324, 334, 158], 'cyst2' : [189, 278, 185], 'hemangioma': [209, 315, 159], 'metastasis': [111, 271, 140], 'normal1': [161, 287, 149], 'normal2': [154, 229, 169]}
-#centersrois = {'cyst1': [322, 180, 157], 'cyst2' : [189, 233, 186], 'hemangioma': [212, 193, 159], 
-             #  'metastasis': [111, 240, 140], 'normal1': [161, 226, 149], 'normal2': [159, 275, 170]}
 
-centersrois = {'cyst1': [180, 322, 157], 'cyst2' : [233, 189, 186], 'hemangioma': [193, 212, 159], 'metastasis': [240, 111, 140], 'normal1': [226, 161, 149], 'normal2': [275, 159, 170]}
+#centersrois = {'cyst1': [180, 322, 157], 'cyst2' : [233, 189, 186], 'hemangioma': [193, 212, 159], 'metastasis': [240, 111, 140], 'normal1': [226, 161, 149], 'normal2': [275, 159, 170]}
 
+centersrois = {'normal': [226, 161, 149], 'cyst' : [179, 324, 157], 'hemangioma': [193, 212, 159], 'metastasis': [240, 111, 140], 'spleen': [322, 400, 159], 'right_kidney': [337, 192, 131], 'pancreas': [252, 343, 129], 'L1_vertebra': [326, 267, 142]}
 
-def extract_patch(image, center, patch_size=(64, 64, 32)):
+def extract_patch(image, center, patch_size=(32, 32, 16)):
     """Extracts a 3D patch centered at 'center' with 'patch_size'."""
     # Ensure patch_size is a tuple of three dimensions (depth, height, width)
     assert len(patch_size) == 3
@@ -64,6 +63,7 @@ def load_metadata(csv_filename):
             folder_name = row["Folder"]
             metadata_dict[folder_name] = {
                 "SeriesDescription": row["SeriesDescription"],
+                "SeriesNumber": row["SeriesNumber"],
                 "ManufacturerModelName": row["ManufacturerModelName"],
                 "Manufacturer": row["Manufacturer"],
                 "SliceThickness": row["SliceThickness"],
@@ -99,7 +99,7 @@ def run_inference():
     datafiles = sorted([f for f in os.listdir(nifti_dir) if f.endswith(".nii.gz")])
 
     output_dir = "/mnt/nas7/data/maria/final_features/"
-    output_file = os.path.join(output_dir, "cnn_features_not_registered.csv")
+    output_file = os.path.join(output_dir, "cnn_features_new_rois_v2.csv")
 
     metadata_csv = "/mnt/nas7/data/maria/final_features/ct-fm/dicom_metadata/dicom_metadata.csv"
     metadata_dict = load_metadata(metadata_csv)
@@ -143,6 +143,7 @@ def run_inference():
             if file_name in metadata_dict:
                 metadata = metadata_dict[file_name]
                 series_description = metadata["SeriesDescription"]
+                series_number = metadata["SeriesNumber"]
                 manufacturer_model_name = metadata["ManufacturerModelName"]
                 manufacturer = metadata["Manufacturer"]
                 slicethickness = metadata["SliceThickness"]
@@ -150,6 +151,7 @@ def run_inference():
                 study_id = metadata["StudyID"]
             else:
                 series_description = "Unknown"
+                series_number = "Unknown"
                 manufacturer_model_name = "Unknown"
                 manufacturer = "Unknown"
                 slicethickness = "Unknown"
@@ -160,6 +162,20 @@ def run_inference():
                 patch_center = np.array(centersrois[roi_label])
                 patch = extract_patch(image, patch_center)
 
+                '''
+                print(patch.shape)
+                dir = "/mnt/nas7/data/maria/final_features/"
+
+                # Save the patch as a NIfTI file
+                patch_np = patch.squeeze(0).cpu().numpy()  # remove channel dimension, move to CPU
+                print(patch_np.shape)
+                patch_affine = np.eye(4)  # or get it from the original image if needed
+
+                patch_nii = nib.Nifti1Image(patch_np, affine=patch_affine)
+                patch_filename = os.path.join(dir, f"{file}_ROI_{roi_label}.nii.gz")
+                nib.save(patch_nii, patch_filename)
+                '''
+
                 flattened_image = patch.flatten()
                 flattened_image = np.array(flattened_image)
                 flattened_image = flattened_image.reshape(1, -1)
@@ -169,7 +185,7 @@ def run_inference():
 
                 writer.writerow({
                     "FileName": file,
-                    "SeriesNumber": "Unknown",
+                    "SeriesNumber": series_number,
                     "deepfeatures": latentrep,
                     "ROI": roi_label,
                     "SeriesDescription": series_description,
@@ -186,50 +202,3 @@ def run_inference():
 
 if __name__ == "__main__":
     run_inference()
-   
-'''
-
-import pandas as pd  
-
-# Cargar el archivo combinado  
-file_path = "/mnt/nas7/data/maria/final_features/cnn_features_complete_updated.csv"
-df = pd.read_csv(file_path)  
-
-# Contar valores únicos en SeriesNumber  
-unique_series_numbers = df["SeriesNumber"].nunique()  
-print("Número de SeriesNumber únicos:", unique_series_numbers)  
-
-# Extraer la dosis de SeriesDescription usando regex  
-df["Dosis"] = df["SeriesDescription"].str.extract(r'(\d+mGy)')  
-
-# Contar apariciones de cada dosis  
-dosis_values = ["1mGy", "3mGy", "6mGy", "10mGy", "14mGy"]  
-dosis_counts = df["Dosis"].value_counts().reindex(dosis_values, fill_value=0)  
-
-print("\nFrecuencia de cada dosis en SeriesDescription:")  
-print(dosis_counts)
-
-import pandas as pd  
-
-# File paths  
-features_file = "/mnt/nas7/data/maria/final_features/cnn_features_complete_updated.csv"  
-metadata_file = "/mnt/nas7/data/maria/final_features/ct-fm/dicom_metadata/dicom_metadata.csv"  
-
-# Load data  
-df_features = pd.read_csv(features_file)  
-df_metadata = pd.read_csv(metadata_file)  
-
-# Extract unique SeriesNumber values  
-features_series_numbers = set(df_features["StudyID"].dropna().unique())  
-metadata_series_numbers = set(df_metadata["StudyID"].dropna().unique())  
-
-# Find missing SeriesNumber values  
-missing_series_numbers = metadata_series_numbers - features_series_numbers  
-
-print(len(metadata_series_numbers))
-
-print("Missing SeriesNumber values:", missing_series_numbers)  
-print(f"Total missing: {len(missing_series_numbers)}")
-
-
-'''

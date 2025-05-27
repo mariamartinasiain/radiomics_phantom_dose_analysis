@@ -82,7 +82,7 @@ def run_inference():
     datafiles = sorted([f for f in os.listdir(nifti_dir) if f.endswith(".nii.gz")])
 
     output_dir = "/mnt/nas7/data/maria/final_features/"
-    output_file = os.path.join(output_dir, "swinunetr_features_not_registered.csv")
+    output_file = os.path.join(output_dir, "swinunetr_features_not_registered_v2.csv")
 
     metadata_csv = "/mnt/nas7/data/maria/final_features/ct-fm/dicom_metadata/dicom_metadata.csv"
     metadata_dict = load_metadata(metadata_csv)

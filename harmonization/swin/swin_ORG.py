@@ -1,3 +1,4 @@
+'''
 import os
 import numpy as np
 import torch
@@ -314,7 +315,7 @@ if __name__ == "__main__":
 
     run_inference(volumes_dir, masks_dir, output_dir)
 
-
+'''
 import pandas as pd
 import numpy as np
 import umap
@@ -340,23 +341,32 @@ X_scaled = scaler.fit_transform(X)
 # ROI labels
 labels = df['ROI']
 
+# Agrupa las ROIs eliminando 'left_' y 'right_'
+df['ROI_grouped'] = df['ROI'].str.replace(r'_(left|right)$', '', regex=True)
+grouped_labels = df['ROI_grouped']
+
 # Aplica UMAP con los nuevos parámetros
-reducer = umap.UMAPreducer = umap.UMAP(n_neighbors=20, min_dist=0.2, n_components=2, random_state=24)
+reducer = umap.UMAP(n_neighbors=20, min_dist=0.2, n_components=2, random_state=24)
 embedding = reducer.fit_transform(X_scaled)
+
+# Obtén lista de clases agrupadas
+unique_labels = np.unique(grouped_labels)
+
+# Escoge una paleta de colores
+cmap = plt.get_cmap('tab10')  # También puedes probar: 'Set3', 'Dark2', 'tab20'
 
 # Visualización
 plt.figure(figsize=(10, 7))
-for roi in np.unique(labels):
-    mask = labels == roi
-    plt.scatter(embedding[mask, 0], embedding[mask, 1], label=roi, alpha=0.7)
+for i, roi in enumerate(unique_labels):
+    mask = grouped_labels == roi
+    color = cmap(i % cmap.N)  # En caso de que haya más clases que colores en la paleta
+    plt.scatter(embedding[mask, 0], embedding[mask, 1], label=roi, alpha=0.7, color=color)
 
 plt.title("SwinUNETR features on CT-ORG data (UMAP)")
-plt.xlabel("UMAP 1")
-plt.ylabel("UMAP 2")
-plt.legend()
+#plt.legend()
 plt.grid(True)
 
 # Guarda la imagen en el mismo directorio del CSV
-output_path = os.path.join(os.path.dirname(csv_path), 'swinunetr_org_umap_v2.png')
+output_path = os.path.join(os.path.dirname(csv_path), 'swinunetr_org_umap_final.png')
 plt.savefig(output_path)
 plt.close()

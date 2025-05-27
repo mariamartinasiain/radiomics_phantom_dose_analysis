@@ -11,6 +11,7 @@ import seaborn as sns
 import time
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
@@ -126,6 +127,14 @@ def train_and_test(X_train, y_train, X_test, y_test, input_size, classes_size, c
     elif classifier_type == 'knn':
         # k-NN classifier
         clf = KNeighborsClassifier(n_neighbors=5)
+        clf.fit(X_train, np.argmax(y_train, axis=1))  # Convert one-hot labels to class indices
+        y_pred = clf.predict(X_test)
+        val_accuracy = np.mean(y_pred == np.argmax(y_test, axis=1))
+        y_true = np.argmax(y_test, axis=1)
+
+    elif classifier_type == 'random_forest':
+        # Random Forest classifier
+        clf = RandomForestClassifier(n_estimators=100, random_state=42)
         clf.fit(X_train, np.argmax(y_train, axis=1))  # Convert one-hot labels to class indices
         y_pred = clf.predict(X_test)
         val_accuracy = np.mean(y_pred == np.argmax(y_test, axis=1))
@@ -268,14 +277,14 @@ def main():
         #f'{files_dir}/features_swinunetr_full.csv',
         #f'{files_dir}/features_ct-fm_full.csv',
 
-        #f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
-        #f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
-        #f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',
+        f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
+        f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
+        f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',
         f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'   
     ]
 
     for path in csv_paths:
-        run_cross_validation(path, classifier_type='mlp', output_dir=output_dir) 
+        run_cross_validation(path, classifier_type='random_forest', output_dir=output_dir) 
 
 
 if __name__ == '__main__':

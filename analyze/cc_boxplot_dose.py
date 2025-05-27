@@ -190,7 +190,6 @@ def main():
     #files_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/four_rois'
     files_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/icc/six_rois'
     methods = ['pyradiomics', 'cnn', 'swinunetr', 'ct-fm']
-    #methods = ['pyradiomics', 'cnn_complete_updated', 'swin']
     scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
 
     output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/boxplot/six_rois'

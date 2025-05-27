@@ -174,7 +174,7 @@ def plot_results(features, labels, data, color_mode, output_dir, filename_suffix
     plt.grid(True)
 
     # Save the figure with color_mode and filename_suffix in the filename
-    plt.savefig(f"{base_filename}_{color_mode}_umap_not_registered_v2.png")
+    plt.savefig(f"{base_filename}_{color_mode}_umap_10regions.png")
     
     umap_df = pd.DataFrame({
     'UMAP1': umap_results[:, 0],
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     # Define file paths
     #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
     files_dir = '/mnt/nas7/data/maria/final_features'
-    output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/umap/four_rois'
+    output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/umap/10_regions'
     #output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/umap/six_rois'
 
     os.makedirs(output_dir, exist_ok=True)
@@ -264,7 +264,9 @@ if __name__ == "__main__":
         #f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'        
 
         #f'{files_dir}/cnn_features_not_registered.csv',
-        f'{files_dir}/swinunetr_features_not_registered_v2.csv'  
+        #f'{files_dir}/swinunetr_features_not_registered_v2.csv',
+        #f'{files_dir}/pyradiomics_features_not_registered.csv',
+        f'{files_dir}/pyradiomics_extraction/10_regions/pyradiomics_features_10regions.csv'    
     ]
     
     # Run the analysis
