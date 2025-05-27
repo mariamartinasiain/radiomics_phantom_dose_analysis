@@ -248,7 +248,7 @@ def get_model(target_size=(64, 64, 32), model_path="model_swinvit.pt", to_compar
             feature_size=48,
             use_checkpoint=True,
         ).to(device)
-    
+    '''
     if "model_swinvit.pt" in model_path:
         weight = torch.load(model_path, weights_only=True)
         model.load_from(weight)
