@@ -7,6 +7,11 @@ from tqdm import tqdm
 from monai.transforms import Compose, LoadImage, EnsureType, ScaleIntensityRange, CropForeground
 from lighter_zoo import SegResEncoder
 import torch.nn.functional as F
+import pandas as pd
+import umap
+import matplotlib.pyplot as plt
+import ast
+from sklearn.preprocessing import StandardScaler
 
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -155,7 +160,6 @@ def run_inference(nifti_dir, masks_dir, output_dir):
             mask_path = os.path.join(masks_dir, mask_file)
             mask_nii = nib.load(mask_path)
             mask_np = mask_nii.get_fdata()
-            #mask_tensor = torch.from_numpy(np.round(mask_np).astype(np.uint8)).unsqueeze(0).to(device)
             mask_tensor = torch.from_numpy(np.round(mask_np).astype(np.uint8)).unsqueeze(0)
 
             for label, name in label_to_name.items():
@@ -171,7 +175,6 @@ def run_inference(nifti_dir, masks_dir, output_dir):
                     image, organ_mask = pad_to_match(image, organ_mask)
                     print('image:', image.shape, 'mask:', organ_mask.shape)
 
-                # Devuelve lista de (patch, name) — uno o dos elementos
                 patches = crop_patch_from_mask(image, organ_mask, patch_size=(64, 64, 32), name=name)
 
                 for patch_tensor, patch_name in patches:
@@ -214,54 +217,42 @@ if __name__ == "__main__":
     run_inference(volumes_dir, masks_dir, output_dir)
 
 
-import pandas as pd
-import numpy as np
-import umap
-import matplotlib.pyplot as plt
-import ast
-import os
-from sklearn.preprocessing import StandardScaler
+############# PLOTS #############
 
-# Carga tu CSV
+# Load CSV
 csv_path = '/mnt/nas7/data/maria/final_features/ct-fm/ct-org/features_ct-fm_org_v3.csv'
 df = pd.read_csv(csv_path)
 
-# Convierte las deep features de string a listas de float
+# deep features from string to float lists
 df['deepfeatures'] = df['deepfeatures'].apply(ast.literal_eval)
 
-# Crea un array de features
-X = np.array(df['deepfeatures'].tolist())
+X = np.array(df['deepfeatures'].tolist())   # features array
 
-# Normaliza los features
+# Normalize features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Agrupa las ROIs eliminando 'left_' y 'right_'
+# Group ROIs
 df['ROI_grouped'] = df['ROI'].str.replace(r'_(left|right)$', '', regex=True)
 grouped_labels = df['ROI_grouped']
 
-# Aplica UMAP
-reducer = umap.UMAP(n_neighbors=20, min_dist=0.2, n_components=2, random_state=24)
+# UMAP
+reducer = umap.UMAP(n_neighbors=20, min_dist=0.4, n_components=2, random_state=24)
 embedding = reducer.fit_transform(X_scaled)
 
-# Obtén lista de clases agrupadas
 unique_labels = np.unique(grouped_labels)
+cmap = plt.get_cmap('tab10')
 
-# Escoge una paleta de colores
-cmap = plt.get_cmap('tab10')  # También puedes probar: 'Set3', 'Dark2', 'tab20'
-
-# Visualización
 plt.figure(figsize=(10, 7))
 for i, roi in enumerate(unique_labels):
     mask = grouped_labels == roi
-    color = cmap(i % cmap.N)  # En caso de que haya más clases que colores en la paleta
+    color = cmap(i % cmap.N) 
     plt.scatter(embedding[mask, 0], embedding[mask, 1], label=roi, alpha=0.7, color=color)
 
 plt.title("CT-FM features on CT-ORG data (UMAP)")
 #plt.legend()
 plt.grid(True)
 
-# Guarda la imagen
-output_path = os.path.join(os.path.dirname(csv_path), 'ct-fm_org_umap_final.png')
+output_path = os.path.join(os.path.dirname(csv_path), 'ct-fm_org_umap_final2.png')
 plt.savefig(output_path)
 plt.close()

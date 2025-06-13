@@ -108,7 +108,7 @@ def apply_umap(csv_path, roi_column='ROI', series_column='SeriesDescription', fe
         method_key = os.path.basename(csv_path).split('_')[1].lower()
         method = method_labels.get(method_key, 'Unknown Method')
 
-        # Create 1x2 subplot with different size ratios
+        # Create 1x2 subplot
         fig, axes = plt.subplots(1, 2, figsize=(20, 8), gridspec_kw={'width_ratios': [1.2, 1.5]})
 
         # Plot ROI-based UMAP
@@ -147,9 +147,9 @@ def main():
     output_dir = '/mnt/nas7/data/maria/final_features/umap_results_dose'
 
     csv_path = [
-        #f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
+        f'{files_dir}/features_pyradiomics_full.csv',
+        f'{files_dir}/features_cnn_full.csv',
+        f'{files_dir}/features_swinunetr_full.csv',
         f'{files_dir}/features_ct-fm_full.csv'
     ]
 

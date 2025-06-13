@@ -73,8 +73,6 @@ def save_statistics_all_scanners(statistics, methods, scanners, output_dir):
 # Function to accumulate statistics for all scanners
 def accumulate_statistics(all_data, methods, scanners):
     statistics_all_scanners = {}
-
-
     for scanner in scanners:
         statistics_all_scanners[scanner] = compute_statistics(all_data[scanner], methods)
 
@@ -82,16 +80,15 @@ def accumulate_statistics(all_data, methods, scanners):
 
 # Function to create boxplots for each scanner and method
 def create_boxplots(ax, data, methods, title):
-    data_to_plot = [data[method]['ICC'].dropna() for method in methods if method in data] #Removed the line that excludes ICC values that are 0
+    data_to_plot = [data[method]['ICC'].dropna() for method in methods if method in data] 
     data_to_plot2 = {method: [] for method in methods}
 
     custom_labels = ['Pyradiomics', 'Shallow CNN', 'SwinUNETR', 'CT-FM']
-    #custom_labels = ['Pyradiomics', 'Shallow CNN', 'SwinUNETR']
 
     box = ax.boxplot(data_to_plot, labels=custom_labels, showfliers=False)
 
     for i, method in enumerate(data.keys()):
-        icc_filtered = data[method]['ICC'].dropna() #Removed the line that excludes ICC values that are 0
+        icc_filtered = data[method]['ICC'].dropna()
         n = len(icc_filtered)
         max_val = max(data_to_plot2[method]) if len(data_to_plot2[method]) > 0 else 0.9
         ax.text(i + 1, max_val + 0.115, f'N={n}', ha='center', va='bottom', fontsize=12)
@@ -100,7 +97,6 @@ def create_boxplots(ax, data, methods, title):
     ax.set_ylabel('ICC', fontsize=12)
     ax.set_ylim(0.58, 1.01)
     ax.grid(True, axis='y', linestyle="solid", linewidth=0.5)
-    #ax.set_yticks(np.arange(0.1, 1.05, 0.05))
     ax.tick_params(axis='x', labelsize=14)
 
 
@@ -126,12 +122,10 @@ def create_merged_boxplot(all_data, methods, scanners, output_dir):
     plot_data = [data_to_plot[method] for method in methods]
     fig, ax = plt.subplots(figsize=(8, 6))
     box = ax.boxplot(plot_data, labels=['Pyradiomics', 'Shallow CNN', 'SwinUNETR', 'CT-FM'], showfliers=False)
-    #box = ax.boxplot(plot_data, labels=['Pyradiomics', 'Shallow CNN', 'SwinUNETR'], showfliers=False)
 
     for i, method in enumerate(methods):
         n = len(data_to_plot[method])
         max_val = max(data_to_plot[method]) if len(data_to_plot[method]) > 0 else 0.9
-        #ax.text(i + 1, max_val + 0.01, f'N={n}', ha='center', va='bottom', fontsize=12)
         ax.text(i + 1, 1.01, f'N={n}', ha='center', va='bottom', fontsize=12)
 
     ax.set_title("ICC Comparison Across Methods (All 13 Scanners Merged)", fontsize=14, fontweight='bold', pad=25)
@@ -161,7 +155,7 @@ def create_method_boxplots(all_data, methods, scanners, output_dir):
         fig, ax = plt.subplots(figsize=(14, 8))
         ax.boxplot(data_per_scanner, labels=scanner_labels, showfliers=False)
 
-        # Añadir el número de elementos encima de cada box
+        # N on top of the boxes
         for i, icc_values in enumerate(data_per_scanner):
             n = len(icc_values)
 
@@ -174,7 +168,6 @@ def create_method_boxplots(all_data, methods, scanners, output_dir):
 
         ax.set_title(f'ICC Distribution Across Scanners ({method_name})', fontsize=14, fontweight='bold', pad=25)
         ax.set_ylabel("ICC", fontsize=14)
-        #ax.set_ylim(0.58, 1.01)
         ax.grid(True, axis='y', linestyle="solid", linewidth=0.5)
         ax.tick_params(axis='x', labelsize=12)
 
@@ -189,6 +182,7 @@ def create_method_boxplots(all_data, methods, scanners, output_dir):
 def main():
     #files_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/four_rois'
     files_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/icc/six_rois'
+    
     methods = ['pyradiomics', 'cnn', 'swinunetr', 'ct-fm']
     scanners = ["A1", "A2", "B1", "B2", "G1", "G2", "C1", "H2", "D1", "E2", "F1", "E1", "H1"]
 

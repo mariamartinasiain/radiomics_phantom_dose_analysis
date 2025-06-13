@@ -3,7 +3,6 @@ import numpy as np
 import torch
 import nibabel as nib
 import csv
-from tqdm import tqdm
 from collections import defaultdict
 from monai.transforms import Compose, LoadImage, EnsureType, EnsureChannelFirst, ScaleIntensityRange, CropForeground
 from lighter_zoo import SegResEncoder
@@ -86,9 +85,8 @@ def run_inference(nifti_image, dicom_folder, output_dir, metadata_json, model, a
     image_array = nifti_image.get_fdata(dtype=np.float32)  # Convert to float32
 
     # Reorder dimensions to (Height, Width, Depth)
-    image_array = np.transpose(image_array, (1, 2, 0))  # (343, 512, 512) -> (512, 512, 343)
-
-    image_array = np.expand_dims(image_array, axis=0)  # (512, 512, 343) -> (1, 512, 512, 343)
+    image_array = np.transpose(image_array, (1, 2, 0)) 
+    image_array = np.expand_dims(image_array, axis=0)  
 
     # Apply preprocessing
     image_array = preprocess(image_array)
@@ -117,14 +115,14 @@ def run_inference(nifti_image, dicom_folder, output_dir, metadata_json, model, a
 
             patch_np = patch.squeeze().cpu().numpy()
         
-            # Save as NIfTI
+            # Save as NIfTI to check patches
             patch_nifti = nib.Nifti1Image(patch_np, affine)
             patch_filename = os.path.join(patches_dir, f"{dicom_folder}_{roi_label}.nii.gz")
             nib.save(patch_nifti, patch_filename)
             print(f"Saved patch: {patch_filename}")
 
             with torch.no_grad():
-                patch = patch.to('cuda')    # Move the tensor to the default GPU
+                patch = patch.to('cuda')   
                 output = model(patch.unsqueeze(0))[-1]
                 feature_vector = torch.nn.functional.adaptive_avg_pool3d(output, 1).squeeze().cpu().numpy()
                 formatted_feature_vector = "[" + ", ".join(map(str, feature_vector)) + "]"
@@ -203,7 +201,7 @@ if __name__ == "__main__":
 
         print(f"\nProcessing DICOM folder: {subfolder}")
 
-                # Loop through all subfolders inside the main subfolder
+        # Loop through all subfolders inside the main subfolder
         for subfile in sorted(os.listdir(subfolder_path)):
             subfile_path = os.path.join(subfolder_path, subfile)
 
@@ -221,7 +219,6 @@ if __name__ == "__main__":
 
             # Convert to NIfTI (without saving)
             nifti_array = sitk.GetArrayFromImage(image)
-            #affine = np.eye(4)
 
             # Extract spacing and origin
             spacing = image.GetSpacing()  # (x, y, z)
@@ -240,6 +237,7 @@ if __name__ == "__main__":
 
             print("🔄 Running feature extraction...")
             run_inference(nifti_image, subfile, output_dir, json_file, model, affine, centersrois)
+
     print("✅ Feature extraction completed!")
     
 

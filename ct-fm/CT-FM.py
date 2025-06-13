@@ -11,7 +11,6 @@ from lighter_zoo import SegResEncoder
 
 # ROI centers (fixed after registration)
 centersrois = {
-    # Adjusted coordinates (after crop)
     'cyst1': [260, 214, 145],  
     'cyst2': [125, 158, 172], 
     'hemangioma': [145, 195, 146],  
@@ -29,21 +28,18 @@ model.eval()
 
 # Preprocessing pipeline
 preprocess = Compose([
-    LoadImage(ensure_channel_first=True),  # Load image and ensure channel dimension
-    EnsureType(),                         # Ensure correct data type
-    #Orientation(axcodes="SPL"),           # Standardize orientation
-    # Scale intensity to [0,1] range, clipping outliers
+    LoadImage(ensure_channel_first=True),
+    EnsureType(),                         
     ScaleIntensityRange(
-        a_min=-1024,    # Min HU value
-        a_max=2048,     # Max HU value
-        b_min=0,        # Target min
-        b_max=1,        # Target max
-        clip=True       # Clip values outside range
+        a_min=-1024,    
+        a_max=2048,     
+        b_min=0,        
+        b_max=1,        
+        clip=True       
     ),
-    CropForeground()    # Remove background to reduce computation
+    CropForeground()   
 ])
 
-# Dictionary to track scanner-dose-IR occurrences
 scanner_count = defaultdict(int)
 
 def extract_patch(image, center, patch_size=(64, 64, 32)):
@@ -123,10 +119,10 @@ def run_inference(nifti_dir, output_dir, metadata_dict):
                 patch = extract_patch(image, patch_center)
 
                 with torch.no_grad():
-                    patch = patch.to('cuda')    # Move the tensor to the default GPU
+                    patch = patch.to('cuda')    
                     output = model(patch.unsqueeze(0))[-1]
                     feature_vector = torch.nn.functional.adaptive_avg_pool3d(output, 1).squeeze()
-                    feature_vector = feature_vector.cpu().numpy()  # Convert tensor to numpy array
+                    feature_vector = feature_vector.cpu().numpy() 
                     formatted_feature_vector = "[" + ", ".join([str(x) for x in feature_vector]) + "]"
                 
                 writer.writerow({

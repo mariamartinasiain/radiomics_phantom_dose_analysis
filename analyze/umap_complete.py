@@ -40,6 +40,8 @@ def load_data(filepath):
     data['Scanner'] = data['SeriesDescription'].str.split('_', expand=True)[[0]]
 
     data['Dose'] = data['SeriesDescription'].apply(extract_mg_value)
+
+    ######### Filter by dose #########
     '''
     # Filter the data for Dose = 10 mGy
     data_filtered = data[data['Dose'] == 14]
@@ -110,7 +112,7 @@ def features_to_numpy(features):
 
 def perform_umap(features):
     """Performs UMAP dimensionality reduction."""
-    features_array = features_to_numpy(features)  # Assuming you have a function that converts features to numpy
+    features_array = features_to_numpy(features)
     features_scaled = StandardScaler().fit_transform(features_array)
     umap_reducer = umap.UMAP(n_neighbors=20, min_dist=0.5, n_components=2, random_state=24)
     umap_results = umap_reducer.fit_transform(features_scaled)
@@ -166,43 +168,12 @@ def plot_results(features, labels, data, color_mode, output_dir, filename_suffix
     else:
         formatted_suffix = 'SwinUNETR'
 
-    # Customize the title based on color_mode and filename_suffix
-    #title = f"UMAP Projection {formatted_suffix} - Colored by {formatted_color_mode} (N={umap_results.shape[0]})"
     title = f"UMAP Projection {formatted_suffix} - Colored by {formatted_color_mode}"
     plt.title(title)
 
     plt.grid(True)
-
-    # Save the figure with color_mode and filename_suffix in the filename
-    plt.savefig(f"{base_filename}_{color_mode}_umap_10regions.png")
+    plt.savefig(f"{base_filename}_{color_mode}_umap.png")
     
-    umap_df = pd.DataFrame({
-    'UMAP1': umap_results[:, 0],
-    'UMAP2': umap_results[:, 1],
-    'label': labels,
-    'index': features.index
-    })
-    #umap_df.to_csv(f"{output_dir}/umap_resultados.csv", index=False)
-
-    x_min, x_max = 10, 15 
-    y_min, y_max = 5, 10
-
-    sospechosos = umap_df[
-        (umap_df['UMAP1'] > x_min) & (umap_df['UMAP1'] < x_max) &
-        (umap_df['UMAP2'] > y_min) & (umap_df['UMAP2'] < y_max)
-    ]
-
-    #sospechosos.to_csv(f"{output_dir}/umap_sospechosos.csv", index=False)
-
-    # Use index to get corresponding rows from original dataset
-    sospechosos_data = data.loc[sospechosos['index']]
-    sospechosos_filtrados = sospechosos_data[sospechosos_data['ROI'] != 'normal1']
-    #print(sospechosos_filtrados)
-
-    # Save results if needed
-    #sospechosos_data.to_csv(f"{output_dir}/{filename_suffix}_{color_mode}_sospechosos.csv")
-    
-
 
 def analysis(csv_paths, output_dir):
     """Main analysis function that loads data, processes it, and generates plots."""
@@ -224,7 +195,7 @@ def analysis(csv_paths, output_dir):
                                                              'Toshiba': 'TOSHIBA',
                                                              'Ge medical systems': 'GE MEDICAL SYSTEMS'}).astype(str)
 
-        # Extract method name from the file name (e.g., 'features_pyradiomics_full.csv' -> 'pyradiomics')
+        # Extract method name from the file name
         method_name = os.path.basename(csv_path).split('_')[0]
 
         # Generate plots for ROI, Manufacturer, and Dose
@@ -236,37 +207,20 @@ if __name__ == "__main__":
     # Define file paths
     #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
     files_dir = '/mnt/nas7/data/maria/final_features'
-    output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/umap/10_regions'
-    #output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/umap/six_rois'
+    output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/umap/six_rois'
 
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        #f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
-        #f'{files_dir}/features_ct-fm_full.csv',
-        #f'{files_dir}/features_cnn_complete_updated.csv',
-        #'/home/reza/radiomics_phantom/final_features_doses/features_swin.csv',
-        #'/home/reza/radiomics_phantom/final_features_doses/features_pyradiomics.csv',
-        #f'{files_dir}/ct-fm/dicom/features_ct-fm_full.csv',
-        #f'{files_dir}/pyradiomics_features_prueba.csv',
-        #'/mnt/nas7/data/maria/final_features/features_swinunetr_reversed.csv',
-
         #f'{files_dir}/final_features_complete/features_pyradiomics_4rois.csv',
         #f'{files_dir}/final_features_complete/features_cnn_4rois.csv',
         #f'{files_dir}/final_features_complete/features_swinunetr_4rois.csv',
         #f'{files_dir}/final_features_complete/features_ct-fm_4rois.csv',
 
-        #f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
-        #f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
-        #f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',
-        #f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'        
-
-        #f'{files_dir}/cnn_features_not_registered.csv',
-        #f'{files_dir}/swinunetr_features_not_registered_v2.csv',
-        #f'{files_dir}/pyradiomics_features_not_registered.csv',
-        f'{files_dir}/pyradiomics_extraction/10_regions/pyradiomics_features_10regions.csv'    
+        f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
+        f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
+        f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',
+        f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'        
     ]
     
     # Run the analysis

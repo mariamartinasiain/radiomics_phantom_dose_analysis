@@ -44,7 +44,6 @@ def load_data(filepath, one_hot=True):
     # Normalize features
     scaler = StandardScaler()
     features = scaler.fit_transform(features)
-
     print('Number of features:', features.shape[1])
 
     return data, features, labels
@@ -65,7 +64,6 @@ def define_regressor(input_size):
             x = layers.Dense(units, activation=tf.nn.gelu)(x)
             x = layers.Dropout(dropout_rate)(x)
         return x
-
 
     input = tf.keras.Input(shape=(input_size,))
     ff = mlp(input, 0.2, [100, 60, 30])
@@ -98,12 +96,9 @@ def train_and_test(X_train, y_train, X_test, y_test, input_size):
     y_pred = model.predict(X_test)
 
     # Compute MAE (Mean Absolute Error)
-
     mae = np.mean(np.abs(y_pred.flatten() - y_test))
 
-    # Plot results
     plot_loss(history)
-
     print(f"Test MAE: {mae:.4f}")
 
     return mae
@@ -112,7 +107,7 @@ def run_cross_validation(data_path, output_dir='./results'):
     data, features, labels = load_data(data_path)
 
     # Extract the method name from the file path
-    method_name = os.path.basename(data_path).split('_')[1]  # Extracts 'pyradiomics', 'cnn', or 'swinunetr'
+    method_name = os.path.basename(data_path).split('_')[1] 
 
     groups = data['ROI_Scanner_Pair']  # Group by ROI-Scanner pairs
 
@@ -138,11 +133,9 @@ def run_cross_validation(data_path, output_dir='./results'):
             print(f"Fold {fold + 1} MAE: {mae:.4f}")
             file.write(f"Fold {fold + 1} MAE: {mae:.4f}\n")
 
-
         # Compute average MAE
         mean_mae = np.mean(fold_maes)
         print(f"\nFinal 10-Fold MAE: {mean_mae:.4f}")
-
         file.write(f"\nFinal 10-Fold MAE: {mean_mae:.4f}\n")
 
         # Plot the MAE per fold and mean MAE
@@ -161,7 +154,7 @@ def run_cross_validation(data_path, output_dir='./results'):
 
         plt.ylim(0, 4)
 
-        # Save the plot to a file
+        # Save the plot
         plot_path = os.path.join(output_dir, f'regression_{method_name}.png')
         plt.savefig(plot_path)
         print(f"Plot saved at: {plot_path}")
@@ -169,7 +162,6 @@ def run_cross_validation(data_path, output_dir='./results'):
         plt.show()
 
     return mean_mae
-
 
 
 def plot_loss(history):
@@ -193,9 +185,9 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        #f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
+        f'{files_dir}/features_pyradiomics_full.csv',
+        f'{files_dir}/features_cnn_full.csv',
+        f'{files_dir}/features_swinunetr_full.csv',
         f'{files_dir}/features_ct-fm_full.csv'
     ]
 

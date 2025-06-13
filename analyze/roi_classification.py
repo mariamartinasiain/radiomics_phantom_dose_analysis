@@ -115,20 +115,20 @@ def train_and_test(X_train, y_train, X_test, y_test, input_size, classes_size, c
     return val_accuracy
 
 def run_cross_validation(data_path, output_dir, classifier_type='mlp'):
-    start_time_total = time.time()  # Tiempo de inicio global
+    start_time_total = time.time()  
 
     # Extract the method name from the file path
-    method_name = os.path.basename(data_path).split('_')[1]  # Extracts 'pyradiomics', 'cnn', or 'swinunetr'
+    method_name = os.path.basename(data_path).split('_')[1] 
     
     data, features, labels, classes_size = load_data(data_path, one_hot=True)
     
     doses = np.unique(data['Dose'])
-    results_matrix = np.zeros((len(doses), len(doses)))  # 5x5 matrix
+    results_matrix = np.zeros((len(doses), len(doses)))  
     detailed_results = []  # To store detailed results for each training and testing dose pair
     
     for train_dose_idx, train_dose in enumerate(doses):
         print(f"Training with Dose: {train_dose}")
-        start_train_time = time.time()  # Tiempo de inicio de entrenamiento
+        start_train_time = time.time() 
         
         # Train on the current dose
         X_train = features[data['Dose'] == train_dose]
@@ -137,7 +137,7 @@ def run_cross_validation(data_path, output_dir, classifier_type='mlp'):
         for test_dose_idx, test_dose in enumerate(doses):
             
             print(f"Testing with Dose: {test_dose}")
-            start_test_time = time.time()  # Tiempo de inicio de prueba
+            start_test_time = time.time() 
             
             # Test on the different dose
             X_test = features[data['Dose'] == test_dose]
@@ -152,9 +152,8 @@ def run_cross_validation(data_path, output_dir, classifier_type='mlp'):
             val_accuracy = train_and_test(X_train, y_train, X_test, y_test, X_train.shape[1], classes_size, classifier_type)
             results_matrix[train_dose_idx, test_dose_idx] = val_accuracy
 
-            test_duration = time.time() - start_test_time  # Tiempo de prueba
+            test_duration = time.time() - start_test_time
             print(f"Results for Train Dose {train_dose} → Test Dose {test_dose}: Accuracy: {val_accuracy:.4f} (Test time: {test_duration:.2f}s)")
-
 
             # Save detailed results
             detailed_results.append({
@@ -163,7 +162,7 @@ def run_cross_validation(data_path, output_dir, classifier_type='mlp'):
                 'validation_accuracy': val_accuracy
             })
 
-        train_duration = time.time() - start_train_time  # Tiempo total de entrenamiento
+        train_duration = time.time() - start_train_time  # Total training time
         print(f"Training time for Dose {train_dose}: {train_duration:.2f}s")
     
     # Save detailed results to a CSV file
@@ -180,18 +179,17 @@ def run_cross_validation(data_path, output_dir, classifier_type='mlp'):
 
 
 def plot_heatmap(matrix, doses, output_dir, method_name, classifier_type='mlp'):
-    # Create a heatmap using Seaborn
     plt.figure(figsize=(8, 6))
     sns.heatmap(matrix, annot=True, cmap="Blues", xticklabels=doses, yticklabels=doses, 
-                cbar=True, fmt=".3f", vmin=0.70, vmax=1)  # Fix color bar from 0.70 to 1
+                cbar=True, fmt=".3f", vmin=0.70, vmax=1)  
     plt.title(f"Accuracy Matrix for Doses (Training vs Testing) - {method_name}")
     plt.xlabel("Training Dose (mGy)")
     plt.ylabel("Testing Dose (mGy)")
 
     # Save the plot
     plot_path = os.path.join(output_dir, f'accuracy_heatmap_{method_name}_{classifier_type}.png')
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')  # Save as high-quality image
-    plt.close()  # Close the plot to free memory
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight') 
+    plt.close()
     print(f'Heatmap saved to: {plot_path}')
 
 
@@ -202,20 +200,15 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        #f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
-        #f'{files_dir}/features_ct-fm_full.csv'
-
         #f'{files_dir}/final_features_complete/features_pyradiomics_4rois.csv',
         #f'{files_dir}/final_features_complete/features_cnn_4rois.csv',
         #f'{files_dir}/final_features_complete/features_swinunetr_4rois.csv',
         #f'{files_dir}/final_features_complete/features_ct-fm_4rois.csv'
 
-        #f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
-        #f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
+        f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
+        f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
         f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',
-        #f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'   
+        f'{files_dir}/final_features_complete/features_ct-fm_6rois.csv'   
     ]
 
     for path in csv_paths:

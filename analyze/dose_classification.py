@@ -8,12 +8,11 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 import os
 import seaborn as sns
-import time
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GroupKFold
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix
 
 
 def load_data(filepath, one_hot=True):
@@ -53,7 +52,6 @@ def load_data(filepath, one_hot=True):
     print('Number of features', len(features))
 
     # Encode labels
-
     label_encoder = LabelEncoder()
     labels = label_encoder.fit_transform(labels)
     
@@ -151,14 +149,12 @@ def plot_confusion_matrix(y_true_all, y_pred_all, class_names, output_dir, metho
     cm = confusion_matrix(y_true_all, y_pred_all)
     plt.figure(figsize=(10, 8))
     
-    # Set color bar limits with vmin and vmax
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_names, yticklabels=class_names,
                 vmin=0, vmax=1500)
     plt.xlabel("Predicted Labels")
     plt.ylabel("True Labels")
     plt.title(f"Confusion Matrix ({method_name} - {classifier_type})")
     
-    # Save the figure
     cm_path = os.path.join(output_dir, f'confusion_matrix_{method_name}_{classifier_type}.png')
     plt.savefig(cm_path)
     print(f"Confusion Matrix saved at: {cm_path}")
@@ -171,7 +167,6 @@ def run_cross_validation(data_path, classifier_type='mlp', output_dir='./results
 
     groups = data['ROI_Scanner_Pair']  # Group by ROI-Scanner pairs
     group_kfold = GroupKFold(n_splits=10)
-
 
     fold_accuracies = []
     y_true_all = []
@@ -208,8 +203,6 @@ def run_cross_validation(data_path, classifier_type='mlp', output_dir='./results
 
         print(f"\nFinal 10-Fold Cross-Validation Accuracy: {mean_accuracy:.4f} ± {std_accuracy:.4f}")
         file.write(f"\nFinal 10-Fold Cross-Validation Accuracy: {mean_accuracy:.4f} ± {std_accuracy:.4f}\n")
-
-                # Save final result
         file.write(f"\nFinal 10-Fold Cross-Validation Accuracy: {mean_accuracy:.4f}\n")
         
         # Plot the results
@@ -226,17 +219,14 @@ def run_cross_validation(data_path, classifier_type='mlp', output_dir='./results
             yval = bar.get_height()
             plt.text(bar.get_x() + bar.get_width() / 2, yval + 0.01, f'{yval:.4f}', ha='center', va='bottom')
         
-        # Set y-axis range between 0 and 1
         plt.ylim(0, 1)
         
-        # Save the plot to a file
         plot_path = os.path.join(output_dir, f'cross_validation_{method_name}_{classifier_type}.png')
         plt.savefig(plot_path)
         print(f"Plot saved at: {plot_path}")
         
         plt.show()
 
-        # Plot and save confusion matrix
         plot_confusion_matrix(y_true_all, y_pred_all, label_encoder.classes_, output_dir, method_name, classifier_type)
 
 
@@ -267,16 +257,10 @@ def plot_accuracy_loss(history):
 
 def main():
     files_dir = '/mnt/nas7/data/maria/final_features'
-    #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
     output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/dose_classification'
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        #f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
-        #f'{files_dir}/features_ct-fm_full.csv',
-
         f'{files_dir}/final_features_complete/features_pyradiomics_6rois.csv',
         f'{files_dir}/final_features_complete/features_cnn_6rois.csv',
         f'{files_dir}/final_features_complete/features_swinunetr_6rois.csv',

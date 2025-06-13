@@ -29,7 +29,6 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
     # Extract scanner and dose from SeriesDescription
     data[['Pos0', 'Pos2']] = data['SeriesDescription'].str.split('_', expand=True)[[0, 2]]
 
-
     summary = []
     icc_results_per_scanner = {}
 
@@ -52,7 +51,6 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
 
         # Convert deep features if necessary
         if feature_column in filtered_data.columns and filtered_data[feature_column].dtype == 'object':
-
             filtered_data[feature_column] = filtered_data[feature_column].apply(lambda x: np.fromstring(x.strip("[]"), sep=','))
             max_len = filtered_data[feature_column].apply(len).max()
             feature_df = pd.DataFrame(filtered_data[feature_column].tolist(), index=filtered_data.index)
@@ -142,23 +140,12 @@ def calculate_icc(csv_path, roi_column='ROI', series_column='SeriesDescription',
     return summary, icc_results_per_scanner
 
 def main():
-    #files_dir = '/mnt/nas7/data/maria/final_features/small_roi'
     files_dir = '/mnt/nas7/data/maria/final_features'
     #output_dir = '/mnt/nas7/data/maria/final_features/icc_results_dose/four_rois'
     output_dir = '/mnt/nas7/data/maria/final_features/final_features_complete/icc/six_rois'
     os.makedirs(output_dir, exist_ok=True)
 
     csv_paths = [
-        #f'{files_dir}/features_pyradiomics_full.csv',
-        #f'{files_dir}/features_cnn_full.csv',
-        #f'{files_dir}/features_swinunetr_full.csv',
-        #f'{files_dir}/features_ct-fm_full.csv',
-        #'/home/reza/radiomics_phantom/final_features_doses/features_pyradiomics.csv',
-        #f'{files_dir}/features_cnn_complete_updated.csv',
-        #'/home/reza/radiomics_phantom/final_features_doses/features_swin.csv',
-        #f'{files_dir}/pyradiomics_features_prueba.csv',
-        #'/mnt/nas7/data/maria/final_features/features_swinunetr_reversed.csv'
-
         #f'{files_dir}/final_features_complete/features_pyradiomics_4rois.csv',
         #f'{files_dir}/final_features_complete/features_cnn_4rois.csv',
         #f'{files_dir}/final_features_complete/features_swinunetr_4rois.csv',
@@ -172,7 +159,6 @@ def main():
 
     for path in csv_paths:
         summaries, icc_results_per_scanner = calculate_icc(path)
-
 
         # Save final summary
         summary_df = pd.DataFrame(summaries)

@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import re
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,6 +11,7 @@ import seaborn as sns
 import os
 import re
 from scipy.stats import skew, kurtosis, ks_2samp
+
 
 # Output directory
 output_dir = "/mnt/nas7/data/maria/final_features/dose_analysis"
@@ -44,8 +44,6 @@ def load_features(path, method_name):
 
 # Load radiomics data
 pyrad = load_features("/mnt/nas7/data/maria/final_features/final_features_complete/features_pyradiomics_4rois.csv", "PyRadiomics")
-
-# Combine for saving (optional, in case needed)
 pyrad.to_csv(os.path.join(output_dir, "pyradiomics_features_dose_filtered.csv"), index=False)
 
 # Plot distributions in subplots
@@ -53,9 +51,9 @@ def plot_distributions(df, method, output_dir, max_features=24):
     features = df.drop(columns=["Dose", "Method"]).columns[:max_features]  # first N features
     n_features = len(features)
     
-    # Create subplots (4 rows and 5 columns)
-    fig, axes = plt.subplots(6, 8, figsize=(26, 18))  # 4x5 grid
-    axes = axes.flatten()  # Flatten the axes to easily index them
+    # Create subplots
+    fig, axes = plt.subplots(6, 8, figsize=(26, 18)) 
+    axes = axes.flatten()
     
     for i, feat in enumerate(features):
         sns.kdeplot(data=df[df["Dose"] == 1], x=feat, label="1 mGy", fill=True, alpha=0.5, ax=axes[i])
@@ -70,11 +68,8 @@ def plot_distributions(df, method, output_dir, max_features=24):
     plt.close()
 
 def plot_feature_statistics(df, method, output_dir, max_features=24):
-    import matplotlib.ticker as mtick
-
     features = df.drop(columns=["Dose", "Method"]).columns[:max_features]
     
-    # Inicializar estructuras
     stats_dict = {
         "Feature": [],
         "Metric": [],
@@ -88,7 +83,7 @@ def plot_feature_statistics(df, method, output_dir, max_features=24):
         data_1 = df[df["Dose"] == 1][feat]
         data_14 = df[df["Dose"] == 14][feat]
 
-        # Calcular métricas
+        # Compute metrics
         stats = {
             "Mean": (np.mean(data_1), np.mean(data_14)),
             "Median": (np.median(data_1), np.median(data_14)),
@@ -97,7 +92,6 @@ def plot_feature_statistics(df, method, output_dir, max_features=24):
             "Kurtosis": (kurtosis(data_1), kurtosis(data_14)),
         }
 
-        # Guardar en el diccionario
         for metric, (val1, val14) in stats.items():
             stats_dict["Feature"].extend([feat, feat])
             stats_dict["Metric"].extend([metric, metric])
@@ -108,10 +102,9 @@ def plot_feature_statistics(df, method, output_dir, max_features=24):
         ks_stat, ks_pval = ks_2samp(data_1, data_14)
         ks_pvalues.append((feat, ks_pval))
 
-    # Crear DataFrame para stats
     stats_df = pd.DataFrame(stats_dict)
 
-    # Plot 1: métricas generales
+    # Plot 1: general metrics
     g = sns.catplot(data=stats_df, x="Feature", y="Value", hue="Dose", col="Metric",
                     kind="bar", col_wrap=2, height=4, aspect=1.5, sharey=False)
     g.set_xticklabels(rotation=90)
@@ -120,7 +113,7 @@ def plot_feature_statistics(df, method, output_dir, max_features=24):
     plt.savefig(os.path.join(output_dir, f"{method}_feature_statistics_bars.png"))
     plt.close()
 
-    # Plot 2: p-values del test KS
+    # Plot 2: p-values KS test
     ks_df = pd.DataFrame(ks_pvalues, columns=["Feature", "KS_pvalue"])
     plt.figure(figsize=(12, 6))
     sns.barplot(data=ks_df, x="Feature", y="KS_pvalue", color="gray")
@@ -133,21 +126,17 @@ def plot_feature_statistics(df, method, output_dir, max_features=24):
     plt.savefig(os.path.join(output_dir, f"{method}_ks_pvalues.png"))
     plt.close()
 
-# Ejecutar
+
 #plot_feature_statistics(pyrad, "CT-FM", output_dir, max_features=24)
 # Plot for PyRadiomics method, limiting to first 20 features
 #plot_distributions(pyrad, "CT-FM", output_dir, max_features=48)
 
 
-import seaborn as sns
-import matplotlib.pyplot as plt
-import os
-
 def plot_distributions(df, method, output_dir, max_features=24):
     features = df.drop(columns=["Dose", "Method", "ROI"]).columns[:max_features]  # Exclude non-feature columns
     n_features = len(features)
 
-    fig, axes = plt.subplots(4, 6, figsize=(26, 18))  # 6x8 grid for up to 48 features
+    fig, axes = plt.subplots(4, 6, figsize=(26, 18)) 
     axes = axes.flatten()
 
     for i, feat in enumerate(features):

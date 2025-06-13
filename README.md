@@ -1,53 +1,67 @@
-# harmonization
+# Impact of CT dose on AI performance
 
-It contains the code for every harmonization experiments done during the internship.
+This repository contains the code used to evaluate how CT dose variations affect the stability of radiomic and deep learning features, and their impact on AI model performance. Using a standardized multi-scanner dataset from a 3D-printed anthropomorphic phantom with liver anomalies, we extracted features from six regions of interest using PyRadiomics, a shallow CNN, SwinUNETR, and a CT foundation model (CT-FM). We assessed feature robustness using intraclass correlation (ICC), visualized embeddings with UMAP, and evaluated generalization across dose levels in classification tasks.
 
-extract is for feature extraction, it use a dataset file in a typical json format to load the volumes. The "image" key of an item in the dataset file should contain the path to the volume.
+## analyze
 
-train is for training a model, it use a dataset file in a typical json format to load the volumes. The "image" key of an item in the dataset file should contain the path to the volume and the "roi_label" key should contain the label of the roi if training with fixed rois.
+Contains all scripts related to downstream analysis and evaluation:
 
-the "info" key of an item in the dataset file should contain the information of the volume useful for creating the feature set file. (like the manufacturer, the slice thickness, the spacing between slices, etc.)
+- Classification: Code for training and evaluating classification models using extracted features.
 
-# analyze
+- UMAP: Scripts to generate 2D visualizations of feature distributions.
 
-It contains the code for every analysis done during the internship.
+- Boxplots: Tools to analyze and visualize feature robustness (e.g., ICC).
 
-analyze is the code used to produce the tsne and pca plots with the features sets.
+- Metadata processing: Utilities to handle acquisition metadata and structure datasets.
 
-batch_classif is used to run different classification experiments using the code from "classification"
+## radiomics
 
-Order of executing the scripts: batch_classif.py + accuracies.py, compute_icc.py + cc_boxplot.py.
+Radiomics feature extraction using PyRadiomics.
 
-# qa4iqi-extraction
+- NIfTI mask generation from DICOM segmentations (nifti_masks_generation.py)
 
-the code is coming from the original repository of the QA4IQI project. It is used to extract the radiomics features from the phantom scans. a few lines were modified so it might still be of use for the project.
+- Feature extraction from full ROI segmentations (pyradiomics_extraction.py, extract_pyradiomics_features.py)
 
-## Code for QA4IQI Radiomics Feature Extraction
+- Patch-level feature extraction (10 patches per ROI)
 
-1. (OPTIONAL) To build this container from source, navigate to this directory and run:
+- Extraction for CT-ORG dataset
 
-   ```
-   docker build -t medgift/qa4iqi-extraction:latest .
-   ```
+## cnn
 
-2. Run a container using the **medgift/qa4iqi-extraction** image (built locally or pulled from Docker Hub directly)
+Deep learning–based feature extraction using a pretrained CNN model.
 
-   ```
-   docker run -it --rm -v <PATH_TO_DATASET_FOLDER>:/data/ct-phantom4radiomics -v <PATH_TO_OUTPUT_FOLDER>:/data/output medgift/qa4iqi-extraction:latest
-   ```
+- Main code for patch-based feature extraction (patches of size 64×64×32, centered on ROI coordinates)
 
-   Where:
-   - ```<PATH_TO_DATASET_FOLDER>``` is an empty folder on your local hard drive where the dataset will be downloaded to. Make sure to have enough space available on your hard drive, as the full dataset is ~42GB.
-   - ```<PATH_TO_OUTPUT_FOLDER>``` is an empty folder on your local hard drive where the extracted features will be saved in a file called **features.csv**.
+- Scripts for extracting features from CT-ORG and MNIST datasets
+
+- Patch-level feature extraction (10 patches per ROI)
+
+## swin
+
+Transformer-based feature extraction using a pretrained Swin Transformer (SwinUNETR).
+
+- Main code for patch-based feature extraction (patches of size 64×64×32, centered on ROI coordinates)
+
+- Scripts for extracting features from CT-ORG and MNIST datasets
+
+## ct-fm
+
+Feature extraction using a pretrained CT-FM model.
+
+- Main code for patch-based feature extraction (patches of size 64×64×32, centered on ROI coordinates)
+
+- Scripts for extracting features from CT-ORG and MNIST datasets
+
 
 ## Phantom Scans Dataset
 
-The dataset of phantom scans is available on TCIA here: https://doi.org/10.7937/a1v1-rc66
+The dataset of phantom scans is available on TCIA here:
 
-If you publish any work which uses this dataset, please cite the following publication :
+> *Amirian, M., Bach, M., Jimenez del Toro, O. A., Aberle, C., Schaer, R., Andrearczyk, V., Maestrati, J.-F., Flouris, K., Obmann, M., Dromain, C., Dufour, B., Poletti, P.-A., von Tengg-Kobligk, H., Alkadhi, H., Konukoglu, E., Müller, H., Stieltjes, B., & Depeursinge, A. (2025). A Multi-Centric Anthropomorphic 3D CT Phantom-Based Benchmark Dataset for Harmonization (CT4Harmonization-Multicentric) (Version 1) [Data set]. The Cancer Imaging Archive. https://doi.org/10.7937/M0PB-BH69*
 
-> *Schaer, R., Bach, M., Obmann, M., Flouris, K., Konukoglu, E., Stieltjes, B., Müller, H., Aberle, C., Jimenez del Toro, O. A., & Depeursinge, A. (2023). Task-Based Anthropomorphic CT Phantom for Radiomics Stability and Discriminatory Power Analyses (CT-Phantom4Radiomics)*
+If you publish any work which uses this dataset, please cite the following publication:
 
-## Reference images
+> *Amirian, M., Bach, M., Jimenez del Toro, O. A., Aberle, C., Schaer, R., Andrearczyk, V., Maestrati, J.-F., Martin Asiain, M., Flouris, K., Obmann, M., Dromain, C., Dufour, B., Poletti, P.-A., von Tengg-Kobligk, H., Hügli, R., Kretzschmar, M., Alkadhi, H., Konukoglu, E., Müller, H., Stieltjes, B., & Depeursinge, A. (2025). A Multi-Centric Anthropomorphic 3D CT Phantom-Based Benchmark Dataset for Harmonization, under submission, 2025.*
 
-The QA4IQI reference data (used for printing the phantom) can be downloaded here: https://www.dropbox.com/s/yf5cqprkyuxwcwv/refData.zip?dl=0
+
+

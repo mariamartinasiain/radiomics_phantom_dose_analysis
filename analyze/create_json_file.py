@@ -40,7 +40,7 @@ for metadata in metadata_list:
                 "StudyDescription": metadata["StudyDescription"],
                 "StudyID": metadata["StudyID"]
             },
-            "roi_label": None  # You can update this if needed
+            "roi_label": None 
         }
         json_data.append(entry)
 

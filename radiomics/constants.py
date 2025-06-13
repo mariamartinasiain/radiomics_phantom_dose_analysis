@@ -1,0 +1,26 @@
+#DATASET_FOLDER = "../DICOM"
+DATASET_FOLDER = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl"
+#DATASET_FOLDER = "/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1/"
+#A1_174008_691000_SOMATOM_Definition_Edge_ID23_Harmonized_10mGy_IR_NrFiles_343
+#/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl
+#si le chemin est un fichier de ct scan, il va y avoir un pb car le .json va se mettre dedans et causer un pb de read sur le dicom, donc mettre dossier parent
+#OUTPUT_FILE_NAME = "./data/output/features2.csv"
+OUTPUT_FILE_NAME = "/mnt/nas7/data/maria/final_features/pyradiomics_extraction/features_pyradiomics_prueba"
+PARAMETER_FILE_NAME = "params/qa4iqi_params.yml"
+TCIA_COLLECTION_NAME = "CT-Phantom4Radiomics"
+MODALITY_CT = "CT"
+MODALITY_SEG = "SEG"
+FIELD_NAME_IMAGE = "image"
+FIELD_NAME_SEG = "seg"
+FOLDER_NAME_IMAGE = "image2"
+FOLDER_NAME_ROIS = "rois2"
+ROI_NAMES = ["normal1", "normal2", "cyst1", "cyst2", "hemangioma", "metastasis"]
+ROI_NAME_FIELD = "ROI"
+DIAGNOSTICS_FEATURES_PREFIX = "diagnostics"
+STUDY_UID_FIELD = "StudyInstanceUID"
+SERIES_NUMBER_FIELD = "SeriesNumber"
+MANUFACTURER_FIELD = "Manufacturer"
+MANUFACTURER_MODEL_NAME_FIELD = "ManufacturerModelName"
+SERIES_DESCRIPTION_FIELD = "SeriesDescription"
+SLICE_THICKNESS_FIELD = "SliceThickness"
+SLICE_SPACING_FIELD = "SpacingBetweenSlices"

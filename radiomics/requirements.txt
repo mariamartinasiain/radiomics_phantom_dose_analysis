@@ -1,0 +1,11 @@
+numpy
+SimpleITK
+pydicom
+pydicom-seg
+nibabel
+dcmstack
+pyradiomics
+tcia_utils
+inquirer
+tqdm
+python-dotenv

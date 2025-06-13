@@ -1,14 +1,11 @@
 import nibabel as nib
 import os
 
-# Paths
 input_folder = "/mnt/nas7/data/reza/registered_dataset_all_doses_pad_updated_NonUnifiedOrigins/"
 output_folder = "/mnt/nas7/data/maria/final_features/registered_niftis_new/"
-
-# Ensure the output directory exists
 os.makedirs(output_folder, exist_ok=True)
 
-# Choose a reference image (update the filename to the correct one)
+# Reference image 
 reference_image_path = os.path.join(input_folder, "A1_174008_691000_SOMATOM_Definition_Edge_ID23_Harmonized_10mGy_IR_NrFiles_343.nii.gz")
 
 ref_nifti = nib.load(reference_image_path)
@@ -26,7 +23,7 @@ for filename in sorted(os.listdir(input_folder)):
         # Check if the file already exists in the output folder
         if os.path.exists(output_path):
             print(f"Skipping {filename} as it already exists in the output folder.")
-            skipped_images_count += 1  # Increment the skipped counter
+            skipped_images_count += 1 
             continue
         
         try:
@@ -36,9 +33,8 @@ for filename in sorted(os.listdir(input_folder)):
             # Create new NIfTI with the reference affine
             new_nifti = nib.Nifti1Image(nifti.get_fdata(), ref_affine, nifti.header)
             
-            # Save the modified image with the same name in the new folder
             nib.save(new_nifti, output_path)
-            new_images_count += 1  # Increment the new images counter
+            new_images_count += 1 
         
         except FileNotFoundError:
             print(f"Warning: File {filename} not found, skipping...")

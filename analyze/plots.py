@@ -1,7 +1,14 @@
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-import matplotlib as mpl
 import os
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+import nibabel as nib
+import matplotlib.patches as patches
+
+
 
 def create_custom_legend(labels, colors, title, filename, output_path):
     """Create and save a custom legend with circle markers and bold title."""
@@ -36,7 +43,7 @@ def create_custom_legend(labels, colors, title, filename, output_path):
     plt.savefig(full_path, bbox_inches='tight', dpi=300)
     plt.close()
 
-output_path = '/mnt/nas7/data/maria/final_features/final_features_complete/legends'
+output_path = '/mnt/nas7/data/maria/final_features/plots'
 os.makedirs(output_path, exist_ok=True)
 
 # === First legend: ROI classes using viridis-style colors ===
@@ -66,11 +73,8 @@ plt.tight_layout()
 plt.savefig(os.path.join(output_path, 'model_titles.png'), dpi=300, bbox_inches='tight')
 plt.close()
 
-'''
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
+
+
 
 def plot_accuracy_matrix(file_path, method_name):
     # Load the data
@@ -90,7 +94,7 @@ def plot_accuracy_matrix(file_path, method_name):
     plt.ylabel('Testing Dose (mGy)', fontsize=11)
     
     # Save the plot to a file
-    output_path = '/mnt/nas7/data/maria/final_features/final_features_complete/legends'
+    output_path = '/mnt/nas7/data/maria/final_features/plots'
     plt.tight_layout()
     plt.savefig(f"{output_path}/accuracy_matrix_{method_name.lower()}.png", dpi=300, bbox_inches='tight')
     plt.close()
@@ -146,7 +150,7 @@ def create_custom_legend(labels, colors, title, filename, output_path):
     plt.savefig(full_path, bbox_inches='tight', dpi=300)
     plt.close()
 
-output_path = '/mnt/nas7/data/maria/final_features/final_features_complete/legends'
+output_path = '/mnt/nas7/data/maria/final_features/final_features_complete/plots'
 os.makedirs(output_path, exist_ok=True)
 
 # === First legend: ROI classes using viridis-style colors ===
@@ -157,12 +161,9 @@ create_custom_legend(roi_labels, roi_colors, 'Organs', 'legend_org.png', output_
 
 
 
-import nibabel as nib
-import numpy as np
-import matplotlib.pyplot as plt
-import os
 
-output_dir = "/mnt/nas7/data/maria/final_features/final_features_complete/histograms"
+
+output_dir = "/mnt/nas7/data/maria/final_features/histograms"
 os.makedirs(output_dir, exist_ok=True)
 
 images = {
@@ -220,123 +221,41 @@ for label, path in images.items():
     plt.close()
 
 
-
-import os
-import nibabel as nib
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import numpy as np
+import os
 
-images = {
-    "14mGy": "/mnt/nas7/data/reza/registered_dataset_all_doses/A1_174008_691000_SOMATOM_Definition_Edge_ID3_Harmonized_14mGy_IR_NrFiles_343.nii.gz",
-    "10mGy": "/mnt/nas7/data/reza/registered_dataset_all_doses/A1_174008_691000_SOMATOM_Definition_Edge_ID23_Harmonized_10mGy_IR_NrFiles_343.nii.gz",
-    "6mGy":  "/mnt/nas7/data/reza/registered_dataset_all_doses/A1_174008_691000_SOMATOM_Definition_Edge_ID43_Harmonized_6mGy_IR_NrFiles_343.nii.gz",
-    "3mGy":  "/mnt/nas7/data/reza/registered_dataset_all_doses/A1_174008_691000_SOMATOM_Definition_Edge_ID63_Harmonized_3mGy_IR_NrFiles_343.nii.gz",
-    "1mGy":  "/mnt/nas7/data/reza/registered_dataset_all_doses/A1_174008_691000_SOMATOM_Definition_Edge_ID83_Harmonized_1mGy_IR_NrFiles_343.nii.gz"
-}
+methods = ['PyRadiomics', 'Shallow CNN', 'SwinUNETR', 'CT-FM']
+means = [0.9205, 0.9407, 0.8178, 0.9650]
+stds = [0.0293, 0.0172, 0.0350, 0.0190]
 
-output_dir = "/mnt/nas7/data/maria/final_features/final_features_complete/patch_zoom"
-os.makedirs(output_dir, exist_ok=True)
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']  # azul, naranja, verde, rojo
 
-def window_level(image, window=400, level=50):
-    min_val = level - window / 2
-    max_val = level + window / 2
-    img_wl = np.clip(image, min_val, max_val)
-    img_wl = (img_wl - min_val) / (max_val - min_val)
-    return img_wl
+x = np.arange(len(methods))
+fig, ax = plt.subplots(figsize=(8, 5))
+bars = ax.bar(x, means, yerr=stds, capsize=5, color=colors)
 
-zoom_size = 50
-
-def flip_volume(volume, axis=0):
-    volume = np.swapaxes(volume, 0, axis)
-    volume_flipped = np.zeros_like(volume)
-    nslices = volume.shape[0]
-    for i in range(nslices):
-         volume_flipped[i, ...] = volume[nslices - i - 1, ...]
-    volume_flipped = np.swapaxes(volume_flipped, axis, 0)
-    return volume_flipped
-
-for label, path in images.items():
-    img = nib.load(path)
-    data = img.get_fdata()
-    affine = img.affine
-
-    data = data.transpose(1, 0, 2)
-    data = flip_volume(data, axis=0)
-
-    slice_idx = data.shape[2] // 2
-    axial_slice = data[:, :, slice_idx]
-
-    # Aplicar window/level
-    axial_wl = window_level(axial_slice, window=400, level=50)
-
-    center_x, center_y = axial_slice.shape[1] // 2, axial_slice.shape[0] // 2
-    x_start = center_x - zoom_size // 2 + 25
-    y_start = center_y - zoom_size // 2 + 80
-
-    patch = axial_wl[y_start:y_start+zoom_size, x_start:x_start+zoom_size]
-
-    # Calcular coordenadas físicas del patch en 3D
-    # Voxel coordinate de la esquina superior izquierda del patch
-    voxel_start = np.array([x_start, y_start, slice_idx, 1])  # Añadimos 1 para producto matricial con affine 4x4
-
-    # Convertir a espacio físico (en mm)
-    phys_start = affine @ voxel_start
-
-    # Calcular la esquina opuesta (inferior derecha)
-    voxel_end = np.array([x_start + zoom_size, y_start + zoom_size, slice_idx, 1])
-    phys_end = affine @ voxel_end
-
-    print(f"{label} - Coordenadas voxel patch: start={voxel_start[:3]}, end={voxel_end[:3]}")
-    print(f"{label} - Coordenadas físicas patch (mm): start={phys_start[:3]}, end={phys_end[:3]}")
-
-    phys_start_lps = phys_start.copy()
-    phys_end_lps = phys_end.copy()
-
-    # Invertir Y (A → P) y Z (S → I)
-    phys_start_lps[1] *= -1
-    phys_start_lps[2] *= -1
-    phys_end_lps[1] *= -1
-    phys_end_lps[2] *= -1
-
-    print(f"L-R (X): {phys_start_lps[0]:.2f} mm to {phys_end_lps[0]:.2f} mm")
-    print(f"P-A (Y): {phys_start_lps[1]:.2f} mm to {phys_end_lps[1]:.2f} mm")
-    print(f"I-S (Z): {phys_start_lps[2]:.2f} mm to {phys_end_lps[2]:.2f} mm")
-
-
-    import nibabel as nib
-    from nibabel.orientations import aff2axcodes
-
-    img = nib.load(path)
-    axcodes = aff2axcodes(img.affine)
-    print("Orientación de los ejes según el affine:", axcodes)
-
-
-    # Guardar patch en NIfTI con affine ajustada (opcional)
-    patch_3d = patch[:, :, np.newaxis]
-    new_origin = affine[:3, :3] @ np.array([x_start, y_start, slice_idx]) + affine[:3, 3]
-    patch_affine = affine.copy()
-    patch_affine[:3, 3] = new_origin
-    patch_img = nib.Nifti1Image(patch_3d, patch_affine)
-    out_path = os.path.join(output_dir, f"patch_wl_{label}.nii.gz")
-    nib.save(patch_img, out_path)
-
-    # Visualización con recuadro rojo
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-    fig.suptitle(f'{label}', fontsize=16)
-
-    axs[0].imshow(axial_wl, cmap='gray')
-    rect = patches.Rectangle((x_start, y_start), zoom_size, zoom_size, linewidth=2, edgecolor='red', facecolor='none')
-    axs[0].add_patch(rect)
-    axs[0].set_title('Slice axial central con WL')
-    axs[0].axis('off')
-
-    axs[1].imshow(patch, cmap='gray')
-    axs[1].set_title(f'Zoom patch {zoom_size}x{zoom_size} con WL')
-    axs[1].axis('off')
-
-    plt.tight_layout()
-    plt.show()
-
+ax.set_ylabel('Mean accuracy')
+#ax.set_title('10-fold CV Accuracy for Organ Classification')
+ax.set_xticks(x)
+ax.set_xticklabels(methods)
+ax.set_ylim(0.7, 1.0)
+ax.grid(True, axis='y', linestyle='--', alpha=0.7)
 
 '''
+# Mostrar valores a la derecha de la barra de error
+for i, (bar, mean, std) in enumerate(zip(bars, means, stds)):
+    ax.annotate(f'{mean:.3f}', 
+                xy=(bar.get_x() + bar.get_width() / 2 + 0.1, mean + std / 2), 
+                ha='left', va='center')
+'''
+
+plt.tight_layout()
+
+output_path = '/mnt/nas7/data/maria/final_features/plots'
+os.makedirs(output_path, exist_ok=True)
+
+output_file = os.path.join(output_path, 'cv_accuracy_plot.png')
+plt.savefig(output_file, dpi=300, bbox_inches='tight')
+
+plt.show()
