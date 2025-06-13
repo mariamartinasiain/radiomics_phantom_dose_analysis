@@ -233,6 +233,16 @@ colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']  # azul, naranja, verde, r
 
 x = np.arange(len(methods))
 fig, ax = plt.subplots(figsize=(8, 5))
+
+plt.rcParams.update({
+    'font.size': 16,
+    'axes.titlesize': 14,
+    'axes.labelsize': 11,
+    'xtick.labelsize': 13,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 15
+})
+
 bars = ax.bar(x, means, yerr=stds, capsize=5, color=colors)
 
 ax.set_ylabel('Mean accuracy')
